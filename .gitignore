@@ -1,0 +1,36 @@
+# Local agent and generated artifacts
+.codex-artifacts/
+
+# Project planning documents are local-only
+docs/
+
+# Dependencies and build output
+node_modules/
+dist/
+build/
+coverage/
+.turbo/
+.vite/
+
+# Test output
+playwright-report/
+test-results/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Logs and temporary files
+*.log
+tmp/
+temp/
+
+# Editor and OS files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+Desktop.ini
