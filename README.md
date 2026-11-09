@@ -1,12 +1,30 @@
 # AgentForge
 
-AgentForge is a planned multi-agent software development workspace focused on controlled execution, verifiable artifacts, explicit approvals, and recoverable workflows.
+AgentForge is a pnpm monorepo for a controlled multi-agent development workspace.
 
-The repository is currently in the architecture and product-design phase. Application implementation has not started.
+## Requirements
 
-## Current Status
+- Node.js 24+
+- pnpm 12.18.0
+- Docker Desktop with Linux containers
 
-- Documentation version: 1.2
-- Architecture: React, Fastify, PostgreSQL, pg-boss, LangGraph, isolated workers and runners
-- Implementation status: not started
+## Local Development
+
+```bash
+pnpm install
+pnpm infra:up
+pnpm dev
+```
+
+The web application runs on `http://localhost:5173`; the API listens on `http://localhost:3000`.
+
+## Workspace
+
+- `apps/web`: React and Vite frontend
+- `apps/server`: Fastify control-plane API
+- `apps/driver`: graph driver process
+- `apps/worker`: agent worker process
+- `apps/runner`: controlled execution service
+- `apps/cli`: local lifecycle and doctor commands
+- `packages/*`: shared contracts, storage, queue, and orchestration modules
 

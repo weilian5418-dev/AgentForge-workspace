@@ -23,6 +23,9 @@ test-results/
 *.pem
 *.key
 
+# TypeScript incremental state
+*.tsbuildinfo
+
 # Logs and temporary files
 *.log
 tmp/

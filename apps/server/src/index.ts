@@ -1,0 +1,18 @@
+import { buildServer } from "./app.js";
+
+const app = buildServer();
+const port = Number(process.env.API_PORT ?? 3000);
+
+try {
+  await app.listen({ host: "127.0.0.1", port });
+} catch (error) {
+  app.log.error(error);
+  process.exit(1);
+}
+
+for (const signal of ["SIGINT", "SIGTERM"] as const) {
+  process.on(signal, async () => {
+    await app.close();
+    process.exit(0);
+  });
+}

@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "baseUrl": ".",
+    "paths": {
+      "@agentforge/contracts": ["packages/contracts/src/index.ts"],
+      "@agentforge/storage": ["packages/storage/src/index.ts"],
+      "@agentforge/queue": ["packages/queue/src/index.ts"],
+      "@agentforge/orchestration": ["packages/orchestration/src/index.ts"]
+    }
+  }
+}
