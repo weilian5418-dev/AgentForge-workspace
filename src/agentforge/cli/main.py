@@ -1263,6 +1263,11 @@ def git_capture_dirty(
 @git_app.command("freeze-snapshot")
 def git_freeze_snapshot(
     workspace_id: str = typer.Option(..., "--workspace-id"),
+    stop_evidence_json: str = typer.Option(
+        ...,
+        "--stop-evidence-json",
+        help="GitStopEvidence JSON (operationId, attemptId, generation, evidenceSha256, ...)",
+    ),
     json_out: bool = typer.Option(False, "--json"),
 ) -> None:
     """Freeze a recoverable workspace snapshot into the D06 store."""
@@ -1271,13 +1276,16 @@ def git_freeze_snapshot(
 
     _settings, engine, store, state_dir, uow_fn = _git_service()
     try:
+        evidence = json.loads(stop_evidence_json)
         with uow_fn(engine) as uow:
             view = GitWorkspaceService(uow.session, store, state_dir).freeze_snapshot(
-                FreezeWorkspaceSnapshotRequest.model_validate({"workspaceId": workspace_id})
+                FreezeWorkspaceSnapshotRequest.model_validate(
+                    {"workspaceId": workspace_id, "stopEvidence": evidence}
+                )
             )
             payload = view.model_dump(mode="json", by_alias=True)
-    except GitWorkspaceError as exc:
-        typer.echo(f"{exc.code}: {exc.message}", err=True)
+    except (GitWorkspaceError, json.JSONDecodeError) as exc:
+        typer.echo(str(exc) if not isinstance(exc, GitWorkspaceError) else f"{exc.code}: {exc.message}", err=True)
         raise typer.Exit(FAILURE) from None
     emit(
         payload,

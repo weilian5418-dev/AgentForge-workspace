@@ -9,6 +9,24 @@ from pydantic import Field
 from agentforge.contracts.base import ApiInputModel, ContractModel
 from agentforge.contracts.common import OpaqueId, RelativePath, Sha256Hex, ShortText, UtcDateTime
 
+
+class GitStopEvidence(ApiInputModel):
+    """Trusted stop proof for workspace freeze — not a generic Runner terminal status."""
+
+    source: Literal["runner"] = "runner"
+    operation_id: OpaqueId
+    workspace_id: OpaqueId
+    attempt_id: OpaqueId
+    generation: int = Field(ge=1, strict=True)
+    evidence_sha256: Sha256Hex
+    evidence_path: RelativePath = "_agentforge/stop_evidence.json"
+    writable_scope: ShortText
+    writes_quiesced: bool = Field(
+        strict=True,
+        description="Must be true: no child/writable execution remains for the scope",
+    )
+    checked_at: UtcDateTime
+
 BaselineStrategy = Literal["commit_only", "managed_dirty_snapshot", "blocked"]
 WorkspaceStatus = Literal[
     "active",
@@ -71,9 +89,7 @@ class WorktreeView(ContractModel):
 
 class FreezeWorkspaceSnapshotRequest(ApiInputModel):
     workspace_id: OpaqueId
-    stop_operation_id: OpaqueId = Field(
-        description="Trusted Runner operation that must be terminal for this workspace"
-    )
+    stop_evidence: GitStopEvidence
 
 
 class WorkspaceSnapshotView(ContractModel):

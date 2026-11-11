@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import shutil
 import uuid
 from datetime import UTC, datetime
@@ -17,6 +18,7 @@ from agentforge.contracts.git_workspaces import (
     CleanupWorktreeRequest,
     DirtySnapshotView,
     FreezeWorkspaceSnapshotRequest,
+    GitStopEvidence,
     IntegrateRequest,
     IntegrationView,
     PrepareWorktreeRequest,
@@ -33,6 +35,7 @@ from agentforge.git.snapshot import (
     porcelain_status,
     store_workspace_snapshot,
 )
+from agentforge.runner.paths import RunnerPathError, resolve_under_workspace
 from agentforge.storage.models import (
     ContentObjectRow,
     DirectoryGrantRow,
@@ -202,7 +205,7 @@ class GitWorkspaceService:
             raise GitWorkspaceError("workspace_not_found", "Worktree not found")
         if row.status in {"blocked", "closed"}:
             raise GitWorkspaceError("invalid_state", f"Cannot snapshot status={row.status}")
-        self._assert_stop_evidence(row, body.stop_operation_id)
+        self._assert_stop_evidence(row, body.stop_evidence)
         path = Path(row.worktree_path)
         try:
             content_hash, manifest_hash, _manifest = store_workspace_snapshot(self.store, path)
@@ -215,7 +218,7 @@ class GitWorkspaceService:
             content_hash=content_hash,
             manifest_hash=manifest_hash,
             head_commit=head_commit(path),
-            stop_operation_id=body.stop_operation_id,
+            stop_operation_id=body.stop_evidence.operation_id,
             created_at=_now(),
         )
         self.session.add(snap)
@@ -449,30 +452,83 @@ class GitWorkspaceService:
                 "sourceRoot must equal the authorized grant root (no client-arbitrary bind)",
             )
 
-    def _assert_stop_evidence(self, workspace: GitWorkspaceRow, stop_operation_id: str) -> None:
-        op = self.session.get(RunnerOperationRow, stop_operation_id)
+    def _assert_stop_evidence(self, workspace: GitWorkspaceRow, claim: GitStopEvidence) -> None:
+        if claim.source != "runner":
+            raise GitWorkspaceError("untrusted_stop_source", "Stop evidence source must be runner")
+        if not claim.writes_quiesced:
+            raise GitWorkspaceError(
+                "writes_not_quiesced",
+                "Freeze refused while writable/child executions may still run",
+            )
+        if claim.workspace_id != workspace.id:
+            raise GitWorkspaceError(
+                "stop_workspace_mismatch",
+                "Stop evidence workspaceId must equal git workspace id",
+            )
+        op = self.session.get(RunnerOperationRow, claim.operation_id)
         if op is None:
             raise GitWorkspaceError(
                 "stop_evidence_missing",
-                "stopOperationId not found in trusted runner ledger",
+                "stop evidence operationId not found in trusted runner ledger",
             )
         if op.status not in {"succeeded", "failed", "blocked"}:
             raise GitWorkspaceError(
                 "stop_not_terminal",
-                f"Runner operation status={op.status} is not a confirmed stop",
+                f"Runner operation status={op.status} is not terminal",
             )
-        # Bind to same workspace identity and attempt when recorded.
-        if op.workspace_id not in {workspace.id, workspace.project_id}:
-            # Also accept match on worktree path root equality for host tickets.
-            if Path(op.workspace_root).resolve() != Path(workspace.worktree_path).resolve():
-                raise GitWorkspaceError(
-                    "stop_workspace_mismatch",
-                    "Stop evidence workspace does not match git worktree",
-                )
-        if workspace.attempt_id and op.attempt_id and workspace.attempt_id != op.attempt_id:
+        # Terminal status alone is insufficient — bind attempt/generation/workspace exactly.
+        if op.workspace_id != workspace.id:
+            raise GitWorkspaceError(
+                "stop_workspace_mismatch",
+                "Stop evidence runner workspaceId does not match git workspace",
+            )
+        if Path(op.workspace_root).resolve() != Path(workspace.worktree_path).resolve():
+            raise GitWorkspaceError(
+                "stop_workspace_mismatch",
+                "Stop evidence workspace_root does not match worktree path",
+            )
+        if not op.attempt_id or op.attempt_id != claim.attempt_id:
             raise GitWorkspaceError(
                 "attempt_mismatch",
-                "Stop evidence attemptId does not match workspace attempt",
+                "Stop evidence attemptId missing or mismatched",
+            )
+        if workspace.attempt_id and workspace.attempt_id != claim.attempt_id:
+            raise GitWorkspaceError(
+                "attempt_mismatch",
+                "Workspace attemptId does not match stop evidence",
+            )
+        if op.generation != claim.generation:
+            raise GitWorkspaceError(
+                "generation_mismatch",
+                "Stop evidence generation does not match runner operation",
+            )
+        # Refuse if any other op still running against this worktree.
+        active = [
+            r
+            for r in self.session.scalars(select(RunnerOperationRow)).all()
+            if r.id != op.id
+            and r.workspace_id == workspace.id
+            and r.status in {"issued", "running", "needs_reconciliation"}
+        ]
+        if active:
+            raise GitWorkspaceError(
+                "workspace_still_writable",
+                "Other runner operations still active on this workspace",
+            )
+        # Evidence file must exist under the worktree and match claimed digest.
+        try:
+            evidence_path = resolve_under_workspace(
+                Path(workspace.worktree_path), claim.evidence_path
+            )
+        except RunnerPathError as exc:
+            raise GitWorkspaceError(exc.code, exc.message) from exc
+        if not evidence_path.is_file():
+            raise GitWorkspaceError("stop_evidence_missing", "Stop evidence file missing")
+        digest = hashlib.sha256(evidence_path.read_bytes()).hexdigest()
+        if digest != claim.evidence_sha256:
+            raise GitWorkspaceError(
+                "stop_evidence_mismatch",
+                "Stop evidence sha256 does not match trusted claim",
             )
 
     def _force_remove_worktree(self, source: Path, path: Path) -> None:

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -83,6 +85,8 @@ class _MemSession:
             return _Result([r for r in self.added if isinstance(r, GitWorkspaceSnapshotRow)])
         if "git_workspaces" in text:
             return _Result([r for r in self.added if isinstance(r, GitWorkspaceRow)])
+        if "runner_operations" in text:
+            return _Result([r for r in self.added if isinstance(r, RunnerOperationRow)])
         return _Result([])
 
 
@@ -171,6 +175,26 @@ def _seed(
     )
 
 
+def _write_stop_evidence(worktree_path: str, *, attempt_id: str = "att_1") -> dict[str, Any]:
+    root = Path(worktree_path)
+    evidence_dir = root / "_agentforge"
+    evidence_dir.mkdir(parents=True, exist_ok=True)
+    payload = {"attemptId": attempt_id, "stopped": True, "writesQuiesced": True}
+    path = evidence_dir / "stop_evidence.json"
+    raw = json.dumps(payload, sort_keys=True).encode("utf-8")
+    path.write_bytes(raw)
+    return {
+        "source": "runner",
+        "evidencePath": "_agentforge/stop_evidence.json",
+        "evidenceSha256": hashlib.sha256(raw).hexdigest(),
+        "writableScope": "ws/",
+        "writesQuiesced": True,
+        "attemptId": attempt_id,
+        "generation": 1,
+        "checkedAt": datetime.now(UTC).isoformat(),
+    }
+
+
 def _seed_stop(
     session: _MemSession,
     *,
@@ -178,8 +202,8 @@ def _seed_stop(
     worktree_path: str,
     operation_id: str = "rop_stop_1",
     status: str = "succeeded",
-    attempt_id: str | None = None,
-) -> str:
+    attempt_id: str = "att_1",
+) -> dict[str, Any]:
     now = datetime.now(UTC)
     session.add(
         RunnerOperationRow(
@@ -204,7 +228,18 @@ def _seed_stop(
             updated_at=now,
         )
     )
-    return operation_id
+    evidence = _write_stop_evidence(worktree_path, attempt_id=attempt_id)
+    evidence["operationId"] = operation_id
+    evidence["workspaceId"] = workspace_id
+    return evidence
+
+
+def _freeze(svc: GitWorkspaceService, workspace_id: str, evidence: dict[str, Any]):
+    return svc.freeze_snapshot(
+        FreezeWorkspaceSnapshotRequest.model_validate(
+            {"workspaceId": workspace_id, "stopEvidence": evidence}
+        )
+    )
 
 
 @pytest.fixture
@@ -317,15 +352,14 @@ def test_freeze_requires_terminal_stop_evidence(harness: tuple) -> None:
             }
         )
     )
+    missing_claim = _write_stop_evidence(view.worktree_path)
+    missing_claim["operationId"] = "rop_missing"
+    missing_claim["workspaceId"] = view.workspace_id
     with pytest.raises(GitWorkspaceError) as missing:
-        svc.freeze_snapshot(
-            FreezeWorkspaceSnapshotRequest.model_validate(
-                {"workspaceId": view.workspace_id, "stopOperationId": "rop_missing"}
-            )
-        )
+        _freeze(svc, view.workspace_id, missing_claim)
     assert missing.value.code == "stop_evidence_missing"
 
-    _seed_stop(
+    wrong = _seed_stop(
         session,
         workspace_id="other_ws",
         worktree_path=str(repo.resolve()),
@@ -333,14 +367,10 @@ def test_freeze_requires_terminal_stop_evidence(harness: tuple) -> None:
         status="succeeded",
     )
     with pytest.raises(GitWorkspaceError) as mismatch:
-        svc.freeze_snapshot(
-            FreezeWorkspaceSnapshotRequest.model_validate(
-                {"workspaceId": view.workspace_id, "stopOperationId": "rop_wrong_ws"}
-            )
-        )
+        _freeze(svc, view.workspace_id, {**wrong, "workspaceId": view.workspace_id})
     assert mismatch.value.code == "stop_workspace_mismatch"
 
-    _seed_stop(
+    running_ev = _seed_stop(
         session,
         workspace_id=view.workspace_id,
         worktree_path=view.worktree_path,
@@ -348,11 +378,7 @@ def test_freeze_requires_terminal_stop_evidence(harness: tuple) -> None:
         status="running",
     )
     with pytest.raises(GitWorkspaceError) as running:
-        svc.freeze_snapshot(
-            FreezeWorkspaceSnapshotRequest.model_validate(
-                {"workspaceId": view.workspace_id, "stopOperationId": "rop_running"}
-            )
-        )
+        _freeze(svc, view.workspace_id, running_ev)
     assert running.value.code == "stop_not_terminal"
 
 
@@ -371,17 +397,13 @@ def test_freeze_recoverable_after_worktree_gone(harness: tuple) -> None:
     )
     wt = Path(view.worktree_path)
     (wt / "extra.py").write_text("print(1)\n", encoding="utf-8")
-    stop_id = _seed_stop(
+    evidence = _seed_stop(
         session,
         workspace_id=view.workspace_id,
         worktree_path=view.worktree_path,
         operation_id="rop_ok",
     )
-    frozen = svc.freeze_snapshot(
-        FreezeWorkspaceSnapshotRequest.model_validate(
-            {"workspaceId": view.workspace_id, "stopOperationId": stop_id}
-        )
-    )
+    frozen = _freeze(svc, view.workspace_id, evidence)
     assert frozen.content_hash
     import shutil
 
@@ -407,17 +429,13 @@ def test_integrate_conflict_retained(harness: tuple) -> None:
             )
         )
         (Path(view.worktree_path) / filename).write_text(content, encoding="utf-8")
-        _seed_stop(
+        evidence = _seed_stop(
             session,
             workspace_id=view.workspace_id,
             worktree_path=view.worktree_path,
             operation_id=op_id,
         )
-        snap = svc.freeze_snapshot(
-            FreezeWorkspaceSnapshotRequest.model_validate(
-                {"workspaceId": view.workspace_id, "stopOperationId": op_id}
-            )
-        )
+        snap = _freeze(svc, view.workspace_id, evidence)
         return view.workspace_id, snap.snapshot_id
 
     a, sa = _prepare_and_edit("shared.txt", "from-a\n", "rop_a")
@@ -457,19 +475,27 @@ def test_integrate_uses_locked_snapshot_not_latest(harness: tuple) -> None:
     )
     wt = Path(view.worktree_path)
     (wt / "only_a.txt").write_text("a\n", encoding="utf-8")
-    _seed_stop(session, workspace_id=view.workspace_id, worktree_path=view.worktree_path, operation_id="rop1")
-    first = svc.freeze_snapshot(
-        FreezeWorkspaceSnapshotRequest.model_validate(
-            {"workspaceId": view.workspace_id, "stopOperationId": "rop1"}
-        )
+    first = _freeze(
+        svc,
+        view.workspace_id,
+        _seed_stop(
+            session,
+            workspace_id=view.workspace_id,
+            worktree_path=view.worktree_path,
+            operation_id="rop1",
+        ),
     )
     (wt / "only_a.txt").write_text("b-later\n", encoding="utf-8")
-    _seed_stop(session, workspace_id=view.workspace_id, worktree_path=view.worktree_path, operation_id="rop2")
     # Second freeze after content change — integrate must still use first snapshot id.
-    svc.freeze_snapshot(
-        FreezeWorkspaceSnapshotRequest.model_validate(
-            {"workspaceId": view.workspace_id, "stopOperationId": "rop2"}
-        )
+    _freeze(
+        svc,
+        view.workspace_id,
+        _seed_stop(
+            session,
+            workspace_id=view.workspace_id,
+            worktree_path=view.worktree_path,
+            operation_id="rop2",
+        ),
     )
     result = svc.integrate(
         IntegrateRequest.model_validate(
@@ -507,11 +533,10 @@ def test_cleanup_refuses_active_refs_even_with_force(harness: tuple) -> None:
             }
         )
     )
-    _seed_stop(session, workspace_id=view.workspace_id, worktree_path=view.worktree_path)
-    svc.freeze_snapshot(
-        FreezeWorkspaceSnapshotRequest.model_validate(
-            {"workspaceId": view.workspace_id, "stopOperationId": "rop_stop_1"}
-        )
+    _freeze(
+        svc,
+        view.workspace_id,
+        _seed_stop(session, workspace_id=view.workspace_id, worktree_path=view.worktree_path),
     )
     session.add(
         GitIntegrationRow(
