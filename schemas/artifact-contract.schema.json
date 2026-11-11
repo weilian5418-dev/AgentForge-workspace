@@ -1,0 +1,140 @@
+{
+  "$defs": {
+    "Criterion": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "required": {
+          "title": "Required",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "description",
+        "required"
+      ],
+      "title": "Criterion",
+      "type": "object"
+    },
+    "ValidatorSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "config": {
+          "additionalProperties": true,
+          "title": "Config",
+          "type": "object"
+        },
+        "criterionIds": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "type": "string"
+          },
+          "maxItems": 64,
+          "minItems": 1,
+          "title": "Criterionids",
+          "type": "array"
+        },
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "required": {
+          "title": "Required",
+          "type": "boolean"
+        },
+        "version": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "version",
+        "criterionIds",
+        "required"
+      ],
+      "title": "ValidatorSpec",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "criteria": {
+      "items": {
+        "$ref": "#/$defs/Criterion"
+      },
+      "maxItems": 64,
+      "minItems": 1,
+      "title": "Criteria",
+      "type": "array"
+    },
+    "id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Id",
+      "type": "string"
+    },
+    "independentReview": {
+      "title": "Independentreview",
+      "type": "boolean"
+    },
+    "kind": {
+      "enum": [
+        "code",
+        "markdown",
+        "pptx"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "relativePath": {
+      "title": "Relativepath",
+      "type": "string"
+    },
+    "required": {
+      "title": "Required",
+      "type": "boolean"
+    },
+    "validators": {
+      "items": {
+        "$ref": "#/$defs/ValidatorSpec"
+      },
+      "maxItems": 32,
+      "minItems": 1,
+      "title": "Validators",
+      "type": "array"
+    }
+  },
+  "required": [
+    "id",
+    "kind",
+    "relativePath",
+    "required",
+    "criteria",
+    "validators",
+    "independentReview"
+  ],
+  "title": "ArtifactContract",
+  "type": "object"
+}

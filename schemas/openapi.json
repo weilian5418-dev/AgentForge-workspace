@@ -1,0 +1,718 @@
+{
+  "components": {
+    "schemas": {
+      "CapabilityResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "admission": {
+            "default": "open",
+            "enum": [
+              "open",
+              "drain",
+              "blocked"
+            ],
+            "title": "Admission",
+            "type": "string"
+          },
+          "agentExecution": {
+            "const": false,
+            "default": false,
+            "title": "Agentexecution",
+            "type": "boolean"
+          },
+          "components": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Components",
+            "type": "array"
+          },
+          "database": {
+            "$ref": "#/components/schemas/DependencyStatus"
+          },
+          "docker": {
+            "$ref": "#/components/schemas/DependencyStatus"
+          },
+          "git": {
+            "$ref": "#/components/schemas/DependencyStatus"
+          },
+          "runMode": {
+            "default": "dev",
+            "enum": [
+              "dev",
+              "local",
+              "hosted"
+            ],
+            "title": "Runmode",
+            "type": "string"
+          },
+          "schemaVersion": {
+            "const": "1",
+            "default": "1",
+            "title": "Schemaversion",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "version",
+          "git",
+          "docker",
+          "database"
+        ],
+        "title": "CapabilityResponse",
+        "type": "object"
+      },
+      "DependencyStatus": {
+        "additionalProperties": false,
+        "properties": {
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "available",
+              "unavailable",
+              "unconfigured",
+              "not_checked"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "message"
+        ],
+        "title": "DependencyStatus",
+        "type": "object"
+      },
+      "ErrorCode": {
+        "enum": [
+          "INVALID_REQUEST",
+          "UNAUTHORIZED",
+          "FORBIDDEN",
+          "HOST_REJECTED",
+          "ORIGIN_REJECTED",
+          "NOT_FOUND",
+          "METHOD_NOT_ALLOWED",
+          "VERSION_CONFLICT",
+          "INVALID_STATE",
+          "IDEMPOTENCY_CONFLICT",
+          "BUDGET_EXCEEDED",
+          "CAPABILITY_UNAVAILABLE",
+          "INTERNAL_ERROR",
+          "HTTP_ERROR",
+          "AGENT_NOT_AUTHENTICATED",
+          "CAPABILITY_UNVERIFIED",
+          "CAPABILITY_MISMATCH",
+          "SESSION_STATE_UNKNOWN",
+          "STOP_UNCONFIRMED",
+          "APPROVAL_MAPPING_UNSUPPORTED",
+          "APPROVAL_NOT_CONFIRMED",
+          "CANDIDATE_STALE",
+          "STAGE_GATE_NOT_MET",
+          "ASSIGNMENT_STALE",
+          "BUDGET_EXHAUSTED"
+        ],
+        "title": "ErrorCode",
+        "type": "string"
+      },
+      "ErrorDetail": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ErrorCode"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Code"
+          },
+          "details": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Details",
+            "type": "object"
+          },
+          "message": {
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "Message",
+            "type": "string"
+          },
+          "requestId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Requestid",
+            "type": "string"
+          },
+          "retryable": {
+            "default": false,
+            "title": "Retryable",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "requestId"
+        ],
+        "title": "ErrorDetail",
+        "type": "object"
+      },
+      "ErrorResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorDetail"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "title": "ErrorResponse",
+        "type": "object"
+      },
+      "HealthResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "const": "ok",
+            "default": "ok",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "title": "HealthResponse",
+        "type": "object"
+      },
+      "ReadinessResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "acceptingWork": {
+            "default": true,
+            "title": "Acceptingwork",
+            "type": "boolean"
+          },
+          "admission": {
+            "default": "open",
+            "enum": [
+              "open",
+              "drain",
+              "blocked"
+            ],
+            "title": "Admission",
+            "type": "string"
+          },
+          "database": {
+            "$ref": "#/components/schemas/DependencyStatus"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "runMode": {
+            "default": "dev",
+            "enum": [
+              "dev",
+              "local",
+              "hosted"
+            ],
+            "title": "Runmode",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "ready",
+              "not_ready"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "database"
+        ],
+        "title": "ReadinessResponse",
+        "type": "object"
+      },
+      "ShutdownRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "force": {
+            "default": false,
+            "description": "When true, stop the platform API even if agent drain coordination is incomplete. Default false: incomplete/unknown coordination returns 409 and does not exit.",
+            "title": "Force",
+            "type": "boolean"
+          },
+          "instanceId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Instanceid",
+            "type": "string"
+          },
+          "platformOnly": {
+            "default": false,
+            "description": "Dev/API-only stop: skip agent coordination when no collaboration DB is configured. Ignored when collaboration tables exist and report pending work unless force=true.",
+            "title": "Platformonly",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "instanceId"
+        ],
+        "title": "ShutdownRequest",
+        "type": "object"
+      },
+      "ShutdownResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "drainComplete": {
+            "default": true,
+            "title": "Draincomplete",
+            "type": "boolean"
+          },
+          "instanceId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Instanceid",
+            "type": "string"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "pendingAgentInstances": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Pendingagentinstances",
+            "type": "array"
+          },
+          "status": {
+            "default": "stopping",
+            "enum": [
+              "stopping",
+              "drain_incomplete"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "unconfirmedSideEffects": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Unconfirmedsideeffects",
+            "type": "array"
+          },
+          "verification": {
+            "default": "verified_empty",
+            "enum": [
+              "verified_empty",
+              "pending",
+              "unknown",
+              "platform_only"
+            ],
+            "title": "Verification",
+            "type": "string"
+          }
+        },
+        "required": [
+          "instanceId"
+        ],
+        "title": "ShutdownResponse",
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "scheme": "bearer",
+        "type": "http"
+      }
+    }
+  },
+  "info": {
+    "title": "AgentForge",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/capabilities": {
+      "get": {
+        "operationId": "capabilities_api_v1_capabilities_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CapabilityResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Capabilities"
+      }
+    },
+    "/api/v1/control/shutdown": {
+      "post": {
+        "description": "Drain admission, verify agent stop coordination, then exit the API process.\n\nIncomplete/unknown agent coordination returns 409 and does **not** invoke the\nexit callback unless ``force`` is true. ``platformOnly`` allows API-only stop\nwhen the database is unconfigured (pure dev); it cannot skip pending agents.",
+        "operationId": "shutdown_api_v1_control_shutdown_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShutdownRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShutdownResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Shutdown"
+      }
+    },
+    "/api/v1/health": {
+      "get": {
+        "operationId": "health_api_v1_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Health"
+      }
+    },
+    "/api/v1/ready": {
+      "get": {
+        "operationId": "ready_api_v1_ready_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Ready"
+      }
+    }
+  }
+}

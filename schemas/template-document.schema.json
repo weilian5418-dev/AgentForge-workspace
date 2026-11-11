@@ -1,0 +1,317 @@
+{
+  "$defs": {
+    "TemplateParameterSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "required": {
+          "title": "Required",
+          "type": "boolean"
+        },
+        "type": {
+          "enum": [
+            "string",
+            "integer",
+            "boolean"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "required"
+      ],
+      "title": "TemplateParameterSpec",
+      "type": "object"
+    },
+    "TemplateRoleSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "independentReview": {
+          "default": false,
+          "title": "Independentreview",
+          "type": "boolean"
+        },
+        "readScopes": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 32,
+          "title": "Readscopes",
+          "type": "array"
+        },
+        "requiredCapabilities": {
+          "items": {
+            "maxLength": 512,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 32,
+          "minItems": 1,
+          "title": "Requiredcapabilities",
+          "type": "array"
+        },
+        "responsibilities": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Responsibilities"
+        },
+        "writeScopes": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 32,
+          "title": "Writescopes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "requiredCapabilities"
+      ],
+      "title": "TemplateRoleSpec",
+      "type": "object"
+    },
+    "TemplateStageSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "dependsOn": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "type": "string"
+          },
+          "maxItems": 16,
+          "title": "Dependson",
+          "type": "array"
+        },
+        "gatePolicy": {
+          "default": "stage_atomic",
+          "enum": [
+            "stage_atomic",
+            "dependency_branch"
+          ],
+          "title": "Gatepolicy",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "maxRepairRounds": {
+          "default": 3,
+          "maximum": 10,
+          "minimum": 0,
+          "title": "Maxrepairrounds",
+          "type": "integer"
+        },
+        "requiredReviewRoles": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "type": "string"
+          },
+          "maxItems": 16,
+          "title": "Requiredreviewroles",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "TemplateStageSpec",
+      "type": "object"
+    },
+    "TemplateWorkPackageBrief": {
+      "additionalProperties": false,
+      "properties": {
+        "dependsOn": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "type": "string"
+          },
+          "maxItems": 32,
+          "title": "Dependson",
+          "type": "array"
+        },
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "objective": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Objective",
+          "type": "string"
+        },
+        "outputKinds": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 8,
+          "title": "Outputkinds",
+          "type": "array"
+        },
+        "ownerRoleId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Ownerroleid",
+          "type": "string"
+        },
+        "stageId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Stageid",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "stageId",
+        "ownerRoleId",
+        "objective"
+      ],
+      "title": "TemplateWorkPackageBrief",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "schemaVersion 2: roles, stages, gates required. Legacy v1 must migrate explicitly.",
+  "properties": {
+    "assignmentsRequired": {
+      "default": true,
+      "title": "Assignmentsrequired",
+      "type": "boolean"
+    },
+    "executionProfile": {
+      "default": "container",
+      "enum": [
+        "container",
+        "host_authorized"
+      ],
+      "title": "Executionprofile",
+      "type": "string"
+    },
+    "failurePolicy": {
+      "default": "dependency-aware",
+      "enum": [
+        "dependency-aware",
+        "layer-atomic"
+      ],
+      "title": "Failurepolicy",
+      "type": "string"
+    },
+    "maxRepairRounds": {
+      "default": 3,
+      "maximum": 10,
+      "minimum": 0,
+      "title": "Maxrepairrounds",
+      "type": "integer"
+    },
+    "name": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+    },
+    "parameters": {
+      "additionalProperties": {
+        "$ref": "#/$defs/TemplateParameterSpec"
+      },
+      "title": "Parameters",
+      "type": "object"
+    },
+    "roles": {
+      "items": {
+        "$ref": "#/$defs/TemplateRoleSpec"
+      },
+      "maxItems": 32,
+      "minItems": 1,
+      "title": "Roles",
+      "type": "array"
+    },
+    "routingMode": {
+      "default": "auto",
+      "enum": [
+        "auto",
+        "single",
+        "team"
+      ],
+      "title": "Routingmode",
+      "type": "string"
+    },
+    "schemaVersion": {
+      "const": "2",
+      "default": "2",
+      "title": "Schemaversion",
+      "type": "string"
+    },
+    "stages": {
+      "items": {
+        "$ref": "#/$defs/TemplateStageSpec"
+      },
+      "maxItems": 32,
+      "minItems": 1,
+      "title": "Stages",
+      "type": "array"
+    },
+    "workPackages": {
+      "items": {
+        "$ref": "#/$defs/TemplateWorkPackageBrief"
+      },
+      "maxItems": 32,
+      "minItems": 1,
+      "title": "Workpackages",
+      "type": "array"
+    }
+  },
+  "required": [
+    "name",
+    "roles",
+    "stages",
+    "workPackages"
+  ],
+  "title": "TemplateDocument",
+  "type": "object"
+}

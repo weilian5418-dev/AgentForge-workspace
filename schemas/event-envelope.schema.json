@@ -1,0 +1,82 @@
+{
+  "additionalProperties": false,
+  "description": "Business or control event. `eventId` is unique; `sequence` orders within a run.",
+  "properties": {
+    "eventId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Eventid",
+      "type": "string"
+    },
+    "payload": {
+      "additionalProperties": true,
+      "title": "Payload",
+      "type": "object"
+    },
+    "runId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Runid",
+      "type": "string"
+    },
+    "schemaVersion": {
+      "const": "1",
+      "default": "1",
+      "title": "Schemaversion",
+      "type": "string"
+    },
+    "sequence": {
+      "minimum": 1,
+      "title": "Sequence",
+      "type": "integer"
+    },
+    "timestamp": {
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    },
+    "type": {
+      "enum": [
+        "routing.decided",
+        "plan.proposed",
+        "run.status_changed",
+        "task.started",
+        "task.blocked",
+        "artifact.candidate_created",
+        "validation.completed",
+        "artifact.published",
+        "approval.requested",
+        "usage.updated",
+        "run.delivery_ready",
+        "resync_required",
+        "agent.discovery_completed",
+        "agent.capabilities_validated",
+        "assignment.confirmed",
+        "instance.started",
+        "instance.stop_requested",
+        "instance.stopped",
+        "message.delivered",
+        "native_approval.requested",
+        "native_approval.confirmed",
+        "stage.candidate_frozen",
+        "stage.rework_requested",
+        "stage.released",
+        "integration.validated"
+      ],
+      "title": "Type",
+      "type": "string"
+    }
+  },
+  "required": [
+    "eventId",
+    "runId",
+    "sequence",
+    "type",
+    "timestamp",
+    "payload"
+  ],
+  "title": "EventEnvelope",
+  "type": "object"
+}

@@ -1,0 +1,49 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "directoryGrantId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Directorygrantid",
+      "type": "string"
+    },
+    "displayName": {
+      "anyOf": [
+        {
+          "maxLength": 256,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Displayname"
+    },
+    "rootPath": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Rootpath",
+      "type": "string"
+    },
+    "trustPolicy": {
+      "additionalProperties": true,
+      "title": "Trustpolicy",
+      "type": "object"
+    },
+    "workspaceRoot": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Workspaceroot",
+      "type": "string"
+    }
+  },
+  "required": [
+    "directoryGrantId",
+    "rootPath",
+    "workspaceRoot"
+  ],
+  "title": "ProjectCreateRequest",
+  "type": "object"
+}

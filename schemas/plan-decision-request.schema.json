@@ -1,0 +1,56 @@
+{
+  "additionalProperties": false,
+  "description": "Confirm or reject a concrete plan + assignment + gate policy binding.",
+  "properties": {
+    "assignmentVersion": {
+      "minimum": 1,
+      "title": "Assignmentversion",
+      "type": "integer"
+    },
+    "decision": {
+      "enum": [
+        "approve",
+        "reject"
+      ],
+      "title": "Decision",
+      "type": "string"
+    },
+    "gatePolicyVersion": {
+      "minimum": 1,
+      "title": "Gatepolicyversion",
+      "type": "integer"
+    },
+    "note": {
+      "anyOf": [
+        {
+          "maxLength": 2048,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Note"
+    },
+    "planHash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Planhash",
+      "type": "string"
+    },
+    "planVersion": {
+      "minimum": 1,
+      "title": "Planversion",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "decision",
+    "planVersion",
+    "planHash",
+    "assignmentVersion",
+    "gatePolicyVersion"
+  ],
+  "title": "PlanDecisionRequest",
+  "type": "object"
+}

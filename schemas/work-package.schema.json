@@ -1,0 +1,273 @@
+{
+  "$defs": {
+    "ArtifactContract": {
+      "additionalProperties": false,
+      "properties": {
+        "criteria": {
+          "items": {
+            "$ref": "#/$defs/Criterion"
+          },
+          "maxItems": 64,
+          "minItems": 1,
+          "title": "Criteria",
+          "type": "array"
+        },
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "independentReview": {
+          "title": "Independentreview",
+          "type": "boolean"
+        },
+        "kind": {
+          "enum": [
+            "code",
+            "markdown",
+            "pptx"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "relativePath": {
+          "title": "Relativepath",
+          "type": "string"
+        },
+        "required": {
+          "title": "Required",
+          "type": "boolean"
+        },
+        "validators": {
+          "items": {
+            "$ref": "#/$defs/ValidatorSpec"
+          },
+          "maxItems": 32,
+          "minItems": 1,
+          "title": "Validators",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "relativePath",
+        "required",
+        "criteria",
+        "validators",
+        "independentReview"
+      ],
+      "title": "ArtifactContract",
+      "type": "object"
+    },
+    "ArtifactRef": {
+      "additionalProperties": false,
+      "properties": {
+        "artifactId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Artifactid",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "artifactId",
+        "version",
+        "sha256"
+      ],
+      "title": "ArtifactRef",
+      "type": "object"
+    },
+    "Criterion": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "required": {
+          "title": "Required",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "description",
+        "required"
+      ],
+      "title": "Criterion",
+      "type": "object"
+    },
+    "ValidatorSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "config": {
+          "additionalProperties": true,
+          "title": "Config",
+          "type": "object"
+        },
+        "criterionIds": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "type": "string"
+          },
+          "maxItems": 64,
+          "minItems": 1,
+          "title": "Criterionids",
+          "type": "array"
+        },
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "required": {
+          "title": "Required",
+          "type": "boolean"
+        },
+        "version": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "version",
+        "criterionIds",
+        "required"
+      ],
+      "title": "ValidatorSpec",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "deliverables": {
+      "items": {
+        "$ref": "#/$defs/ArtifactContract"
+      },
+      "maxItems": 32,
+      "title": "Deliverables",
+      "type": "array"
+    },
+    "dependsOn": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9._:-]+$",
+        "type": "string"
+      },
+      "maxItems": 64,
+      "title": "Dependson",
+      "type": "array"
+    },
+    "id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Id",
+      "type": "string"
+    },
+    "inputs": {
+      "items": {
+        "$ref": "#/$defs/ArtifactRef"
+      },
+      "maxItems": 64,
+      "title": "Inputs",
+      "type": "array"
+    },
+    "maxRepairRounds": {
+      "default": 3,
+      "maximum": 10,
+      "minimum": 0,
+      "title": "Maxrepairrounds",
+      "type": "integer"
+    },
+    "objective": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Objective",
+      "type": "string"
+    },
+    "ownerRoleId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Ownerroleid",
+      "type": "string"
+    },
+    "planVersion": {
+      "minimum": 1,
+      "title": "Planversion",
+      "type": "integer"
+    },
+    "readScopes": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 64,
+      "title": "Readscopes",
+      "type": "array"
+    },
+    "stageId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Stageid",
+      "type": "string"
+    },
+    "toolPolicyId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Toolpolicyid",
+      "type": "string"
+    },
+    "writeScopes": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 64,
+      "title": "Writescopes",
+      "type": "array"
+    }
+  },
+  "required": [
+    "id",
+    "planVersion",
+    "stageId",
+    "objective",
+    "ownerRoleId",
+    "toolPolicyId"
+  ],
+  "title": "WorkPackage",
+  "type": "object"
+}

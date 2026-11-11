@@ -1,0 +1,104 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "accessLevel": {
+      "enum": [
+        "controlled_auto",
+        "limited_auto",
+        "manual_assisted"
+      ],
+      "title": "Accesslevel",
+      "type": "string"
+    },
+    "adapterId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Adapterid",
+      "type": "string"
+    },
+    "adapterVersion": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Adapterversion",
+      "type": "string"
+    },
+    "authStatus": {
+      "enum": [
+        "authenticated",
+        "unauthenticated",
+        "unknown",
+        "expired"
+      ],
+      "title": "Authstatus",
+      "type": "string"
+    },
+    "configHash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Confighash",
+      "type": "string"
+    },
+    "configVersion": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Configversion",
+      "type": "string"
+    },
+    "installationId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Installationid",
+      "type": "string"
+    },
+    "lastValidationId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Lastvalidationid"
+    },
+    "profileId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Profileid",
+      "type": "string"
+    },
+    "secretRef": {
+      "anyOf": [
+        {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Secure reference only; never a copied native long-lived secret.",
+      "title": "Secretref"
+    }
+  },
+  "required": [
+    "profileId",
+    "installationId",
+    "adapterId",
+    "adapterVersion",
+    "configVersion",
+    "configHash",
+    "authStatus",
+    "accessLevel"
+  ],
+  "title": "AgentProfile",
+  "type": "object"
+}

@@ -1,0 +1,9 @@
+"""Central CLI / process exit codes for BE-03."""
+
+OK = 0
+FAILURE = 1
+CONFIG_ERROR = 2
+DEPENDENCY_UNAVAILABLE = 3
+AUTH_FAILURE = 4
+CONFLICT = 5
+TIMEOUT = 6

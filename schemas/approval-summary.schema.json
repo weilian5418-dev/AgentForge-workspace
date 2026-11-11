@@ -1,0 +1,302 @@
+{
+  "$defs": {
+    "NativeApprovalMapping": {
+      "additionalProperties": false,
+      "properties": {
+        "decisionId": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Decisionid"
+        },
+        "forwardState": {
+          "default": "not_started",
+          "enum": [
+            "not_started",
+            "forwarding",
+            "confirmed",
+            "rejected",
+            "mapping_unsupported",
+            "delivery_unknown"
+          ],
+          "title": "Forwardstate",
+          "type": "string"
+        },
+        "mappingVersion": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Mappingversion",
+          "type": "string"
+        },
+        "nativeConfirmationRef": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Nativeconfirmationref"
+        },
+        "nativeScope": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Nativescope",
+          "type": "string"
+        },
+        "platformScope": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Platformscope",
+          "type": "string"
+        },
+        "productId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Productid",
+          "type": "string"
+        },
+        "profileId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Profileid",
+          "type": "string"
+        },
+        "sessionRef": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Sessionref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "productId",
+        "profileId",
+        "sessionRef",
+        "nativeScope",
+        "platformScope",
+        "mappingVersion"
+      ],
+      "title": "NativeApprovalMapping",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "User decision plus native forward/confirm state.\n\n``approved`` / user decide alone is **not** proof the external agent accepted the grant.\nOnly ``confirmed`` (with matching native request) is effective for native actions.",
+  "properties": {
+    "action": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Action",
+      "type": "string"
+    },
+    "actionDigest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Actiondigest",
+      "type": "string"
+    },
+    "attemptId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Attemptid"
+    },
+    "expiresAt": {
+      "format": "date-time",
+      "title": "Expiresat",
+      "type": "string"
+    },
+    "id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Id",
+      "type": "string"
+    },
+    "instanceId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Instanceid"
+    },
+    "mapping": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/NativeApprovalMapping"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "nativeConfirmed": {
+      "default": false,
+      "description": "True only after native confirmation for the same request/attempt.",
+      "title": "Nativeconfirmed",
+      "type": "boolean"
+    },
+    "nativeRequestId": {
+      "anyOf": [
+        {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Nativerequestid"
+    },
+    "parameterSummary": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Parametersummary",
+      "type": "string"
+    },
+    "requestedScope": {
+      "anyOf": [
+        {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Requestedscope"
+    },
+    "roleId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Roleid"
+    },
+    "runId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Runid"
+    },
+    "stageId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Stageid"
+    },
+    "status": {
+      "enum": [
+        "pending",
+        "user_decided",
+        "forwarding",
+        "confirmed",
+        "approved",
+        "rejected",
+        "expired",
+        "consumed",
+        "mapping_unsupported",
+        "manual_required",
+        "delivery_unknown"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "targetSummary": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Targetsummary",
+      "type": "string"
+    },
+    "userDecision": {
+      "anyOf": [
+        {
+          "enum": [
+            "approve",
+            "reject"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Userdecision"
+    }
+  },
+  "required": [
+    "id",
+    "action",
+    "targetSummary",
+    "parameterSummary",
+    "actionDigest",
+    "expiresAt",
+    "status"
+  ],
+  "title": "ApprovalSummary",
+  "type": "object"
+}

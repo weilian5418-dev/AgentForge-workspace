@@ -1,0 +1,94 @@
+{
+  "$defs": {
+    "ManifestEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "artifactId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Artifactid",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "code",
+            "markdown",
+            "pptx"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "relativePath": {
+          "title": "Relativepath",
+          "type": "string"
+        },
+        "required": {
+          "title": "Required",
+          "type": "boolean"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "artifactId",
+        "version",
+        "sha256",
+        "kind",
+        "relativePath",
+        "required"
+      ],
+      "title": "ManifestEntry",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "entries": {
+      "items": {
+        "$ref": "#/$defs/ManifestEntry"
+      },
+      "maxItems": 128,
+      "minItems": 1,
+      "title": "Entries",
+      "type": "array"
+    },
+    "knownRisks": {
+      "items": {
+        "maxLength": 512,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 32,
+      "title": "Knownrisks",
+      "type": "array"
+    },
+    "manifestHash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Manifesthash",
+      "type": "string"
+    },
+    "runId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Runid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "manifestHash",
+    "runId",
+    "entries"
+  ],
+  "title": "DeliveryManifest",
+  "type": "object"
+}

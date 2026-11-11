@@ -1,0 +1,146 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "attemptId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Attemptid",
+      "type": "string"
+    },
+    "deliveryId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Deliveryid",
+      "type": "string"
+    },
+    "deliveryMode": {
+      "anyOf": [
+        {
+          "enum": [
+            "realtime",
+            "next_safe_boundary"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Deliverymode"
+    },
+    "errorCode": {
+      "anyOf": [
+        {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Errorcode"
+    },
+    "messageId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Messageid",
+      "type": "string"
+    },
+    "nativeReceiptRef": {
+      "anyOf": [
+        {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Nativereceiptref"
+    },
+    "nextAttemptAt": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Nextattemptat"
+    },
+    "receivedAt": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Receivedat"
+    },
+    "recipientInstanceId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Recipientinstanceid",
+      "type": "string"
+    },
+    "respondedAt": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Respondedat"
+    },
+    "retryCount": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Retrycount",
+      "type": "integer"
+    },
+    "status": {
+      "enum": [
+        "pending",
+        "dispatching",
+        "sent",
+        "received",
+        "awaiting_reply",
+        "responded",
+        "failed",
+        "expired",
+        "unknown"
+      ],
+      "title": "Status",
+      "type": "string"
+    }
+  },
+  "required": [
+    "deliveryId",
+    "messageId",
+    "recipientInstanceId",
+    "attemptId",
+    "status"
+  ],
+  "title": "MessageDelivery",
+  "type": "object"
+}

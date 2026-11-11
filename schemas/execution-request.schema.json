@@ -1,0 +1,34 @@
+{
+  "additionalProperties": false,
+  "description": "Idempotent request to create/start confirmed role instances. Does not approve a plan.",
+  "properties": {
+    "assignmentVersion": {
+      "minimum": 1,
+      "title": "Assignmentversion",
+      "type": "integer"
+    },
+    "gatePolicyVersion": {
+      "minimum": 1,
+      "title": "Gatepolicyversion",
+      "type": "integer"
+    },
+    "planHash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Planhash",
+      "type": "string"
+    },
+    "planVersion": {
+      "minimum": 1,
+      "title": "Planversion",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "planHash",
+    "planVersion",
+    "assignmentVersion",
+    "gatePolicyVersion"
+  ],
+  "title": "ExecutionRequest",
+  "type": "object"
+}

@@ -1,0 +1,58 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "acceptedArtifactIds": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9._:-]+$",
+        "type": "string"
+      },
+      "maxItems": 128,
+      "title": "Acceptedartifactids",
+      "type": "array"
+    },
+    "decision": {
+      "pattern": "^(accept|reject|partial)$",
+      "title": "Decision",
+      "type": "string"
+    },
+    "integrationVersion": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Integrationversion",
+      "type": "string"
+    },
+    "manifestHash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Manifesthash",
+      "type": "string"
+    },
+    "note": {
+      "anyOf": [
+        {
+          "maxLength": 2048,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Note"
+    },
+    "riskAcknowledged": {
+      "title": "Riskacknowledged",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "decision",
+    "manifestHash",
+    "integrationVersion",
+    "riskAcknowledged"
+  ],
+  "title": "AcceptanceRequest",
+  "type": "object"
+}

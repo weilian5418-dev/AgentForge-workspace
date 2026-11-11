@@ -1,0 +1,1360 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Per-type event payload schemas; SSE transport is BE-15.",
+  "properties": {
+    "agent.capabilities_validated": {
+      "additionalProperties": false,
+      "properties": {
+        "accessLevel": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Accesslevel",
+          "type": "string"
+        },
+        "checkId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Checkid",
+          "type": "string"
+        },
+        "profileId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Profileid",
+          "type": "string"
+        }
+      },
+      "required": [
+        "profileId",
+        "checkId",
+        "accessLevel"
+      ],
+      "title": "AgentCapabilitiesValidatedPayload",
+      "type": "object"
+    },
+    "agent.discovery_completed": {
+      "additionalProperties": false,
+      "properties": {
+        "discoveryId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Discoveryid",
+          "type": "string"
+        },
+        "installationCount": {
+          "minimum": 0,
+          "title": "Installationcount",
+          "type": "integer"
+        },
+        "productCount": {
+          "minimum": 0,
+          "title": "Productcount",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "discoveryId",
+        "productCount",
+        "installationCount"
+      ],
+      "title": "AgentDiscoveryCompletedPayload",
+      "type": "object"
+    },
+    "approval.requested": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Action",
+          "type": "string"
+        },
+        "actionDigest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Actiondigest",
+          "type": "string"
+        },
+        "approvalId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Approvalid",
+          "type": "string"
+        },
+        "expiresAt": {
+          "format": "date-time",
+          "title": "Expiresat",
+          "type": "string"
+        },
+        "instanceId": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Instanceid"
+        },
+        "stageId": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stageid"
+        }
+      },
+      "required": [
+        "approvalId",
+        "action",
+        "actionDigest",
+        "expiresAt"
+      ],
+      "title": "ApprovalRequestedPayload",
+      "type": "object"
+    },
+    "artifact.candidate_created": {
+      "$defs": {
+        "ArtifactRef": {
+          "additionalProperties": false,
+          "properties": {
+            "artifactId": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "title": "Artifactid",
+              "type": "string"
+            },
+            "sha256": {
+              "pattern": "^[0-9a-f]{64}$",
+              "title": "Sha256",
+              "type": "string"
+            },
+            "version": {
+              "minimum": 1,
+              "title": "Version",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "artifactId",
+            "version",
+            "sha256"
+          ],
+          "title": "ArtifactRef",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "artifact": {
+          "$ref": "#/$defs/ArtifactRef"
+        },
+        "relativePath": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Relativepath",
+          "type": "string"
+        },
+        "workPackageId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Workpackageid",
+          "type": "string"
+        }
+      },
+      "required": [
+        "artifact",
+        "workPackageId",
+        "relativePath"
+      ],
+      "title": "ArtifactCandidatePayload",
+      "type": "object"
+    },
+    "artifact.published": {
+      "$defs": {
+        "ArtifactRef": {
+          "additionalProperties": false,
+          "properties": {
+            "artifactId": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "title": "Artifactid",
+              "type": "string"
+            },
+            "sha256": {
+              "pattern": "^[0-9a-f]{64}$",
+              "title": "Sha256",
+              "type": "string"
+            },
+            "version": {
+              "minimum": 1,
+              "title": "Version",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "artifactId",
+            "version",
+            "sha256"
+          ],
+          "title": "ArtifactRef",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "artifact": {
+          "$ref": "#/$defs/ArtifactRef"
+        },
+        "relativePath": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Relativepath",
+          "type": "string"
+        }
+      },
+      "required": [
+        "artifact",
+        "relativePath"
+      ],
+      "title": "ArtifactPublishedPayload",
+      "type": "object"
+    },
+    "assignment.confirmed": {
+      "additionalProperties": false,
+      "properties": {
+        "assignmentVersion": {
+          "minimum": 1,
+          "title": "Assignmentversion",
+          "type": "integer"
+        },
+        "planVersion": {
+          "minimum": 1,
+          "title": "Planversion",
+          "type": "integer"
+        },
+        "roleCount": {
+          "minimum": 1,
+          "title": "Rolecount",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "planVersion",
+        "assignmentVersion",
+        "roleCount"
+      ],
+      "title": "AssignmentConfirmedPayload",
+      "type": "object"
+    },
+    "instance.started": {
+      "additionalProperties": false,
+      "properties": {
+        "agentProfileId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Agentprofileid",
+          "type": "string"
+        },
+        "instanceId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Instanceid",
+          "type": "string"
+        },
+        "roleId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Roleid",
+          "type": "string"
+        },
+        "sessionRef": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sessionref"
+        },
+        "stageId": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stageid"
+        }
+      },
+      "required": [
+        "instanceId",
+        "roleId",
+        "agentProfileId"
+      ],
+      "title": "InstanceLifecyclePayload",
+      "type": "object"
+    },
+    "instance.stop_requested": {
+      "additionalProperties": false,
+      "properties": {
+        "agentProfileId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Agentprofileid",
+          "type": "string"
+        },
+        "instanceId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Instanceid",
+          "type": "string"
+        },
+        "roleId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Roleid",
+          "type": "string"
+        },
+        "sessionRef": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sessionref"
+        },
+        "stageId": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stageid"
+        }
+      },
+      "required": [
+        "instanceId",
+        "roleId",
+        "agentProfileId"
+      ],
+      "title": "InstanceLifecyclePayload",
+      "type": "object"
+    },
+    "instance.stopped": {
+      "additionalProperties": false,
+      "properties": {
+        "agentProfileId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Agentprofileid",
+          "type": "string"
+        },
+        "instanceId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Instanceid",
+          "type": "string"
+        },
+        "roleId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Roleid",
+          "type": "string"
+        },
+        "sessionRef": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sessionref"
+        },
+        "stageId": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stageid"
+        }
+      },
+      "required": [
+        "instanceId",
+        "roleId",
+        "agentProfileId"
+      ],
+      "title": "InstanceLifecyclePayload",
+      "type": "object"
+    },
+    "integration.validated": {
+      "additionalProperties": false,
+      "properties": {
+        "integrationVersion": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Integrationversion",
+          "type": "string"
+        },
+        "manifestHash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Manifesthash",
+          "type": "string"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "integrationVersion",
+        "manifestHash",
+        "passed"
+      ],
+      "title": "IntegrationValidatedPayload",
+      "type": "object"
+    },
+    "message.delivered": {
+      "additionalProperties": false,
+      "properties": {
+        "deliveryId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Deliveryid",
+          "type": "string"
+        },
+        "messageId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Messageid",
+          "type": "string"
+        },
+        "recipientInstanceId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Recipientinstanceid",
+          "type": "string"
+        },
+        "status": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "messageId",
+        "deliveryId",
+        "recipientInstanceId",
+        "status"
+      ],
+      "title": "MessageDeliveredPayload",
+      "type": "object"
+    },
+    "native_approval.confirmed": {
+      "additionalProperties": false,
+      "properties": {
+        "approvalId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Approvalid",
+          "type": "string"
+        },
+        "instanceId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Instanceid",
+          "type": "string"
+        },
+        "nativeRequestId": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Nativerequestid",
+          "type": "string"
+        },
+        "status": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "approvalId",
+        "instanceId",
+        "nativeRequestId",
+        "status"
+      ],
+      "title": "NativeApprovalPayload",
+      "type": "object"
+    },
+    "native_approval.requested": {
+      "additionalProperties": false,
+      "properties": {
+        "approvalId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Approvalid",
+          "type": "string"
+        },
+        "instanceId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Instanceid",
+          "type": "string"
+        },
+        "nativeRequestId": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Nativerequestid",
+          "type": "string"
+        },
+        "status": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "approvalId",
+        "instanceId",
+        "nativeRequestId",
+        "status"
+      ],
+      "title": "NativeApprovalPayload",
+      "type": "object"
+    },
+    "plan.proposed": {
+      "additionalProperties": false,
+      "properties": {
+        "contractHash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Contracthash",
+          "type": "string"
+        },
+        "planVersion": {
+          "minimum": 1,
+          "title": "Planversion",
+          "type": "integer"
+        },
+        "summary": {
+          "default": "",
+          "maxLength": 4096,
+          "title": "Summary",
+          "type": "string"
+        }
+      },
+      "required": [
+        "planVersion",
+        "contractHash"
+      ],
+      "title": "PlanProposedPayload",
+      "type": "object"
+    },
+    "resync_required": {
+      "additionalProperties": false,
+      "properties": {
+        "reason": {
+          "enum": [
+            "cursor_expired",
+            "gap_detected",
+            "retention_elapsed"
+          ],
+          "title": "Reason",
+          "type": "string"
+        },
+        "snapshotHint": {
+          "default": "GET /api/v1/runs/{id}",
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Snapshothint",
+          "type": "string"
+        }
+      },
+      "required": [
+        "reason"
+      ],
+      "title": "ResyncRequiredPayload",
+      "type": "object"
+    },
+    "routing.decided": {
+      "$defs": {
+        "RoutingDecision": {
+          "additionalProperties": false,
+          "description": "Suggestion only. Never authorizes execution by itself.",
+          "properties": {
+            "confidence": {
+              "anyOf": [
+                {
+                  "maximum": 1,
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Confidence"
+            },
+            "mode": {
+              "enum": [
+                "single",
+                "team",
+                "needs_input",
+                "undecided"
+              ],
+              "title": "Mode",
+              "type": "string"
+            },
+            "modelReviewCount": {
+              "maximum": 1,
+              "minimum": 0,
+              "title": "Modelreviewcount",
+              "type": "integer"
+            },
+            "reason": {
+              "maxLength": 512,
+              "minLength": 1,
+              "title": "Reason",
+              "type": "string"
+            },
+            "ruleVersion": {
+              "maxLength": 512,
+              "minLength": 1,
+              "title": "Ruleversion",
+              "type": "string"
+            },
+            "score": {
+              "anyOf": [
+                {
+                  "maximum": 10,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Score"
+            }
+          },
+          "required": [
+            "mode",
+            "reason",
+            "ruleVersion",
+            "modelReviewCount"
+          ],
+          "title": "RoutingDecision",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "decision": {
+          "$ref": "#/$defs/RoutingDecision"
+        }
+      },
+      "required": [
+        "decision"
+      ],
+      "title": "RoutingDecidedPayload",
+      "type": "object"
+    },
+    "run.delivery_ready": {
+      "additionalProperties": false,
+      "properties": {
+        "artifactCount": {
+          "minimum": 1,
+          "title": "Artifactcount",
+          "type": "integer"
+        },
+        "integrationVersion": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Integrationversion"
+        },
+        "manifestHash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Manifesthash",
+          "type": "string"
+        }
+      },
+      "required": [
+        "manifestHash",
+        "artifactCount"
+      ],
+      "title": "DeliveryReadyPayload",
+      "type": "object"
+    },
+    "run.status_changed": {
+      "additionalProperties": false,
+      "properties": {
+        "reason": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "preflight",
+            "routing",
+            "planning",
+            "awaiting_approval",
+            "awaiting_confirmation",
+            "preparing",
+            "running",
+            "awaiting_acceptance",
+            "completed",
+            "pause_requested",
+            "paused",
+            "blocked",
+            "cancel_requested",
+            "canceled",
+            "failed"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "statusVersion": {
+          "minimum": 1,
+          "title": "Statusversion",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "status",
+        "statusVersion"
+      ],
+      "title": "RunStatusChangedPayload",
+      "type": "object"
+    },
+    "stage.candidate_frozen": {
+      "additionalProperties": false,
+      "properties": {
+        "candidateId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Candidateid",
+          "type": "string"
+        },
+        "manifestHash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Manifesthash",
+          "type": "string"
+        },
+        "stageId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Stageid",
+          "type": "string"
+        }
+      },
+      "required": [
+        "stageId",
+        "candidateId",
+        "manifestHash"
+      ],
+      "title": "StageCandidateFrozenPayload",
+      "type": "object"
+    },
+    "stage.released": {
+      "additionalProperties": false,
+      "properties": {
+        "candidateId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Candidateid",
+          "type": "string"
+        },
+        "gateResult": {
+          "enum": [
+            "released",
+            "rework",
+            "blocked"
+          ],
+          "title": "Gateresult",
+          "type": "string"
+        },
+        "manifestHash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Manifesthash",
+          "type": "string"
+        },
+        "stageId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Stageid",
+          "type": "string"
+        }
+      },
+      "required": [
+        "stageId",
+        "candidateId",
+        "manifestHash",
+        "gateResult"
+      ],
+      "title": "StageReleasedPayload",
+      "type": "object"
+    },
+    "stage.rework_requested": {
+      "additionalProperties": false,
+      "properties": {
+        "candidateId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Candidateid",
+          "type": "string"
+        },
+        "reason": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        },
+        "stageId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Stageid",
+          "type": "string"
+        },
+        "targetRoleId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Targetroleid",
+          "type": "string"
+        }
+      },
+      "required": [
+        "stageId",
+        "candidateId",
+        "targetRoleId",
+        "reason"
+      ],
+      "title": "StageReworkRequestedPayload",
+      "type": "object"
+    },
+    "task.blocked": {
+      "additionalProperties": false,
+      "properties": {
+        "agentInstanceId": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Agentinstanceid"
+        },
+        "attemptId": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Attemptid"
+        },
+        "capabilityHint": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Capabilityhint"
+        },
+        "reason": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "pending",
+            "ready",
+            "running",
+            "validating",
+            "published",
+            "repairing",
+            "failed",
+            "blocked",
+            "blocked_dependency"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "workPackageId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Workpackageid",
+          "type": "string"
+        }
+      },
+      "required": [
+        "workPackageId",
+        "status",
+        "reason"
+      ],
+      "title": "TaskBlockedPayload",
+      "type": "object"
+    },
+    "task.started": {
+      "additionalProperties": false,
+      "properties": {
+        "agentInstanceId": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Agentinstanceid"
+        },
+        "attemptId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Attemptid",
+          "type": "string"
+        },
+        "status": {
+          "default": "running",
+          "enum": [
+            "pending",
+            "ready",
+            "running",
+            "validating",
+            "published",
+            "repairing",
+            "failed",
+            "blocked",
+            "blocked_dependency"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "workPackageId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Workpackageid",
+          "type": "string"
+        }
+      },
+      "required": [
+        "workPackageId",
+        "attemptId"
+      ],
+      "title": "TaskStartedPayload",
+      "type": "object"
+    },
+    "usage.updated": {
+      "additionalProperties": false,
+      "properties": {
+        "actualTokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Actualtokens"
+        },
+        "currency": {
+          "anyOf": [
+            {
+              "maxLength": 8,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Currency"
+        },
+        "estimatedCost": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Estimatedcost"
+        },
+        "observability": {
+          "default": "unknown",
+          "enum": [
+            "exact",
+            "estimated",
+            "unknown"
+          ],
+          "title": "Observability",
+          "type": "string"
+        },
+        "reservedTokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reservedtokens"
+        }
+      },
+      "title": "UsageUpdatedPayload",
+      "type": "object"
+    },
+    "validation.completed": {
+      "$defs": {
+        "ArtifactRef": {
+          "additionalProperties": false,
+          "properties": {
+            "artifactId": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "title": "Artifactid",
+              "type": "string"
+            },
+            "sha256": {
+              "pattern": "^[0-9a-f]{64}$",
+              "title": "Sha256",
+              "type": "string"
+            },
+            "version": {
+              "minimum": 1,
+              "title": "Version",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "artifactId",
+            "version",
+            "sha256"
+          ],
+          "title": "ArtifactRef",
+          "type": "object"
+        },
+        "CriterionResult": {
+          "additionalProperties": false,
+          "properties": {
+            "criterionId": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "title": "Criterionid",
+              "type": "string"
+            },
+            "evidenceRefs": {
+              "items": {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              "maxItems": 64,
+              "title": "Evidencerefs",
+              "type": "array"
+            },
+            "message": {
+              "maxLength": 512,
+              "minLength": 1,
+              "title": "Message",
+              "type": "string"
+            },
+            "status": {
+              "enum": [
+                "passed",
+                "failed",
+                "blocked",
+                "not_run"
+              ],
+              "title": "Status",
+              "type": "string"
+            }
+          },
+          "required": [
+            "criterionId",
+            "status",
+            "message"
+          ],
+          "title": "CriterionResult",
+          "type": "object"
+        },
+        "ValidationReport": {
+          "additionalProperties": false,
+          "properties": {
+            "artifact": {
+              "$ref": "#/$defs/ArtifactRef"
+            },
+            "contractId": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "title": "Contractid",
+              "type": "string"
+            },
+            "contractVersion": {
+              "minimum": 1,
+              "title": "Contractversion",
+              "type": "integer"
+            },
+            "criterionResults": {
+              "items": {
+                "$ref": "#/$defs/CriterionResult"
+              },
+              "maxItems": 64,
+              "minItems": 1,
+              "title": "Criterionresults",
+              "type": "array"
+            },
+            "environmentRef": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "title": "Environmentref",
+              "type": "string"
+            },
+            "evidenceRefs": {
+              "items": {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              "maxItems": 128,
+              "title": "Evidencerefs",
+              "type": "array"
+            },
+            "failureClass": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "content",
+                    "environment",
+                    "transient",
+                    "permission"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Failureclass"
+            },
+            "finishedAt": {
+              "format": "date-time",
+              "title": "Finishedat",
+              "type": "string"
+            },
+            "id": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "title": "Id",
+              "type": "string"
+            },
+            "startedAt": {
+              "format": "date-time",
+              "title": "Startedat",
+              "type": "string"
+            },
+            "status": {
+              "enum": [
+                "passed",
+                "failed",
+                "blocked",
+                "not_run"
+              ],
+              "title": "Status",
+              "type": "string"
+            },
+            "validatorId": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "title": "Validatorid",
+              "type": "string"
+            },
+            "validatorVersion": {
+              "maxLength": 512,
+              "minLength": 1,
+              "title": "Validatorversion",
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "artifact",
+            "contractId",
+            "contractVersion",
+            "validatorId",
+            "validatorVersion",
+            "status",
+            "criterionResults",
+            "environmentRef",
+            "startedAt",
+            "finishedAt"
+          ],
+          "title": "ValidationReport",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "report": {
+          "$ref": "#/$defs/ValidationReport"
+        }
+      },
+      "required": [
+        "report"
+      ],
+      "title": "ValidationCompletedPayload",
+      "type": "object"
+    }
+  },
+  "title": "AgentForgeEventPayloads"
+}

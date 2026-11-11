@@ -1,0 +1,74 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "createdAt": {
+      "format": "date-time",
+      "title": "Createdat",
+      "type": "string"
+    },
+    "directoryGrantId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Directorygrantid",
+      "type": "string"
+    },
+    "displayName": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Displayname"
+    },
+    "id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Id",
+      "type": "string"
+    },
+    "revision": {
+      "minimum": 1,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "rootPath": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Rootpath",
+      "type": "string"
+    },
+    "trustPolicy": {
+      "additionalProperties": true,
+      "title": "Trustpolicy",
+      "type": "object"
+    },
+    "updatedAt": {
+      "format": "date-time",
+      "title": "Updatedat",
+      "type": "string"
+    },
+    "workspaceRoot": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Workspaceroot",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "directoryGrantId",
+    "rootPath",
+    "workspaceRoot",
+    "revision",
+    "createdAt",
+    "updatedAt"
+  ],
+  "title": "ProjectResponse",
+  "type": "object"
+}

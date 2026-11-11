@@ -1,0 +1,44 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "baseUrl": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Baseurl",
+      "type": "string"
+    },
+    "credentialRef": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Credentialref",
+      "type": "string"
+    },
+    "label": {
+      "anyOf": [
+        {
+          "maxLength": 256,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Label"
+    },
+    "model": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Model",
+      "type": "string"
+    }
+  },
+  "required": [
+    "baseUrl",
+    "model",
+    "credentialRef"
+  ],
+  "title": "ProviderCreateRequest",
+  "type": "object"
+}

@@ -1,0 +1,93 @@
+{
+  "$defs": {
+    "ErrorCode": {
+      "enum": [
+        "INVALID_REQUEST",
+        "UNAUTHORIZED",
+        "FORBIDDEN",
+        "HOST_REJECTED",
+        "ORIGIN_REJECTED",
+        "NOT_FOUND",
+        "METHOD_NOT_ALLOWED",
+        "VERSION_CONFLICT",
+        "INVALID_STATE",
+        "IDEMPOTENCY_CONFLICT",
+        "BUDGET_EXCEEDED",
+        "CAPABILITY_UNAVAILABLE",
+        "INTERNAL_ERROR",
+        "HTTP_ERROR",
+        "AGENT_NOT_AUTHENTICATED",
+        "CAPABILITY_UNVERIFIED",
+        "CAPABILITY_MISMATCH",
+        "SESSION_STATE_UNKNOWN",
+        "STOP_UNCONFIRMED",
+        "APPROVAL_MAPPING_UNSUPPORTED",
+        "APPROVAL_NOT_CONFIRMED",
+        "CANDIDATE_STALE",
+        "STAGE_GATE_NOT_MET",
+        "ASSIGNMENT_STALE",
+        "BUDGET_EXHAUSTED"
+      ],
+      "title": "ErrorCode",
+      "type": "string"
+    },
+    "ErrorDetail": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ErrorCode"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "title": "Code"
+        },
+        "details": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Details",
+          "type": "object"
+        },
+        "message": {
+          "maxLength": 1024,
+          "minLength": 1,
+          "title": "Message",
+          "type": "string"
+        },
+        "requestId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Requestid",
+          "type": "string"
+        },
+        "retryable": {
+          "default": false,
+          "title": "Retryable",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "requestId"
+      ],
+      "title": "ErrorDetail",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "error": {
+      "$ref": "#/$defs/ErrorDetail"
+    }
+  },
+  "required": [
+    "error"
+  ],
+  "title": "ErrorResponse",
+  "type": "object"
+}

@@ -1,0 +1,532 @@
+{
+  "$defs": {
+    "ClarificationRequestPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "contextRefs": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "type": "string"
+          },
+          "maxItems": 32,
+          "title": "Contextrefs",
+          "type": "array"
+        },
+        "question": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Question",
+          "type": "string"
+        },
+        "type": {
+          "const": "clarification.request",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "question"
+      ],
+      "title": "ClarificationRequestPayload",
+      "type": "object"
+    },
+    "ContractChangeRequestPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "proposedContractHash": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Proposedcontracthash"
+        },
+        "summary": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Summary",
+          "type": "string"
+        },
+        "type": {
+          "const": "contract.change_request",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "summary"
+      ],
+      "title": "ContractChangeRequestPayload",
+      "type": "object"
+    },
+    "ReviewFeedbackPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "candidateId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Candidateid",
+          "type": "string"
+        },
+        "stageId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Stageid",
+          "type": "string"
+        },
+        "summary": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Summary",
+          "type": "string"
+        },
+        "type": {
+          "const": "review.feedback",
+          "title": "Type",
+          "type": "string"
+        },
+        "verdict": {
+          "enum": [
+            "approve",
+            "request_changes",
+            "needs_input"
+          ],
+          "title": "Verdict",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "stageId",
+        "candidateId",
+        "verdict",
+        "summary"
+      ],
+      "title": "ReviewFeedbackPayload",
+      "type": "object"
+    },
+    "StageReleasePayload": {
+      "additionalProperties": false,
+      "description": "Platform-derived only — not accepted on MessageCreateRequest.",
+      "properties": {
+        "candidateId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Candidateid",
+          "type": "string"
+        },
+        "gateDecisionId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Gatedecisionid",
+          "type": "string"
+        },
+        "manifestHash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Manifesthash",
+          "type": "string"
+        },
+        "stageId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Stageid",
+          "type": "string"
+        },
+        "type": {
+          "const": "stage.release",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "stageId",
+        "gateDecisionId",
+        "candidateId",
+        "manifestHash"
+      ],
+      "title": "StageReleasePayload",
+      "type": "object"
+    },
+    "StageSubmissionPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "attemptRefs": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "type": "string"
+          },
+          "maxItems": 32,
+          "minItems": 1,
+          "title": "Attemptrefs",
+          "type": "array"
+        },
+        "candidateRef": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Candidateref",
+          "type": "string"
+        },
+        "stageId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Stageid",
+          "type": "string"
+        },
+        "type": {
+          "const": "stage.submission",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "stageId",
+        "candidateRef",
+        "attemptRefs"
+      ],
+      "title": "StageSubmissionPayload",
+      "type": "object"
+    },
+    "TaskAssignmentPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "objective": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Objective",
+          "type": "string"
+        },
+        "stageId": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stageid"
+        },
+        "type": {
+          "const": "task.assignment",
+          "title": "Type",
+          "type": "string"
+        },
+        "workPackageId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Workpackageid",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "workPackageId",
+        "objective"
+      ],
+      "title": "TaskAssignmentPayload",
+      "type": "object"
+    },
+    "TaskReworkPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "paths": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 64,
+          "title": "Paths",
+          "type": "array"
+        },
+        "reason": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        },
+        "stageId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Stageid",
+          "type": "string"
+        },
+        "targetRoleId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Targetroleid",
+          "type": "string"
+        },
+        "type": {
+          "const": "task.rework",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "stageId",
+        "targetRoleId",
+        "reason"
+      ],
+      "title": "TaskReworkPayload",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "artifactRefs": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9._:-]+$",
+        "type": "string"
+      },
+      "maxItems": 32,
+      "title": "Artifactrefs",
+      "type": "array"
+    },
+    "assignmentVersion": {
+      "anyOf": [
+        {
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Assignmentversion"
+    },
+    "correlationId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Correlationid"
+    },
+    "createdAt": {
+      "format": "date-time",
+      "title": "Createdat",
+      "type": "string"
+    },
+    "derivedFromGateDecisionId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Derivedfromgatedecisionid"
+    },
+    "expiresAt": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Expiresat"
+    },
+    "messageId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Messageid",
+      "type": "string"
+    },
+    "payload": {
+      "discriminator": {
+        "mapping": {
+          "clarification.request": "#/$defs/ClarificationRequestPayload",
+          "contract.change_request": "#/$defs/ContractChangeRequestPayload",
+          "review.feedback": "#/$defs/ReviewFeedbackPayload",
+          "stage.release": "#/$defs/StageReleasePayload",
+          "stage.submission": "#/$defs/StageSubmissionPayload",
+          "task.assignment": "#/$defs/TaskAssignmentPayload",
+          "task.rework": "#/$defs/TaskReworkPayload"
+        },
+        "propertyName": "type"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/TaskAssignmentPayload"
+        },
+        {
+          "$ref": "#/$defs/ClarificationRequestPayload"
+        },
+        {
+          "$ref": "#/$defs/ContractChangeRequestPayload"
+        },
+        {
+          "$ref": "#/$defs/StageSubmissionPayload"
+        },
+        {
+          "$ref": "#/$defs/ReviewFeedbackPayload"
+        },
+        {
+          "$ref": "#/$defs/TaskReworkPayload"
+        },
+        {
+          "$ref": "#/$defs/StageReleasePayload"
+        }
+      ],
+      "title": "Payload"
+    },
+    "planVersion": {
+      "anyOf": [
+        {
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Planversion"
+    },
+    "projectId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Projectid",
+      "type": "string"
+    },
+    "recipientRefs": {
+      "items": {
+        "maxLength": 512,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 32,
+      "minItems": 1,
+      "title": "Recipientrefs",
+      "type": "array"
+    },
+    "replyRequired": {
+      "default": false,
+      "title": "Replyrequired",
+      "type": "boolean"
+    },
+    "replyTo": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Replyto"
+    },
+    "runId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Runid",
+      "type": "string"
+    },
+    "schemaVersion": {
+      "const": "1",
+      "default": "1",
+      "title": "Schemaversion",
+      "type": "string"
+    },
+    "senderRef": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Senderref",
+      "type": "string"
+    },
+    "stageId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Stageid"
+    },
+    "workPackageId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Workpackageid"
+    }
+  },
+  "required": [
+    "messageId",
+    "projectId",
+    "runId",
+    "senderRef",
+    "recipientRefs",
+    "payload",
+    "createdAt"
+  ],
+  "title": "CollaborationMessage",
+  "type": "object"
+}

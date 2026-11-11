@@ -1,39 +1,33 @@
-# Local agent and generated artifacts
-.codex-artifacts/
-
-# Project planning documents are local-only
-docs/
-
-# Dependencies and build output
-node_modules/
-dist/
+# Python / tooling
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
 build/
-coverage/
-.turbo/
-.vite/
-
-# Test output
-playwright-report/
-test-results/
-
-# Local configuration and secrets
+dist/
+*.tar.gz
+# Runtime / credentials / local state
 .env
 .env.*
 !.env.example
-*.pem
-*.key
-
-# TypeScript incremental state
-*.tsbuildinfo
-
-# Logs and temporary files
-*.log
-tmp/
-temp/
-
-# Editor and OS files
+.agentforge/
+environment/.env
+environment/.secrets/
+environment/results/
+# Artifact / git worktree scratch (local runs)
+**/artifact_store/
+**/git_worktrees/
+# Editors / OS
 .idea/
 .vscode/
 .DS_Store
 Thumbs.db
-Desktop.ini
+# Legacy Node monorepo (must not return)
+node_modules/
+.pnpm-store/

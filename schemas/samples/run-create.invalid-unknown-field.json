@@ -1,0 +1,10 @@
+{
+  "projectId": "project_demo",
+  "goal": "demo",
+  "outputs": ["markdown"],
+  "budget": {
+    "maxTokens": 1000
+  },
+  "planningProviderProfileId": "profile_local",
+  "status": "completed"
+}

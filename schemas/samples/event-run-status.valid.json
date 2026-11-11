@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "1",
+  "eventId": "evt_demo_1",
+  "runId": "run_demo",
+  "sequence": 3,
+  "type": "run.status_changed",
+  "timestamp": "2026-11-10T04:01:00Z",
+  "payload": {
+    "status": "running",
+    "statusVersion": 2,
+    "reason": "plan approved"
+  }
+}

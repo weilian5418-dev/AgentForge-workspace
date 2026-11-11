@@ -1,0 +1,70 @@
+{
+  "additionalProperties": false,
+  "description": "Suggestion only. Never authorizes execution by itself.",
+  "properties": {
+    "confidence": {
+      "anyOf": [
+        {
+          "maximum": 1,
+          "minimum": 0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Confidence"
+    },
+    "mode": {
+      "enum": [
+        "single",
+        "team",
+        "needs_input",
+        "undecided"
+      ],
+      "title": "Mode",
+      "type": "string"
+    },
+    "modelReviewCount": {
+      "maximum": 1,
+      "minimum": 0,
+      "title": "Modelreviewcount",
+      "type": "integer"
+    },
+    "reason": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Reason",
+      "type": "string"
+    },
+    "ruleVersion": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Ruleversion",
+      "type": "string"
+    },
+    "score": {
+      "anyOf": [
+        {
+          "maximum": 10,
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Score"
+    }
+  },
+  "required": [
+    "mode",
+    "reason",
+    "ruleVersion",
+    "modelReviewCount"
+  ],
+  "title": "RoutingDecision",
+  "type": "object"
+}

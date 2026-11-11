@@ -1,0 +1,154 @@
+{
+  "$defs": {
+    "BudgetLimitsInput": {
+      "additionalProperties": false,
+      "description": "External nested budget input: camelCase aliases only (matches exported schema).",
+      "properties": {
+        "currency": {
+          "anyOf": [
+            {
+              "maxLength": 8,
+              "minLength": 3,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Currency"
+        },
+        "maxCost": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Maxcost"
+        },
+        "maxTokens": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Maxtokens"
+        },
+        "maxWallTimeSeconds": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Maxwalltimeseconds"
+        }
+      },
+      "title": "BudgetLimitsInput",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Create a goal and enter preflight/planning. Does not dispatch development.\n\n``mode=auto`` means the platform may auto-propose a plan; it does **not** mean\nthe platform may confirm assignments or start executors without user decisions.\n``planningProviderProfileId`` configures the platform planning model only.",
+  "properties": {
+    "budget": {
+      "$ref": "#/$defs/BudgetLimitsInput"
+    },
+    "executionProfile": {
+      "default": "container",
+      "enum": [
+        "container",
+        "host_authorized"
+      ],
+      "title": "Executionprofile",
+      "type": "string"
+    },
+    "failurePolicy": {
+      "default": "dependency-aware",
+      "enum": [
+        "dependency-aware",
+        "layer-atomic"
+      ],
+      "title": "Failurepolicy",
+      "type": "string"
+    },
+    "goal": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Goal",
+      "type": "string"
+    },
+    "inputRefs": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9._:-]+$",
+        "type": "string"
+      },
+      "maxItems": 64,
+      "title": "Inputrefs",
+      "type": "array"
+    },
+    "mode": {
+      "default": "auto",
+      "enum": [
+        "auto",
+        "single",
+        "team"
+      ],
+      "title": "Mode",
+      "type": "string"
+    },
+    "outputs": {
+      "items": {
+        "enum": [
+          "code",
+          "markdown",
+          "pptx"
+        ],
+        "type": "string"
+      },
+      "maxItems": 8,
+      "minItems": 1,
+      "title": "Outputs",
+      "type": "array"
+    },
+    "planningProviderProfileId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Planningproviderprofileid",
+      "type": "string"
+    },
+    "projectId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Projectid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "projectId",
+    "goal",
+    "outputs",
+    "budget",
+    "planningProviderProfileId"
+  ],
+  "title": "RunCreateRequest",
+  "type": "object"
+}

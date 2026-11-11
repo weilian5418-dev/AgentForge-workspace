@@ -1,0 +1,80 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "commitOrTree": {
+      "anyOf": [
+        {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Commitortree"
+    },
+    "contentHash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Contenthash",
+      "type": "string"
+    },
+    "environmentRef": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Environmentref",
+      "type": "string"
+    },
+    "id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Id",
+      "type": "string"
+    },
+    "inputCandidateIds": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9._:-]+$",
+        "type": "string"
+      },
+      "maxItems": 64,
+      "minItems": 1,
+      "title": "Inputcandidateids",
+      "type": "array"
+    },
+    "reviewRefs": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9._:-]+$",
+        "type": "string"
+      },
+      "maxItems": 64,
+      "title": "Reviewrefs",
+      "type": "array"
+    },
+    "validationRefs": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9._:-]+$",
+        "type": "string"
+      },
+      "maxItems": 64,
+      "title": "Validationrefs",
+      "type": "array"
+    }
+  },
+  "required": [
+    "id",
+    "inputCandidateIds",
+    "contentHash",
+    "environmentRef"
+  ],
+  "title": "IntegrationVersion",
+  "type": "object"
+}

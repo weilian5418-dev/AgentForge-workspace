@@ -1,0 +1,27 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "migrateFromV1": {
+      "default": false,
+      "description": "When true, attempt explicit v1→v2 proposal migration (still needs user assign).",
+      "title": "Migratefromv1",
+      "type": "boolean"
+    },
+    "parameters": {
+      "additionalProperties": true,
+      "title": "Parameters",
+      "type": "object"
+    },
+    "yamlText": {
+      "maxLength": 200000,
+      "minLength": 1,
+      "title": "Yamltext",
+      "type": "string"
+    }
+  },
+  "required": [
+    "yamlText"
+  ],
+  "title": "TemplateImportRequest",
+  "type": "object"
+}

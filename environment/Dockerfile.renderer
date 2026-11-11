@@ -1,0 +1,13 @@
+# Reuse the already installed Debian-based image; no database service is started.
+FROM postgres:17-bookworm@sha256:665dc7b37ac52a17e298511414c21d23ffa4e6a6ef6225b3e5d59c7afb35e994
+USER root
+ENV DEBIAN_FRONTEND=noninteractive LANG=C.UTF-8 LC_ALL=C.UTF-8 HOME=/tmp/home
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates libreoffice-impress poppler-utils fonts-noto-cjk \
+    fonts-dejavu-core fontconfig git ripgrep tini \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd --uid 10001 --create-home --shell /bin/sh renderer
+USER 10001:10001
+WORKDIR /work
+ENTRYPOINT ["/usr/bin/tini", "--"]
+CMD ["libreoffice", "--version"]

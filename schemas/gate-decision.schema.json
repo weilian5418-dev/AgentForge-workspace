@@ -1,0 +1,112 @@
+{
+  "additionalProperties": false,
+  "description": "Platform StageController decision; not writable by review agents.",
+  "properties": {
+    "candidateId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Candidateid",
+      "type": "string"
+    },
+    "contractHash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Contracthash",
+      "type": "string"
+    },
+    "decidedAt": {
+      "format": "date-time",
+      "title": "Decidedat",
+      "type": "string"
+    },
+    "decisionId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Decisionid",
+      "type": "string"
+    },
+    "gatePolicyVersion": {
+      "minimum": 1,
+      "title": "Gatepolicyversion",
+      "type": "integer"
+    },
+    "manifestHash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Manifesthash",
+      "type": "string"
+    },
+    "reason": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Reason",
+      "type": "string"
+    },
+    "result": {
+      "enum": [
+        "released",
+        "rework",
+        "blocked"
+      ],
+      "title": "Result",
+      "type": "string"
+    },
+    "reviewRefs": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9._:-]+$",
+        "type": "string"
+      },
+      "maxItems": 64,
+      "title": "Reviewrefs",
+      "type": "array"
+    },
+    "stageId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Stageid",
+      "type": "string"
+    },
+    "userDecisionRef": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Userdecisionref"
+    },
+    "validationRefs": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9._:-]+$",
+        "type": "string"
+      },
+      "maxItems": 64,
+      "title": "Validationrefs",
+      "type": "array"
+    }
+  },
+  "required": [
+    "decisionId",
+    "stageId",
+    "candidateId",
+    "manifestHash",
+    "contractHash",
+    "gatePolicyVersion",
+    "result",
+    "reason",
+    "decidedAt"
+  ],
+  "title": "GateDecision",
+  "type": "object"
+}

@@ -1,0 +1,15 @@
+{
+  "renderer": {
+    "tag": "agentforge-renderer:dev-20261109",
+    "image_id": "sha256:09cdabb96519cf0240236c31f805c7197dbb92bedddad458ee38bfd74481167f",
+    "repo_digests": [
+      "agentforge-renderer@sha256:09cdabb96519cf0240236c31f805c7197dbb92bedddad458ee38bfd74481167f"
+    ],
+    "base": "postgres:17-bookworm",
+    "purpose": "local development rendering; no PostgreSQL server is run",
+    "user": "10001:10001",
+    "postgres_volume_inherited": true
+  },
+  "python": "existing CPython 3.13.12; .venv",
+  "database": "existing agentforge-postgres-1 / agentforge"
+}

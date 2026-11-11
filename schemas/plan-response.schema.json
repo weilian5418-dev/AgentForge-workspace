@@ -1,0 +1,731 @@
+{
+  "$defs": {
+    "ArtifactContract": {
+      "additionalProperties": false,
+      "properties": {
+        "criteria": {
+          "items": {
+            "$ref": "#/$defs/Criterion"
+          },
+          "maxItems": 64,
+          "minItems": 1,
+          "title": "Criteria",
+          "type": "array"
+        },
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "independentReview": {
+          "title": "Independentreview",
+          "type": "boolean"
+        },
+        "kind": {
+          "enum": [
+            "code",
+            "markdown",
+            "pptx"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "relativePath": {
+          "title": "Relativepath",
+          "type": "string"
+        },
+        "required": {
+          "title": "Required",
+          "type": "boolean"
+        },
+        "validators": {
+          "items": {
+            "$ref": "#/$defs/ValidatorSpec"
+          },
+          "maxItems": 32,
+          "minItems": 1,
+          "title": "Validators",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "relativePath",
+        "required",
+        "criteria",
+        "validators",
+        "independentReview"
+      ],
+      "title": "ArtifactContract",
+      "type": "object"
+    },
+    "ArtifactRef": {
+      "additionalProperties": false,
+      "properties": {
+        "artifactId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Artifactid",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "artifactId",
+        "version",
+        "sha256"
+      ],
+      "title": "ArtifactRef",
+      "type": "object"
+    },
+    "Criterion": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "required": {
+          "title": "Required",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "description",
+        "required"
+      ],
+      "title": "Criterion",
+      "type": "object"
+    },
+    "RoleAssignment": {
+      "additionalProperties": false,
+      "properties": {
+        "agentProfileId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Agentprofileid",
+          "type": "string"
+        },
+        "assignmentId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Assignmentid",
+          "type": "string"
+        },
+        "assignmentVersion": {
+          "minimum": 1,
+          "title": "Assignmentversion",
+          "type": "integer"
+        },
+        "confirmedAt": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confirmedat"
+        },
+        "confirmedBy": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confirmedby"
+        },
+        "planVersion": {
+          "minimum": 1,
+          "title": "Planversion",
+          "type": "integer"
+        },
+        "roleId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Roleid",
+          "type": "string"
+        },
+        "runId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Runid",
+          "type": "string"
+        }
+      },
+      "required": [
+        "assignmentId",
+        "runId",
+        "planVersion",
+        "assignmentVersion",
+        "roleId",
+        "agentProfileId"
+      ],
+      "title": "RoleAssignment",
+      "type": "object"
+    },
+    "RoleSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "budget": {
+          "additionalProperties": true,
+          "title": "Budget",
+          "type": "object"
+        },
+        "independentReview": {
+          "title": "Independentreview",
+          "type": "boolean"
+        },
+        "readScopes": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 64,
+          "title": "Readscopes",
+          "type": "array"
+        },
+        "requireUserDecisionOnGate": {
+          "default": false,
+          "title": "Requireuserdecisionongate",
+          "type": "boolean"
+        },
+        "requiredCapabilities": {
+          "items": {
+            "maxLength": 512,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 32,
+          "minItems": 1,
+          "title": "Requiredcapabilities",
+          "type": "array"
+        },
+        "responsibilities": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Responsibilities",
+          "type": "string"
+        },
+        "roleId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Roleid",
+          "type": "string"
+        },
+        "writeScopes": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 64,
+          "title": "Writescopes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "roleId",
+        "responsibilities",
+        "requiredCapabilities",
+        "independentReview"
+      ],
+      "title": "RoleSpec",
+      "type": "object"
+    },
+    "RoutingDecision": {
+      "additionalProperties": false,
+      "description": "Suggestion only. Never authorizes execution by itself.",
+      "properties": {
+        "confidence": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confidence"
+        },
+        "mode": {
+          "enum": [
+            "single",
+            "team",
+            "needs_input",
+            "undecided"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "modelReviewCount": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Modelreviewcount",
+          "type": "integer"
+        },
+        "reason": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        },
+        "ruleVersion": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Ruleversion",
+          "type": "string"
+        },
+        "score": {
+          "anyOf": [
+            {
+              "maximum": 10,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Score"
+        }
+      },
+      "required": [
+        "mode",
+        "reason",
+        "ruleVersion",
+        "modelReviewCount"
+      ],
+      "title": "RoutingDecision",
+      "type": "object"
+    },
+    "Stage": {
+      "additionalProperties": false,
+      "properties": {
+        "currentCandidateId": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Currentcandidateid"
+        },
+        "dependencies": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "type": "string"
+          },
+          "maxItems": 32,
+          "title": "Dependencies",
+          "type": "array"
+        },
+        "gatePolicy": {
+          "$ref": "#/$defs/StageGatePolicy"
+        },
+        "planVersion": {
+          "minimum": 1,
+          "title": "Planversion",
+          "type": "integer"
+        },
+        "repairRound": {
+          "default": 0,
+          "maximum": 10,
+          "minimum": 0,
+          "title": "Repairround",
+          "type": "integer"
+        },
+        "requiredWorkPackages": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "type": "string"
+          },
+          "maxItems": 64,
+          "title": "Requiredworkpackages",
+          "type": "array"
+        },
+        "stageId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Stageid",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "pending",
+            "ready",
+            "executing",
+            "submission_requested",
+            "stopping",
+            "frozen",
+            "reviewing",
+            "released",
+            "rework",
+            "blocked"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "stageId",
+        "planVersion",
+        "gatePolicy",
+        "status"
+      ],
+      "title": "Stage",
+      "type": "object"
+    },
+    "StageGatePolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "maxRepairRounds": {
+          "default": 3,
+          "maximum": 10,
+          "minimum": 0,
+          "title": "Maxrepairrounds",
+          "type": "integer"
+        },
+        "policy": {
+          "default": "stage_atomic",
+          "enum": [
+            "stage_atomic",
+            "dependency_branch"
+          ],
+          "title": "Policy",
+          "type": "string"
+        },
+        "requireUserDecision": {
+          "default": false,
+          "title": "Requireuserdecision",
+          "type": "boolean"
+        },
+        "requiredReviewRoles": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "type": "string"
+          },
+          "maxItems": 16,
+          "title": "Requiredreviewroles",
+          "type": "array"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "version"
+      ],
+      "title": "StageGatePolicy",
+      "type": "object"
+    },
+    "ValidatorSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "config": {
+          "additionalProperties": true,
+          "title": "Config",
+          "type": "object"
+        },
+        "criterionIds": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "type": "string"
+          },
+          "maxItems": 64,
+          "minItems": 1,
+          "title": "Criterionids",
+          "type": "array"
+        },
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "required": {
+          "title": "Required",
+          "type": "boolean"
+        },
+        "version": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "version",
+        "criterionIds",
+        "required"
+      ],
+      "title": "ValidatorSpec",
+      "type": "object"
+    },
+    "WorkPackage": {
+      "additionalProperties": false,
+      "properties": {
+        "deliverables": {
+          "items": {
+            "$ref": "#/$defs/ArtifactContract"
+          },
+          "maxItems": 32,
+          "title": "Deliverables",
+          "type": "array"
+        },
+        "dependsOn": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "type": "string"
+          },
+          "maxItems": 64,
+          "title": "Dependson",
+          "type": "array"
+        },
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "inputs": {
+          "items": {
+            "$ref": "#/$defs/ArtifactRef"
+          },
+          "maxItems": 64,
+          "title": "Inputs",
+          "type": "array"
+        },
+        "maxRepairRounds": {
+          "default": 3,
+          "maximum": 10,
+          "minimum": 0,
+          "title": "Maxrepairrounds",
+          "type": "integer"
+        },
+        "objective": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Objective",
+          "type": "string"
+        },
+        "ownerRoleId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Ownerroleid",
+          "type": "string"
+        },
+        "planVersion": {
+          "minimum": 1,
+          "title": "Planversion",
+          "type": "integer"
+        },
+        "readScopes": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 64,
+          "title": "Readscopes",
+          "type": "array"
+        },
+        "stageId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Stageid",
+          "type": "string"
+        },
+        "toolPolicyId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Toolpolicyid",
+          "type": "string"
+        },
+        "writeScopes": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 64,
+          "title": "Writescopes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "planVersion",
+        "stageId",
+        "objective",
+        "ownerRoleId",
+        "toolPolicyId"
+      ],
+      "title": "WorkPackage",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "assignments": {
+      "items": {
+        "$ref": "#/$defs/RoleAssignment"
+      },
+      "maxItems": 32,
+      "title": "Assignments",
+      "type": "array"
+    },
+    "contractHash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Contracthash",
+      "type": "string"
+    },
+    "createdAt": {
+      "format": "date-time",
+      "title": "Createdat",
+      "type": "string"
+    },
+    "gatePolicy": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/StageGatePolicy"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "planVersion": {
+      "minimum": 1,
+      "title": "Planversion",
+      "type": "integer"
+    },
+    "roles": {
+      "items": {
+        "$ref": "#/$defs/RoleSpec"
+      },
+      "maxItems": 32,
+      "title": "Roles",
+      "type": "array"
+    },
+    "routing": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/RoutingDecision"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "runId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Runid",
+      "type": "string"
+    },
+    "stages": {
+      "items": {
+        "$ref": "#/$defs/Stage"
+      },
+      "maxItems": 32,
+      "title": "Stages",
+      "type": "array"
+    },
+    "status": {
+      "enum": [
+        "proposed",
+        "approved",
+        "rejected",
+        "superseded"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "summary": {
+      "default": "",
+      "maxLength": 4096,
+      "title": "Summary",
+      "type": "string"
+    },
+    "workPackages": {
+      "items": {
+        "$ref": "#/$defs/WorkPackage"
+      },
+      "maxItems": 64,
+      "title": "Workpackages",
+      "type": "array"
+    }
+  },
+  "required": [
+    "runId",
+    "planVersion",
+    "contractHash",
+    "status",
+    "createdAt"
+  ],
+  "title": "PlanResponse",
+  "type": "object"
+}

@@ -1,0 +1,14 @@
+{
+  "projectId": "project_demo",
+  "goal": "Fix export, write release notes, and build a short demo deck",
+  "mode": "auto",
+  "inputRefs": ["input_requirements"],
+  "outputs": ["code", "markdown", "pptx"],
+  "executionProfile": "container",
+  "failurePolicy": "dependency-aware",
+  "budget": {
+    "maxTokens": 100000,
+    "maxWallTimeSeconds": 1800
+  },
+  "planningProviderProfileId": "profile_local_or_remote"
+}

@@ -1,0 +1,51 @@
+[project]
+name = "agentforge"
+version = "0.1.0"
+description = "Local agent task delivery backend"
+readme = "README.md"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+  "pydantic-settings>=2,<3", "fastapi>=0.115,<1", "uvicorn[standard]>=0.34,<1", "pydantic>=2.12,<3",
+  "sqlalchemy>=2.0,<3", "psycopg[binary,pool]>=3.2,<4", "alembic>=1.15,<2",
+  "procrastinate>=3,<4", "langgraph>=1,<2", "langgraph-checkpoint-postgres>=3,<4",
+  "langchain>=1,<2", "langchain-openai>=1,<2", "langchain-ollama>=1,<2",
+  "deepagents>=0.1,<1", "httpx>=0.28,<1", "typer>=0.15,<1",
+  "python-pptx>=1,<2", "markdown-it-py>=3,<5", "ruamel.yaml>=0.18,<1",
+  "structlog>=25,<27", "opentelemetry-api>=1.30,<2", "opentelemetry-sdk>=1.30,<2",
+  "prometheus-client>=0.21,<1", "mcp>=1,<2", "tree-sitter>=0.25,<1",
+  "python-dotenv>=1,<2", "defusedxml>=0.7,<1", "Pillow>=11,<14",
+]
+
+[dependency-groups]
+dev = ["pytest>=8,<10", "pytest-asyncio>=1,<2", "ruff>=0.11,<1", "mypy>=1.15,<2", "types-PyYAML>=6"]
+
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project.scripts]
+agentforge = "agentforge.cli.main:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/agentforge"]
+
+[tool.uv]
+package = true
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.13"
+files = ["src"]
+strict = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+markers = ["integration: requires an explicitly provided PostgreSQL test URL"]

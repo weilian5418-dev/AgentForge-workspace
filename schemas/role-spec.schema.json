@@ -1,0 +1,67 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "budget": {
+      "additionalProperties": true,
+      "title": "Budget",
+      "type": "object"
+    },
+    "independentReview": {
+      "title": "Independentreview",
+      "type": "boolean"
+    },
+    "readScopes": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 64,
+      "title": "Readscopes",
+      "type": "array"
+    },
+    "requireUserDecisionOnGate": {
+      "default": false,
+      "title": "Requireuserdecisionongate",
+      "type": "boolean"
+    },
+    "requiredCapabilities": {
+      "items": {
+        "maxLength": 512,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 32,
+      "minItems": 1,
+      "title": "Requiredcapabilities",
+      "type": "array"
+    },
+    "responsibilities": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Responsibilities",
+      "type": "string"
+    },
+    "roleId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Roleid",
+      "type": "string"
+    },
+    "writeScopes": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 64,
+      "title": "Writescopes",
+      "type": "array"
+    }
+  },
+  "required": [
+    "roleId",
+    "responsibilities",
+    "requiredCapabilities",
+    "independentReview"
+  ],
+  "title": "RoleSpec",
+  "type": "object"
+}

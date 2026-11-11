@@ -1,0 +1,137 @@
+{
+  "$defs": {
+    "StageGatePolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "maxRepairRounds": {
+          "default": 3,
+          "maximum": 10,
+          "minimum": 0,
+          "title": "Maxrepairrounds",
+          "type": "integer"
+        },
+        "policy": {
+          "default": "stage_atomic",
+          "enum": [
+            "stage_atomic",
+            "dependency_branch"
+          ],
+          "title": "Policy",
+          "type": "string"
+        },
+        "requireUserDecision": {
+          "default": false,
+          "title": "Requireuserdecision",
+          "type": "boolean"
+        },
+        "requiredReviewRoles": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "type": "string"
+          },
+          "maxItems": 16,
+          "title": "Requiredreviewroles",
+          "type": "array"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "version"
+      ],
+      "title": "StageGatePolicy",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "currentCandidateId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Currentcandidateid"
+    },
+    "dependencies": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9._:-]+$",
+        "type": "string"
+      },
+      "maxItems": 32,
+      "title": "Dependencies",
+      "type": "array"
+    },
+    "gatePolicy": {
+      "$ref": "#/$defs/StageGatePolicy"
+    },
+    "planVersion": {
+      "minimum": 1,
+      "title": "Planversion",
+      "type": "integer"
+    },
+    "repairRound": {
+      "default": 0,
+      "maximum": 10,
+      "minimum": 0,
+      "title": "Repairround",
+      "type": "integer"
+    },
+    "requiredWorkPackages": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9._:-]+$",
+        "type": "string"
+      },
+      "maxItems": 64,
+      "title": "Requiredworkpackages",
+      "type": "array"
+    },
+    "stageId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Stageid",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "pending",
+        "ready",
+        "executing",
+        "submission_requested",
+        "stopping",
+        "frozen",
+        "reviewing",
+        "released",
+        "rework",
+        "blocked"
+      ],
+      "title": "Status",
+      "type": "string"
+    }
+  },
+  "required": [
+    "stageId",
+    "planVersion",
+    "gatePolicy",
+    "status"
+  ],
+  "title": "Stage",
+  "type": "object"
+}

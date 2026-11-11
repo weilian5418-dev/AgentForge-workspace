@@ -1,0 +1,25 @@
+{
+  "id": "val_demo",
+  "artifact": {
+    "artifactId": "notes",
+    "version": 1,
+    "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "contractId": "notes-contract",
+  "contractVersion": 1,
+  "validatorId": "markdown.release-notes-v1",
+  "validatorVersion": "1",
+  "status": "passed",
+  "criterionResults": [
+    {
+      "criterionId": "sections",
+      "status": "passed",
+      "evidenceRefs": ["ev_sections"],
+      "message": "Required sections present"
+    }
+  ],
+  "environmentRef": "env_renderer_1",
+  "startedAt": "2026-11-10T04:00:00Z",
+  "finishedAt": "2026-11-10T04:00:02Z",
+  "evidenceRefs": ["ev_sections"]
+}
