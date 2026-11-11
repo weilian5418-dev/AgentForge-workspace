@@ -22,6 +22,7 @@ from agentforge.contracts.plans import (
 from agentforge.permissions.action import ActionDescriptor, action_descriptor_digest
 from agentforge.permissions.bridge import map_user_decision
 from agentforge.permissions.digest import compute_action_digest
+from agentforge.permissions.evaluator import EvaluationRequest, evaluate
 from agentforge.queue.constants import INTENT_APPROVAL_FORWARD
 from agentforge.storage.models import ApprovalMappingRow, Outbox
 
@@ -115,8 +116,27 @@ def assert_action_executable(
     attempt_id: str | None = None,
     stage_id: str | None = None,
     at: datetime | None = None,
+    descriptor: ActionDescriptor | None = None,
 ) -> None:
-    """Current-action gate used at execution time (stricter than record validity)."""
+    """Current-action gate used at execution time (stricter than record validity).
+
+    Prefer passing a typed ``descriptor`` so PermissionEvaluator owns the judgment.
+    Legacy digest/identity kwargs remain for call sites that have not migrated yet.
+    """
+    if descriptor is not None:
+        result = evaluate(
+            EvaluationRequest(
+                descriptor=descriptor,
+                mode="execute",
+                approval=row,
+                stage_id=stage_id,
+                at=at,
+            )
+        )
+        if not result.permitted:
+            raise ApprovalError(result.code, result.detail)
+        return
+
     if not grant_record_looks_valid(row, at=at):
         raise ApprovalError("grant_not_effective", "Authorization record is not effective")
     if action_digest is not None and row.action_digest != action_digest:

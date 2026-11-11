@@ -1,8 +1,14 @@
-"""Native approval mapping and PermissionBridge (BE-06 / D04)."""
+"""Native approval mapping, PermissionEvaluator, and PermissionBridge (BE-06 / D04)."""
 
 from agentforge.permissions.action import ActionDescriptor, action_descriptor_digest
 from agentforge.permissions.bridge import BridgeResult, map_user_decision, scope_fits
 from agentforge.permissions.digest import compute_action_digest
+from agentforge.permissions.evaluator import (
+    EvaluationRequest,
+    EvaluationResult,
+    PermissionVerdict,
+    evaluate,
+)
 from agentforge.permissions.service import (
     ApprovalError,
     assert_action_executable,
@@ -24,11 +30,15 @@ __all__ = [
     "ActionDescriptor",
     "ApprovalError",
     "BridgeResult",
+    "EvaluationRequest",
+    "EvaluationResult",
+    "PermissionVerdict",
     "action_descriptor_digest",
     "assert_action_executable",
     "compute_action_digest",
     "confirm_native",
     "decide",
+    "evaluate",
     "get_approval",
     "grant_record_looks_valid",
     "is_effective_grant",

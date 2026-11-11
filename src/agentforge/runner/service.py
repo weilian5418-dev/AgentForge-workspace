@@ -202,17 +202,16 @@ class RunnerService:
                 )
             params = dict(row.params_json or {})
             exec_digest = str(params.get("__executionDigest") or "")
-            live = action_descriptor_digest(
-                descriptor_from_runner(
-                    profile_id=row.profile_id,
-                    workspace_id=row.workspace_id,
-                    workspace_root=row.workspace_root,
-                    scope=row.scope,
-                    params={k: v for k, v in params.items() if not str(k).startswith("__")},
-                    attempt_id=row.attempt_id,
-                    generation=row.generation,
-                )
+            descriptor = descriptor_from_runner(
+                profile_id=row.profile_id,
+                workspace_id=row.workspace_id,
+                workspace_root=row.workspace_root,
+                scope=row.scope,
+                params={k: v for k, v in params.items() if not str(k).startswith("__")},
+                attempt_id=row.attempt_id,
+                generation=row.generation,
             )
+            live = action_descriptor_digest(descriptor)
             if not exec_digest or exec_digest != live or approval.action_digest != live:
                 raise RunnerError(
                     "approval_action_mismatch",
@@ -223,9 +222,10 @@ class RunnerService:
                     approval,
                     action_digest=live,
                     attempt_id=row.attempt_id,
+                    descriptor=descriptor,
                 )
             except ApprovalError as exc:
-                raise RunnerError("approval_not_effective", exc.message) from exc
+                raise RunnerError(exc.code, exc.message) from exc
             if not try_consume_once(self.session, approval, operation_id=row.id):
                 raise RunnerError(
                     "approval_consumed",
