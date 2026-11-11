@@ -71,7 +71,9 @@ class WorktreeView(ContractModel):
 
 class FreezeWorkspaceSnapshotRequest(ApiInputModel):
     workspace_id: OpaqueId
-    stop_operation_id: OpaqueId | None = None
+    stop_operation_id: OpaqueId = Field(
+        description="Trusted Runner operation that must be terminal for this workspace"
+    )
 
 
 class WorkspaceSnapshotView(ContractModel):
@@ -84,16 +86,32 @@ class WorkspaceSnapshotView(ContractModel):
     note: ShortText = "Recoverable via D06 store; audit must not use mutable worktree"
 
 
+class CandidateSnapshotRef(ApiInputModel):
+    """Locks a specific frozen snapshot — integrate must not follow 'latest'."""
+
+    workspace_id: OpaqueId
+    snapshot_id: OpaqueId
+
+
 class IntegrateRequest(ApiInputModel):
     project_id: OpaqueId
     baseline_id: OpaqueId
     source_root: ShortText
     directory_identity: ShortText
-    candidate_workspace_ids: list[OpaqueId] = Field(min_length=1, max_length=16)
+    candidate_snapshots: list[CandidateSnapshotRef] = Field(
+        min_length=1,
+        max_length=16,
+        description="Ordered locked snapshots; merge uses these ids only",
+    )
+    candidate_workspace_ids: list[OpaqueId] | None = Field(
+        default=None,
+        max_length=16,
+        description="Deprecated alias; prefer candidateSnapshots",
+    )
     merge_order: list[OpaqueId] | None = Field(
         default=None,
         max_length=16,
-        description="Defaults to candidate_workspace_ids order",
+        description="Optional workspace id order; must match candidateSnapshots set",
     )
 
 

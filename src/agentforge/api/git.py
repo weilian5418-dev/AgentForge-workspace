@@ -61,6 +61,15 @@ def _map(exc: GitWorkspaceError) -> HTTPException:
         "source_not_authorized": 403,
         "grant_inactive": 403,
         "refuse_user_root": 403,
+        "stop_evidence_missing": 400,
+        "stop_not_terminal": 409,
+        "stop_workspace_mismatch": 409,
+        "attempt_mismatch": 409,
+        "snapshot_not_found": 404,
+        "snapshot_ids_required": 400,
+        "refs_active": 409,
+        "workspace_active": 409,
+        "force_not_safe": 409,
     }.get(exc.code, 400)
     return HTTPException(status, f"{exc.code}: {exc.message}")
 

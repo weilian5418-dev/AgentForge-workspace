@@ -24,6 +24,7 @@ from agentforge.contracts.artifacts import (
 from agentforge.contracts.errors import ErrorResponse
 from agentforge.contracts.events import EventEnvelope, event_payload_json_schema
 from agentforge.contracts.git_workspaces import (
+    CandidateSnapshotRef,
     CaptureDirtySnapshotRequest,
     CleanupWorktreeRequest,
     DirtySnapshotView,
@@ -106,6 +107,7 @@ SCHEMA_MODELS: dict[str, type[Any]] = {
     "git-worktree-view.schema.json": WorktreeView,
     "git-freeze-workspace-snapshot-request.schema.json": FreezeWorkspaceSnapshotRequest,
     "git-workspace-snapshot-view.schema.json": WorkspaceSnapshotView,
+    "git-candidate-snapshot-ref.schema.json": CandidateSnapshotRef,
     "git-integrate-request.schema.json": IntegrateRequest,
     "git-integration-view.schema.json": IntegrationView,
     "git-cleanup-worktree-request.schema.json": CleanupWorktreeRequest,

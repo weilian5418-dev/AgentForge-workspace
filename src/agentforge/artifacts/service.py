@@ -31,6 +31,9 @@ from agentforge.storage.models import (
     ArtifactPublicationRow,
     ArtifactValidationReportRow,
     ContentObjectRow,
+    GitDirtySnapshotRow,
+    GitIntegrationRow,
+    GitWorkspaceSnapshotRow,
     RunnerOperationRow,
 )
 
@@ -436,6 +439,13 @@ class ArtifactService:
             hashes.add(row.content_hash)
         for row in self.session.scalars(select(ArtifactPublicationRow)).all():
             hashes.add(row.content_hash)
+        for row in self.session.scalars(select(GitDirtySnapshotRow)).all():
+            hashes.add(row.content_hash)
+        for row in self.session.scalars(select(GitWorkspaceSnapshotRow)).all():
+            hashes.add(row.content_hash)
+        for row in self.session.scalars(select(GitIntegrationRow)).all():
+            if row.content_hash:
+                hashes.add(row.content_hash)
         return hashes
 
     def _next_version(self, artifact_id: str) -> int:

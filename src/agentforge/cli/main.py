@@ -1300,7 +1300,15 @@ def git_integrate(
     from agentforge.git.service import GitWorkspaceError, GitWorkspaceService
 
     _settings, engine, store, state_dir, uow_fn = _git_service()
-    ids = [x.strip() for x in workspace_ids.split(",") if x.strip()]
+    # Format: workspaceId:snapshotId[,...]
+    snapshot_pairs = [x.strip() for x in workspace_ids.split(",") if x.strip()]
+    refs = []
+    for item in snapshot_pairs:
+        if ":" not in item:
+            typer.echo("Use --workspace-ids workspaceId:snapshotId,...", err=True)
+            raise typer.Exit(CONFIG_ERROR)
+        wid, sid = item.split(":", 1)
+        refs.append({"workspaceId": wid, "snapshotId": sid})
     try:
         body = IntegrateRequest.model_validate(
             {
@@ -1308,7 +1316,7 @@ def git_integrate(
                 "baselineId": baseline_id,
                 "sourceRoot": source_root,
                 "directoryIdentity": directory_identity,
-                "candidateWorkspaceIds": ids,
+                "candidateSnapshots": refs,
             }
         )
         with uow_fn(engine) as uow:

@@ -26,6 +26,7 @@ from agentforge.storage.models import (
     GitWorkspaceSnapshotRow,
     Project,
     ProjectBaselineRow,
+    RunnerOperationRow,
 )
 
 
@@ -170,6 +171,42 @@ def _seed(
     )
 
 
+def _seed_stop(
+    session: _MemSession,
+    *,
+    workspace_id: str,
+    worktree_path: str,
+    operation_id: str = "rop_stop_1",
+    status: str = "succeeded",
+    attempt_id: str | None = None,
+) -> str:
+    now = datetime.now(UTC)
+    session.add(
+        RunnerOperationRow(
+            id=operation_id,
+            profile_id="close_task",
+            workspace_id=workspace_id,
+            workspace_root=worktree_path,
+            node_id="local",
+            attempt_id=attempt_id,
+            generation=1,
+            action_digest="a" * 64,
+            scope="ws/",
+            params_json={},
+            status=status,
+            result_json={},
+            process_ref=f"host:{operation_id}",
+            approval_id=None,
+            require_effective_approval=False,
+            message="stopped",
+            expires_at=now,
+            created_at=now,
+            updated_at=now,
+        )
+    )
+    return operation_id
+
+
 @pytest.fixture
 def harness(tmp_path: Path) -> tuple[GitWorkspaceService, _MemSession, Path, str, str]:
     repo = tmp_path / "repo"
@@ -267,8 +304,60 @@ def test_blocked_strategy_no_worktree(harness: tuple) -> None:
     assert view.worktree_path == "blocked"
 
 
+def test_freeze_requires_terminal_stop_evidence(harness: tuple) -> None:
+    svc, session, repo, _commit, identity = harness
+    view = svc.prepare_worktree(
+        PrepareWorktreeRequest.model_validate(
+            {
+                "projectId": "prj_d07",
+                "baselineId": "bl_d07",
+                "strategy": "commit_only",
+                "sourceRoot": str(repo.resolve()),
+                "directoryIdentity": identity,
+            }
+        )
+    )
+    with pytest.raises(GitWorkspaceError) as missing:
+        svc.freeze_snapshot(
+            FreezeWorkspaceSnapshotRequest.model_validate(
+                {"workspaceId": view.workspace_id, "stopOperationId": "rop_missing"}
+            )
+        )
+    assert missing.value.code == "stop_evidence_missing"
+
+    _seed_stop(
+        session,
+        workspace_id="other_ws",
+        worktree_path=str(repo.resolve()),
+        operation_id="rop_wrong_ws",
+        status="succeeded",
+    )
+    with pytest.raises(GitWorkspaceError) as mismatch:
+        svc.freeze_snapshot(
+            FreezeWorkspaceSnapshotRequest.model_validate(
+                {"workspaceId": view.workspace_id, "stopOperationId": "rop_wrong_ws"}
+            )
+        )
+    assert mismatch.value.code == "stop_workspace_mismatch"
+
+    _seed_stop(
+        session,
+        workspace_id=view.workspace_id,
+        worktree_path=view.worktree_path,
+        operation_id="rop_running",
+        status="running",
+    )
+    with pytest.raises(GitWorkspaceError) as running:
+        svc.freeze_snapshot(
+            FreezeWorkspaceSnapshotRequest.model_validate(
+                {"workspaceId": view.workspace_id, "stopOperationId": "rop_running"}
+            )
+        )
+    assert running.value.code == "stop_not_terminal"
+
+
 def test_freeze_recoverable_after_worktree_gone(harness: tuple) -> None:
-    svc, _session, repo, _commit, identity = harness
+    svc, session, repo, _commit, identity = harness
     view = svc.prepare_worktree(
         PrepareWorktreeRequest.model_validate(
             {
@@ -282,24 +371,30 @@ def test_freeze_recoverable_after_worktree_gone(harness: tuple) -> None:
     )
     wt = Path(view.worktree_path)
     (wt / "extra.py").write_text("print(1)\n", encoding="utf-8")
+    stop_id = _seed_stop(
+        session,
+        workspace_id=view.workspace_id,
+        worktree_path=view.worktree_path,
+        operation_id="rop_ok",
+    )
     frozen = svc.freeze_snapshot(
-        FreezeWorkspaceSnapshotRequest.model_validate({"workspaceId": view.workspace_id})
+        FreezeWorkspaceSnapshotRequest.model_validate(
+            {"workspaceId": view.workspace_id, "stopOperationId": stop_id}
+        )
     )
     assert frozen.content_hash
-    # Simulate crash: remove live worktree
     import shutil
 
     shutil.rmtree(wt, ignore_errors=True)
     assert not wt.exists()
-    # Snapshot still readable from D06 store
     data = svc.store.get_bytes(frozen.content_hash)
     assert len(data) > 0
 
 
 def test_integrate_conflict_retained(harness: tuple) -> None:
-    svc, _session, repo, _commit, identity = harness
+    svc, session, repo, _commit, identity = harness
 
-    def _prepare_and_edit(filename: str, content: str) -> str:
+    def _prepare_and_edit(filename: str, content: str, op_id: str) -> tuple[str, str]:
         view = svc.prepare_worktree(
             PrepareWorktreeRequest.model_validate(
                 {
@@ -312,13 +407,21 @@ def test_integrate_conflict_retained(harness: tuple) -> None:
             )
         )
         (Path(view.worktree_path) / filename).write_text(content, encoding="utf-8")
-        svc.freeze_snapshot(
-            FreezeWorkspaceSnapshotRequest.model_validate({"workspaceId": view.workspace_id})
+        _seed_stop(
+            session,
+            workspace_id=view.workspace_id,
+            worktree_path=view.worktree_path,
+            operation_id=op_id,
         )
-        return view.workspace_id
+        snap = svc.freeze_snapshot(
+            FreezeWorkspaceSnapshotRequest.model_validate(
+                {"workspaceId": view.workspace_id, "stopOperationId": op_id}
+            )
+        )
+        return view.workspace_id, snap.snapshot_id
 
-    a = _prepare_and_edit("shared.txt", "from-a\n")
-    b = _prepare_and_edit("shared.txt", "from-b\n")
+    a, sa = _prepare_and_edit("shared.txt", "from-a\n", "rop_a")
+    b, sb = _prepare_and_edit("shared.txt", "from-b\n", "rop_b")
 
     result = svc.integrate(
         IntegrateRequest.model_validate(
@@ -327,7 +430,10 @@ def test_integrate_conflict_retained(harness: tuple) -> None:
                 "baselineId": "bl_d07",
                 "sourceRoot": str(repo.resolve()),
                 "directoryIdentity": identity,
-                "candidateWorkspaceIds": [a, b],
+                "candidateSnapshots": [
+                    {"workspaceId": a, "snapshotId": sa},
+                    {"workspaceId": b, "snapshotId": sb},
+                ],
             }
         )
     )
@@ -336,7 +442,7 @@ def test_integrate_conflict_retained(harness: tuple) -> None:
     assert result.stage_released is False
 
 
-def test_cleanup_refuses_user_root_and_active_refs(harness: tuple) -> None:
+def test_integrate_uses_locked_snapshot_not_latest(harness: tuple) -> None:
     svc, session, repo, _commit, identity = harness
     view = svc.prepare_worktree(
         PrepareWorktreeRequest.model_validate(
@@ -349,10 +455,64 @@ def test_cleanup_refuses_user_root_and_active_refs(harness: tuple) -> None:
             }
         )
     )
-    svc.freeze_snapshot(
-        FreezeWorkspaceSnapshotRequest.model_validate({"workspaceId": view.workspace_id})
+    wt = Path(view.worktree_path)
+    (wt / "only_a.txt").write_text("a\n", encoding="utf-8")
+    _seed_stop(session, workspace_id=view.workspace_id, worktree_path=view.worktree_path, operation_id="rop1")
+    first = svc.freeze_snapshot(
+        FreezeWorkspaceSnapshotRequest.model_validate(
+            {"workspaceId": view.workspace_id, "stopOperationId": "rop1"}
+        )
     )
-    # Seed an active integration referencing the workspace
+    (wt / "only_a.txt").write_text("b-later\n", encoding="utf-8")
+    _seed_stop(session, workspace_id=view.workspace_id, worktree_path=view.worktree_path, operation_id="rop2")
+    # Second freeze after content change — integrate must still use first snapshot id.
+    svc.freeze_snapshot(
+        FreezeWorkspaceSnapshotRequest.model_validate(
+            {"workspaceId": view.workspace_id, "stopOperationId": "rop2"}
+        )
+    )
+    result = svc.integrate(
+        IntegrateRequest.model_validate(
+            {
+                "projectId": "prj_d07",
+                "baselineId": "bl_d07",
+                "sourceRoot": str(repo.resolve()),
+                "directoryIdentity": identity,
+                "candidateSnapshots": [
+                    {"workspaceId": view.workspace_id, "snapshotId": first.snapshot_id}
+                ],
+            }
+        )
+    )
+    assert result.status == "ready"
+    assert result.content_hash
+    # Locked first snapshot content is "a\n"
+    from agentforge.git.snapshot import extract_tar_to
+
+    dest = repo.parent / "restored"
+    extract_tar_to(svc.store, first.content_hash, dest)
+    assert (dest / "only_a.txt").read_text(encoding="utf-8") == "a\n"
+
+
+def test_cleanup_refuses_active_refs_even_with_force(harness: tuple) -> None:
+    svc, session, repo, _commit, identity = harness
+    view = svc.prepare_worktree(
+        PrepareWorktreeRequest.model_validate(
+            {
+                "projectId": "prj_d07",
+                "baselineId": "bl_d07",
+                "strategy": "commit_only",
+                "sourceRoot": str(repo.resolve()),
+                "directoryIdentity": identity,
+            }
+        )
+    )
+    _seed_stop(session, workspace_id=view.workspace_id, worktree_path=view.worktree_path)
+    svc.freeze_snapshot(
+        FreezeWorkspaceSnapshotRequest.model_validate(
+            {"workspaceId": view.workspace_id, "stopOperationId": "rop_stop_1"}
+        )
+    )
     session.add(
         GitIntegrationRow(
             id="gin_active",
@@ -372,16 +532,10 @@ def test_cleanup_refuses_user_root_and_active_refs(harness: tuple) -> None:
     )
     with pytest.raises(GitWorkspaceError) as exc:
         svc.cleanup(
-            CleanupWorktreeRequest.model_validate({"workspaceId": view.workspace_id, "force": False})
+            CleanupWorktreeRequest.model_validate({"workspaceId": view.workspace_id, "force": True})
         )
     assert exc.value.code == "refs_active"
-
-    closed = svc.cleanup(
-        CleanupWorktreeRequest.model_validate({"workspaceId": view.workspace_id, "force": True})
-    )
-    assert closed.status == "closed"
-    assert not Path(view.worktree_path).exists()
-    # User source root intact
+    assert Path(view.worktree_path).exists()
     assert (repo / "README.md").exists()
 
 

@@ -29,6 +29,7 @@ from agentforge.git.snapshot import (
     capture_selected_paths,
     extract_tar_to,
     head_commit,
+    list_tar_paths,
     porcelain_status,
     store_workspace_snapshot,
 )
@@ -41,6 +42,7 @@ from agentforge.storage.models import (
     GitWorkspaceSnapshotRow,
     Project,
     ProjectBaselineRow,
+    RunnerOperationRow,
 )
 
 
@@ -200,6 +202,7 @@ class GitWorkspaceService:
             raise GitWorkspaceError("workspace_not_found", "Worktree not found")
         if row.status in {"blocked", "closed"}:
             raise GitWorkspaceError("invalid_state", f"Cannot snapshot status={row.status}")
+        self._assert_stop_evidence(row, body.stop_operation_id)
         path = Path(row.worktree_path)
         try:
             content_hash, manifest_hash, _manifest = store_workspace_snapshot(self.store, path)
@@ -231,12 +234,23 @@ class GitWorkspaceService:
     def integrate(self, body: IntegrateRequest) -> IntegrationView:
         project, baseline, grant = self._load_project_baseline(body.project_id, body.baseline_id)
         self._assert_source_binding(grant, body.source_root)
-        order = list(body.merge_order or body.candidate_workspace_ids)
-        if set(order) != set(body.candidate_workspace_ids):
-            raise GitWorkspaceError("merge_order_mismatch", "mergeOrder must list the same candidates")
 
-        workspaces: list[GitWorkspaceRow] = []
-        for wid in order:
+        refs = list(body.candidate_snapshots)
+        if not refs and body.candidate_workspace_ids:
+            raise GitWorkspaceError(
+                "snapshot_ids_required",
+                "candidateSnapshots with locked snapshotId are required (no latest-follow)",
+            )
+        order_ids = list(body.merge_order or [r.workspace_id for r in refs])
+        ref_by_ws = {r.workspace_id: r for r in refs}
+        if set(order_ids) != set(ref_by_ws):
+            raise GitWorkspaceError(
+                "merge_order_mismatch",
+                "mergeOrder must list the same workspaces as candidateSnapshots",
+            )
+
+        locked: list[tuple[GitWorkspaceRow, GitWorkspaceSnapshotRow]] = []
+        for wid in order_ids:
             ws = self.session.get(GitWorkspaceRow, wid)
             if ws is None or ws.project_id != project.id:
                 raise GitWorkspaceError("workspace_not_found", f"Missing workspace {wid}")
@@ -245,7 +259,13 @@ class GitWorkspaceService:
                     "baseline_mismatch",
                     "All candidates must share the same confirmed baseline",
                 )
-            workspaces.append(ws)
+            snap = self.session.get(GitWorkspaceSnapshotRow, ref_by_ws[wid].snapshot_id)
+            if snap is None or snap.workspace_id != ws.id:
+                raise GitWorkspaceError(
+                    "snapshot_not_found",
+                    f"Locked snapshot not found for workspace {wid}",
+                )
+            locked.append((ws, snap))
 
         integration_id = f"gin_{uuid.uuid4().hex[:16]}"
         path = self.wt_root / project.id / f"integration_{integration_id}"
@@ -260,48 +280,64 @@ class GitWorkspaceService:
         except GitSafeError as exc:
             raise GitWorkspaceError(exc.code, exc.message) from exc
 
+        baseline_paths = {
+            p.relative_to(path).as_posix()
+            for p in path.rglob("*")
+            if p.is_file() and not p.is_symlink() and ".git" not in p.relative_to(path).parts
+        }
         conflict_paths: list[str] = []
-        # Apply each candidate tree onto integration worktree via archive extract.
-        # Baseline→first-candidate diffs are applied; conflicts only when two candidates
-        # disagree on the same path (no silent side pick).
-        touched: dict[str, str] = {}
-        for ws in workspaces:
-            snap = self.session.scalar(
-                select(GitWorkspaceSnapshotRow)
-                .where(GitWorkspaceSnapshotRow.workspace_id == ws.id)
-                .order_by(GitWorkspaceSnapshotRow.created_at.desc())
-            )
-            if snap is None:
-                self._force_remove_worktree(source, path)
-                raise GitWorkspaceError(
-                    "candidate_not_frozen",
-                    f"Workspace {ws.id} has no frozen snapshot; freeze before integrate",
-                )
+        # Declared strategy: full-tree overlay + explicit deletes vs baseline;
+        # conflict on write/write or write/delete disagreement (no silent side pick).
+        written_by: dict[str, str] = {}
+        deleted_by: dict[str, str] = {}
+        for ws, snap in locked:
             overlay = path.parent / f".overlay_{ws.id}"
             if overlay.exists():
                 shutil.rmtree(overlay)
             try:
                 extract_tar_to(self.store, snap.content_hash, overlay)
+                overlay_paths = list_tar_paths(self.store, snap.content_hash)
             except SnapshotError as exc:
                 self._force_remove_worktree(source, path)
                 raise GitWorkspaceError(exc.code, exc.message) from exc
+
+            for rel in sorted(baseline_paths - overlay_paths):
+                if rel in written_by and written_by[rel] != ws.id:
+                    conflict_paths.append(rel)
+                    continue
+                if rel in deleted_by and deleted_by[rel] != ws.id:
+                    continue
+                deleted_by[rel] = ws.id
+
             for file in sorted(overlay.rglob("*")):
                 if not file.is_file() or file.is_symlink():
                     continue
                 rel = file.relative_to(overlay).as_posix()
+                if rel in deleted_by and deleted_by[rel] != ws.id:
+                    conflict_paths.append(rel)
+                    continue
                 dest = path / rel
                 new_bytes = file.read_bytes()
                 if dest.exists() and dest.is_file():
                     cur = dest.read_bytes()
                     if cur == new_bytes:
+                        written_by.setdefault(rel, ws.id)
                         continue
-                    if rel in touched and touched[rel] != ws.id:
+                    if rel in written_by and written_by[rel] != ws.id:
                         conflict_paths.append(rel)
                         continue
                 dest.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(file, dest)
-                touched[rel] = ws.id
+                written_by[rel] = ws.id
+                deleted_by.pop(rel, None)
             shutil.rmtree(overlay, ignore_errors=True)
+
+        for rel, _ws_id in deleted_by.items():
+            if rel in conflict_paths:
+                continue
+            dest = path / rel
+            if dest.exists() and dest.is_file():
+                dest.unlink()
 
         if conflict_paths:
             row = GitIntegrationRow(
@@ -310,7 +346,7 @@ class GitWorkspaceService:
                 baseline_id=baseline.id,
                 status="conflicted",
                 worktree_path=str(path),
-                input_workspace_ids=order,
+                input_workspace_ids=order_ids,
                 conflict_paths=sorted(set(conflict_paths)),
                 content_hash=None,
                 manifest_hash=None,
@@ -334,12 +370,12 @@ class GitWorkspaceService:
             baseline_id=baseline.id,
             status="ready",
             worktree_path=str(path),
-            input_workspace_ids=order,
+            input_workspace_ids=order_ids,
             conflict_paths=[],
             content_hash=content_hash,
             manifest_hash=manifest_hash,
             stage_released=False,
-            message="integration ready; not stage-released (D10)",
+            message="integration ready; locked snapshots; not stage-released (D10)",
             created_at=_now(),
             updated_at=_now(),
         )
@@ -351,22 +387,32 @@ class GitWorkspaceService:
         row = self.session.get(GitWorkspaceRow, body.workspace_id)
         if row is None:
             raise GitWorkspaceError("workspace_not_found", "Worktree not found")
-        # Refuse if snapshot refs still need the live tree? Snapshots are in D06 — OK to remove wt.
-        # Refuse cleanup of user source_root always.
         source = Path(row.source_root)
         path = Path(row.worktree_path)
         if path.resolve() == source.resolve():
             raise GitWorkspaceError("refuse_user_root", "Refusing to cleanup user source root")
-        # Active integration referencing this workspace
+        # Active / unresolved integrations always block — force cannot bypass refs.
         integrations = [
             r
             for r in self.session.scalars(select(GitIntegrationRow)).all()
-            if row.id in (r.input_workspace_ids or []) and r.status in {"pending", "merging", "conflicted"}
+            if row.id in (r.input_workspace_ids or [])
+            and r.status in {"pending", "merging", "conflicted"}
         ]
-        if integrations and not body.force:
+        if integrations:
             raise GitWorkspaceError(
                 "refs_active",
-                "Active integration references this workspace; refuse cleanup",
+                "Active integration references this workspace; refuse cleanup (force cannot bypass)",
+            )
+        if row.status == "active" and not body.force:
+            raise GitWorkspaceError(
+                "workspace_active",
+                "Workspace still active; stop and freeze first, or pass force only after safe stop",
+            )
+        # force only allows removing disposable trees after snapshot_frozen/closed/blocked
+        if body.force and row.status not in {"snapshot_frozen", "closed", "blocked", "restricted"}:
+            raise GitWorkspaceError(
+                "force_not_safe",
+                "force only applies after safe stop/freeze; not for unknown-active workspaces",
             )
         self._force_remove_worktree(source, path)
         row.status = "closed"
@@ -401,6 +447,32 @@ class GitWorkspaceService:
             raise GitWorkspaceError(
                 "source_not_authorized",
                 "sourceRoot must equal the authorized grant root (no client-arbitrary bind)",
+            )
+
+    def _assert_stop_evidence(self, workspace: GitWorkspaceRow, stop_operation_id: str) -> None:
+        op = self.session.get(RunnerOperationRow, stop_operation_id)
+        if op is None:
+            raise GitWorkspaceError(
+                "stop_evidence_missing",
+                "stopOperationId not found in trusted runner ledger",
+            )
+        if op.status not in {"succeeded", "failed", "blocked"}:
+            raise GitWorkspaceError(
+                "stop_not_terminal",
+                f"Runner operation status={op.status} is not a confirmed stop",
+            )
+        # Bind to same workspace identity and attempt when recorded.
+        if op.workspace_id not in {workspace.id, workspace.project_id}:
+            # Also accept match on worktree path root equality for host tickets.
+            if Path(op.workspace_root).resolve() != Path(workspace.worktree_path).resolve():
+                raise GitWorkspaceError(
+                    "stop_workspace_mismatch",
+                    "Stop evidence workspace does not match git worktree",
+                )
+        if workspace.attempt_id and op.attempt_id and workspace.attempt_id != op.attempt_id:
+            raise GitWorkspaceError(
+                "attempt_mismatch",
+                "Stop evidence attemptId does not match workspace attempt",
             )
 
     def _force_remove_worktree(self, source: Path, path: Path) -> None:
