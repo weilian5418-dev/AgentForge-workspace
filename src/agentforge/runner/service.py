@@ -13,6 +13,7 @@ from agentforge.contracts.runner import (
     RunnerTicket,
     RunnerTicketIssueRequest,
 )
+from agentforge.permissions.action import action_descriptor_digest, descriptor_from_runner
 from agentforge.permissions.service import (
     ApprovalError,
     assert_action_executable,
@@ -91,6 +92,27 @@ class RunnerService:
             scope=body.scope,
             params=body.params,
         )
+        execution_desc = descriptor_from_runner(
+            profile_id=body.profile_id,
+            workspace_id=body.workspace_id,
+            workspace_root=body.workspace_root,
+            scope=body.scope,
+            params=dict(body.params),
+            attempt_id=body.attempt_id,
+            generation=body.generation,
+        )
+        execution_digest = action_descriptor_digest(execution_desc)
+        if body.approval_id:
+            approval = self.session.get(ApprovalMappingRow, body.approval_id)
+            if approval is None:
+                raise RunnerError("approval_not_found", "approvalId not found")
+            if approval.action_digest != execution_digest:
+                raise RunnerError(
+                    "approval_action_mismatch",
+                    "Approval ActionDescriptor digest does not match runner ticket action",
+                )
+        params = dict(body.params)
+        params["__executionDigest"] = execution_digest
         row = RunnerOperationRow(
             id=f"rop_{uuid.uuid4().hex[:20]}",
             profile_id=body.profile_id,
@@ -101,7 +123,7 @@ class RunnerService:
             generation=body.generation,
             action_digest=digest,
             scope=body.scope,
-            params_json=dict(body.params),
+            params_json=params,
             status="issued",
             result_json={},
             process_ref=None,
@@ -156,30 +178,6 @@ class RunnerService:
                 "Prior execution may have started; refusing blind retry",
             )
 
-        if row.require_effective_approval:
-            if not row.approval_id:
-                raise RunnerError("approval_required", "Effective approval_id required")
-            approval = self.session.get(ApprovalMappingRow, row.approval_id)
-            if approval is None:
-                raise RunnerError(
-                    "approval_not_effective",
-                    "D04 grant is not native-effective for this operation",
-                )
-            try:
-                # Runner digest ≠ approval digest; bind on attempt/instance when present.
-                assert_action_executable(
-                    approval,
-                    action_digest=None,
-                    attempt_id=row.attempt_id,
-                )
-            except ApprovalError as exc:
-                raise RunnerError("approval_not_effective", exc.message) from exc
-            if not try_consume_once(self.session, approval):
-                raise RunnerError(
-                    "approval_consumed",
-                    "Once-scoped grant already consumed",
-                )
-
         spec = get_profile(row.profile_id)
         if spec.docker_required:
             row.status = "blocked"
@@ -192,6 +190,48 @@ class RunnerService:
             self.session.flush()
             return _to_ticket(row)
 
+        # Feasibility first; only then bind+consume once-grant with this operationId.
+        if row.require_effective_approval:
+            if not row.approval_id:
+                raise RunnerError("approval_required", "Effective approval_id required")
+            approval = self.session.get(ApprovalMappingRow, row.approval_id)
+            if approval is None:
+                raise RunnerError(
+                    "approval_not_effective",
+                    "D04 grant is not native-effective for this operation",
+                )
+            params = dict(row.params_json or {})
+            exec_digest = str(params.get("__executionDigest") or "")
+            live = action_descriptor_digest(
+                descriptor_from_runner(
+                    profile_id=row.profile_id,
+                    workspace_id=row.workspace_id,
+                    workspace_root=row.workspace_root,
+                    scope=row.scope,
+                    params={k: v for k, v in params.items() if not str(k).startswith("__")},
+                    attempt_id=row.attempt_id,
+                    generation=row.generation,
+                )
+            )
+            if not exec_digest or exec_digest != live or approval.action_digest != live:
+                raise RunnerError(
+                    "approval_action_mismatch",
+                    "Final runner action does not match approved ActionDescriptor",
+                )
+            try:
+                assert_action_executable(
+                    approval,
+                    action_digest=live,
+                    attempt_id=row.attempt_id,
+                )
+            except ApprovalError as exc:
+                raise RunnerError("approval_not_effective", exc.message) from exc
+            if not try_consume_once(self.session, approval, operation_id=row.id):
+                raise RunnerError(
+                    "approval_consumed",
+                    "Once-scoped grant already consumed by another operation",
+                )
+
         row.status = "running"
         row.process_ref = f"host:{row.id}"
         row.updated_at = _now()
@@ -199,10 +239,11 @@ class RunnerService:
 
         try:
             root = resolve_workspace_root(row.workspace_root)
+            raw_params = dict(row.params_json or {})
             result = execute_profile(
                 row.profile_id,
                 workspace_root=root,
-                params=dict(row.params_json or {}),
+                params={k: v for k, v in raw_params.items() if not str(k).startswith("__")},
             )
         except RunnerPathError as exc:
             row.status = "failed"

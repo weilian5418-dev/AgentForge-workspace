@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import hashlib
-import json
 from typing import Any
+
+from agentforge.permissions.action import ActionDescriptor, action_descriptor_digest
 
 
 def compute_action_digest(
@@ -17,17 +17,36 @@ def compute_action_digest(
     native_request_id: str,
     attempt_id: str | None,
     semantic: str,
+    operation_type: str = "tool.invoke",
+    workspace_id: str | None = None,
+    workspace_root: str = "",
+    params: dict[str, Any] | None = None,
+    environment_id: str | None = None,
+    generation: int | None = None,
+    instance_id: str | None = None,
 ) -> str:
-    """Stable SHA-256 over a sorted canonical object (no floating auth expansion)."""
-    payload: dict[str, Any] = {
-        "action": action,
-        "attemptId": attempt_id or "",
-        "nativeRequestId": native_request_id,
-        "parameterSummary": parameter_summary,
-        "requestedScope": requested_scope,
-        "semantic": semantic,
-        "sessionRef": session_ref,
-        "targetSummary": target_summary,
-    }
-    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
-    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+    """Digest binds the *final action* (ActionDescriptor), not native request ids.
+
+    ``native_request_id`` / ``semantic`` remain on the ledger row but are not part of
+    the execution bind key — Runner and approval must share this digest.
+    """
+    _ = (native_request_id, semantic)  # ledger fields; not in execution digest
+    descriptor = ActionDescriptor(
+        operation_type=operation_type,
+        params=params
+        if params is not None
+        else {
+            "action": action,
+            "target": target_summary,
+            "parameters": parameter_summary,
+        },
+        workspace_id=workspace_id or requested_scope,
+        workspace_root=workspace_root,
+        scope=requested_scope,
+        environment_id=environment_id,
+        attempt_id=attempt_id,
+        generation=generation,
+        instance_id=instance_id,
+        session_ref=session_ref,
+    )
+    return action_descriptor_digest(descriptor)

@@ -21,6 +21,7 @@ from agentforge.permissions.service import (
     decide,
     get_approval,
     list_approvals,
+    process_pending_forward,
     record_native_request,
     retry_forward,
 )
@@ -120,7 +121,7 @@ def post_decision(
     engine = _engine(request, settings)
     try:
         with unit_of_work_connection(engine) as uow:
-            return decide(
+            summary = decide(
                 uow.session,
                 approval_id=approval_id,
                 decision=body.decision,
@@ -128,6 +129,12 @@ def post_decision(
                 note=body.note,
                 forward=body.forward,
             )
+            pending = body.forward and summary.status == "forwarding"
+        # Native adapter call happens only after decision/intent commit.
+        if pending:
+            with unit_of_work_connection(engine) as uow:
+                summary = process_pending_forward(uow.session, approval_id)
+        return summary
     except ApprovalError as exc:
         raise _map(exc) from exc
 
@@ -164,8 +171,13 @@ def post_retry_forward(
     engine = _engine(request, settings)
     try:
         with unit_of_work_connection(engine) as uow:
-            return retry_forward(
+            summary = retry_forward(
                 uow.session, approval_id=approval_id, reconcile_token=reconcile_token
             )
+            pending = summary.status == "forwarding"
+        if pending:
+            with unit_of_work_connection(engine) as uow:
+                summary = process_pending_forward(uow.session, approval_id)
+        return summary
     except ApprovalError as exc:
         raise _map(exc) from exc

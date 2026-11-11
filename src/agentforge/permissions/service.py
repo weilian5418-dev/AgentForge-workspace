@@ -9,15 +9,21 @@ from typing import Any, Literal
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+import json
+
+from sqlalchemy import text
+
 from agentforge.adapters.registry import get_adapter
 from agentforge.contracts.plans import (
     ApprovalSummary,
     NativeApprovalMapping,
     NativeApprovalRecordRequest,
 )
+from agentforge.permissions.action import ActionDescriptor, action_descriptor_digest
 from agentforge.permissions.bridge import map_user_decision
 from agentforge.permissions.digest import compute_action_digest
-from agentforge.storage.models import ApprovalMappingRow
+from agentforge.queue.constants import INTENT_APPROVAL_FORWARD
+from agentforge.storage.models import ApprovalMappingRow, Outbox
 
 
 class ApprovalError(Exception):
@@ -126,36 +132,94 @@ def assert_action_executable(
         raise ApprovalError("stage_mismatch", "Grant stageId does not match")
 
 
-def try_consume_once(session: Session, row: ApprovalMappingRow) -> bool:
-    """Atomically consume a once-scoped grant. Returns False if already consumed.
+def try_consume_once(
+    session: Session,
+    row: ApprovalMappingRow,
+    *,
+    operation_id: str,
+) -> bool:
+    """Atomically consume a once-scoped grant bound to ``operation_id``.
 
-    Relies on the caller's short DB transaction for concurrency; re-reads mapping_json
-    and refuses a second consume in the same row.
+    Same operationId retries are idempotent (return True without double-granting).
+    Different operationIds cannot share one once-grant. Uses conditional UPDATE on
+    PostgreSQL; falls back to version-checked in-memory update for unit sessions.
     """
+    if not operation_id:
+        raise ApprovalError("operation_id_required", "once-consume requires operationId")
     meta = _mapping_payload(row)
     semantic = str(meta.get("semantic") or "once")
     if semantic != "once":
         return True
-    if meta.get("consumedAt"):
+    existing_op = meta.get("consumedByOperationId")
+    if meta.get("consumedAt") and existing_op == operation_id:
+        return True
+    if meta.get("consumedAt") and existing_op and existing_op != operation_id:
         return False
-    # Re-get to reduce lost-update windows under concurrent sessions.
-    fresh = session.get(ApprovalMappingRow, row.id)
-    if fresh is None:
+
+    consumed_at = _now().isoformat()
+    patch = {
+        "consumedAt": consumed_at,
+        "consumedByOperationId": operation_id,
+    }
+    bind = {"id": row.id, "patch": json.dumps(patch)}
+    # Prefer atomic JSONB conditional update when talking to real Postgres.
+    try:
+        result = session.execute(
+            text(
+                """
+                UPDATE app.approval_mappings
+                SET
+                  mapping_json = COALESCE(mapping_json, '{}'::jsonb) || CAST(:patch AS jsonb),
+                  status = 'consumed',
+                  updated_at = now()
+                WHERE id = :id
+                  AND status = 'confirmed'
+                  AND user_decision = 'approve'
+                  AND native_confirmed = true
+                  AND (
+                    mapping_json->>'consumedAt' IS NULL
+                    OR mapping_json->>'consumedByOperationId' = :opid
+                  )
+                """
+            ),
+            {**bind, "opid": operation_id},
+        )
+        if result.rowcount:  # type: ignore[attr-defined]
+            session.refresh(row)
+            return True
+        # Re-read for idempotent same-operation case after lost race.
+        fresh = session.get(ApprovalMappingRow, row.id)
+        if fresh is None:
+            return False
+        fresh_meta = _mapping_payload(fresh)
+        if fresh_meta.get("consumedByOperationId") == operation_id:
+            row.mapping_json = fresh_meta
+            row.status = fresh.status
+            return True
         return False
-    fresh_meta = _mapping_payload(fresh)
-    if fresh_meta.get("consumedAt"):
-        return False
-    if not grant_record_looks_valid(fresh):
-        return False
-    fresh_meta["consumedAt"] = _now().isoformat()
-    fresh.mapping_json = fresh_meta
-    fresh.status = "consumed"
-    fresh.updated_at = _now()
-    session.flush()
-    row.mapping_json = fresh_meta
-    row.status = "consumed"
-    row.updated_at = fresh.updated_at
-    return True
+    except Exception:
+        # MemSession / non-PG: optimistic single-threaded update with version token.
+        fresh = session.get(ApprovalMappingRow, row.id)
+        if fresh is None:
+            return False
+        fresh_meta = _mapping_payload(fresh)
+        if fresh_meta.get("consumedByOperationId") == operation_id:
+            return True
+        if fresh_meta.get("consumedAt"):
+            return False
+        if not grant_record_looks_valid(fresh):
+            return False
+        version = int(fresh_meta.get("grantVersion") or 1)
+        fresh_meta.update(patch)
+        fresh_meta["grantVersion"] = version + 1
+        fresh.mapping_json = fresh_meta
+        fresh.status = "consumed"
+        fresh.updated_at = _now()
+        session.flush()
+        row.mapping_json = fresh_meta
+        row.status = "consumed"
+        row.updated_at = fresh.updated_at
+        return True
 
 
 def revoke_grant(session: Session, *, approval_id: str, reason: str | None = None) -> ApprovalSummary:
@@ -204,16 +268,25 @@ def record_native_request(
             )
         return _to_summary(existing)
 
-    digest = compute_action_digest(
-        action=body.action,
-        target_summary=body.target_summary,
-        parameter_summary=body.parameter_summary,
-        requested_scope=body.requested_scope,
-        session_ref=body.session_ref,
-        native_request_id=body.native_request_id,
+    descriptor = ActionDescriptor(
+        operation_type=body.operation_type,
+        params=body.params
+        if body.params is not None
+        else {
+            "action": body.action,
+            "target": body.target_summary,
+            "parameters": body.parameter_summary,
+        },
+        workspace_id=body.workspace_id or body.requested_scope,
+        workspace_root=body.workspace_root or "",
+        scope=body.requested_scope,
+        environment_id=body.environment_id,
         attempt_id=body.attempt_id,
-        semantic=body.semantic,
+        generation=body.generation,
+        instance_id=body.instance_id,
+        session_ref=body.session_ref,
     )
+    digest = action_descriptor_digest(descriptor)
     if body.action_digest is not None and body.action_digest != digest:
         raise ApprovalError("action_digest_mismatch", "Client actionDigest does not match canonical digest")
 
@@ -236,6 +309,19 @@ def record_native_request(
         "semantic": body.semantic,
         "forwardState": "not_started",
         "nativeOptions": list(body.native_options),
+        "actionDescriptor": {
+            "operationType": descriptor.operation_type,
+            "params": descriptor.params,
+            "workspaceId": descriptor.workspace_id,
+            "workspaceRoot": descriptor.normalized().workspace_root,
+            "scope": descriptor.scope,
+            "environmentId": descriptor.environment_id,
+            "attemptId": descriptor.attempt_id,
+            "generation": descriptor.generation,
+            "instanceId": descriptor.instance_id,
+            "sessionRef": descriptor.session_ref,
+        },
+        "grantVersion": 1,
     }
     row = ApprovalMappingRow(
         id=f"appr_{uuid.uuid4().hex[:16]}",
@@ -329,11 +415,12 @@ def decide(
         raise ApprovalError("invalid_state", f"Cannot decide from status={row.status}")
 
     if forward:
-        return _forward(session, row)
+        return _queue_forward_intent(session, row)
     return _to_summary(row)
 
 
-def _forward(session: Session, row: ApprovalMappingRow) -> ApprovalSummary:
+def _queue_forward_intent(session: Session, row: ApprovalMappingRow) -> ApprovalSummary:
+    """Short-txn: bridge + persist forward intent / outbox. Does NOT call native adapter."""
     meta = _mapping_payload(row)
     semantic = str(meta.get("semantic") or "once")
     bridge = map_user_decision(
@@ -362,30 +449,71 @@ def _forward(session: Session, row: ApprovalMappingRow) -> ApprovalSummary:
 
     adapter_id = str(meta.get("adapterId") or "")
     try:
+        get_adapter(adapter_id)
+    except KeyError as exc:
+        raise ApprovalError("adapter_not_found", str(exc)) from exc
+
+    meta["bridgeMappedOptions"] = bridge.mapped_options
+    meta["bridgeNativeDecision"] = bridge.native_decision
+    meta["forwardIntentAt"] = _now().isoformat()
+    meta["forwardPending"] = True
+    meta["forwardState"] = "forwarding"
+    row.status = "forwarding"
+    row.mapping_json = meta
+    row.updated_at = _now()
+    outbox_id = f"obx_{uuid.uuid4().hex[:20]}"
+    meta["forwardOutboxId"] = outbox_id
+    row.mapping_json = meta
+    session.add(
+        Outbox(
+            id=outbox_id,
+            run_id=row.run_id,
+            event_id=None,
+            intent_type=INTENT_APPROVAL_FORWARD,
+            target="approval:forward",
+            payload={"approvalId": row.id, "adapterId": adapter_id},
+            idempotency_key=f"approval-forward:{row.id}:{meta.get('decisionId')}",
+            delivery_status="pending",
+            attempt_count=0,
+        )
+    )
+    session.flush()
+    return _to_summary(row)
+
+
+def process_pending_forward(session: Session, approval_id: str) -> ApprovalSummary:
+    """Post-commit: call native adapter and persist trusted result in a new short txn."""
+    row = session.get(ApprovalMappingRow, approval_id)
+    if row is None:
+        raise ApprovalError("approval_not_found", "Approval not found")
+    meta = _mapping_payload(row)
+    if row.status in {"confirmed", "rejected", "mapping_unsupported", "manual_required", "consumed"}:
+        return _to_summary(row)
+    if row.status != "forwarding" or not meta.get("forwardPending"):
+        raise ApprovalError("invalid_state", "No pending forward intent to process")
+
+    semantic = str(meta.get("semantic") or "once")
+    native_decision = str(meta.get("bridgeNativeDecision") or "")
+    mapped_options = meta.get("bridgeMappedOptions")
+    adapter_id = str(meta.get("adapterId") or "")
+    try:
         adapter = get_adapter(adapter_id)
     except KeyError as exc:
         raise ApprovalError("adapter_not_found", str(exc)) from exc
 
-    row.status = "forwarding"
     meta["forwardState"] = "forwarding"
-    row.mapping_json = meta
-    row.updated_at = _now()
-    session.flush()
-
-    # Persist forward intent before leaving the short transaction boundary of the caller.
-    meta["bridgeMappedOptions"] = bridge.mapped_options
-    meta["forwardIntentAt"] = _now().isoformat()
     row.mapping_json = meta
     session.flush()
 
     result = adapter.respond_approval(
         session_ref=str(meta.get("sessionRef") or ""),
         native_request_id=str(row.native_request_id or ""),
-        decision=str(bridge.native_decision),
+        decision=native_decision,
         semantic=semantic,
-        mapped_options=bridge.mapped_options,
+        mapped_options=mapped_options if isinstance(mapped_options, dict) else None,
     )
     status = str(result.get("status") or "unknown")
+    meta["forwardPending"] = False
     if status == "unsupported":
         row.status = "mapping_unsupported"
         meta["forwardState"] = "mapping_unsupported"
@@ -394,17 +522,18 @@ def _forward(session: Session, row: ApprovalMappingRow) -> ApprovalSummary:
         row.updated_at = _now()
         session.flush()
         return _to_summary(row)
-    if status in {"failed", "unknown"}:
-        # Unknown ≠ unsent; do not invent confirmation. Reconcile before any retry.
+    if status in {"failed", "unknown", "supported"}:
         row.status = "delivery_unknown"
         meta["forwardState"] = "delivery_unknown"
-        meta["adapterDetail"] = result.get("detail")
+        meta["adapterDetail"] = result.get("detail") or (
+            "supported≠acked; waiting for native confirmationRef"
+            if status == "supported"
+            else result.get("detail")
+        )
         row.mapping_json = meta
         row.updated_at = _now()
         session.flush()
         return _to_summary(row)
-    # `supported` only means the interface exists — not that the native side accepted.
-    # Elevation requires an explicit acked/confirmed receipt with confirmationRef.
     if status in {"acked", "confirmed"}:
         conf = result.get("confirmationRef")
         if not conf:
@@ -415,6 +544,8 @@ def _forward(session: Session, row: ApprovalMappingRow) -> ApprovalSummary:
             row.updated_at = _now()
             session.flush()
             return _to_summary(row)
+        row.mapping_json = meta
+        session.flush()
         return confirm_native(
             session,
             approval_id=row.id,
@@ -422,14 +553,6 @@ def _forward(session: Session, row: ApprovalMappingRow) -> ApprovalSummary:
             confirmation_ref=str(conf),
             source="adapter_host",
         )
-    if status == "supported":
-        row.status = "delivery_unknown"
-        meta["forwardState"] = "delivery_unknown"
-        meta["adapterDetail"] = "supported≠acked; waiting for native confirmationRef"
-        row.mapping_json = meta
-        row.updated_at = _now()
-        session.flush()
-        return _to_summary(row)
     row.status = "delivery_unknown"
     meta["forwardState"] = "delivery_unknown"
     meta["adapterDetail"] = f"unexpected adapter status={status}"
@@ -528,7 +651,7 @@ def retry_forward(
     meta.pop("reconcileToken", None)
     row.mapping_json = meta
     session.flush()
-    return _forward(session, row)
+    return _queue_forward_intent(session, row)
 
 
 def mark_forward_reconciled(

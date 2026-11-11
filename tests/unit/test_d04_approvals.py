@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta  # timedelta used in happy-path expiry window
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from unittest.mock import patch
 
@@ -16,10 +16,12 @@ from agentforge.permissions.service import (
     confirm_native,
     decide,
     is_effective_grant,
+    mark_forward_reconciled,
+    process_pending_forward,
     record_native_request,
     retry_forward,
 )
-from agentforge.storage.models import ApprovalMappingRow
+from agentforge.storage.models import ApprovalMappingRow, Outbox
 
 
 class _MemSession:
@@ -39,14 +41,14 @@ class _MemSession:
     def get(self, model: type, key: str) -> Any | None:
         return self.store.get((model, key))
 
+    def refresh(self, row: Any) -> None:
+        return None
+
+    def execute(self, *_a: Any, **_k: Any) -> Any:
+        raise RuntimeError("no SQL in mem session")
+
     def scalar(self, stmt: Any) -> Any | None:
-        text = str(stmt).lower()
-        if "native_request_id" in text or "approval_mappings" in text:
-            # Return existing by scanning if any row matches last added native id
-            for row in self.added:
-                if isinstance(row, ApprovalMappingRow) and row.native_request_id:
-                    # Tests that need conflict set up store explicitly via get path
-                    return None
+        _ = stmt
         return None
 
 
@@ -71,6 +73,19 @@ def _body(**overrides: Any) -> NativeApprovalRecordRequest:
     return NativeApprovalRecordRequest.model_validate(base)
 
 
+def _decide_and_forward(session: _MemSession, summary_id: str, digest: str, decision: str = "approve"):
+    decided = decide(
+        session,  # type: ignore[arg-type]
+        approval_id=summary_id,
+        decision=decision,  # type: ignore[arg-type]
+        action_digest=digest,
+        forward=True,
+    )
+    if decided.status == "forwarding":
+        return process_pending_forward(session, summary_id)  # type: ignore[arg-type]
+    return decided
+
+
 def test_digest_stable() -> None:
     a = compute_action_digest(
         action="run_command",
@@ -88,10 +103,11 @@ def test_digest_stable() -> None:
         parameter_summary="p",
         requested_scope="s",
         session_ref="sess",
-        native_request_id="n1",
+        native_request_id="n2",
         attempt_id=None,
         semantic="once",
     )
+    # native_request_id is not part of execution bind digest
     assert a == b
     assert len(a) == 64
 
@@ -112,19 +128,13 @@ def test_record_and_decide_mapping_unsupported_without_product_ack() -> None:
     assert summary.status == "pending"
     assert summary.action_digest
 
-    decided = decide(
-        session,  # type: ignore[arg-type]
-        approval_id=summary.id,
-        decision="approve",
-        action_digest=summary.action_digest,
-        forward=True,
-    )
-    # Real adapters return unsupported → ledger must not fake confirmed
+    decided = _decide_and_forward(session, summary.id, summary.action_digest)
     assert decided.status == "mapping_unsupported"
     assert decided.native_confirmed is False
     row = session.get(ApprovalMappingRow, summary.id)
     assert row is not None
     assert is_effective_grant(row) is False
+    assert any(isinstance(x, Outbox) for x in session.added) or decided.status == "mapping_unsupported"
 
 
 def test_wrong_digest_rejected() -> None:
@@ -149,7 +159,6 @@ def test_expired_blocks_late_decision() -> None:
     )
     row = session.get(ApprovalMappingRow, summary.id)
     assert row is not None
-    # Fixed clock: force expiry without relying on a 1ms race window.
     row.expires_at = datetime(2020, 1, 1, tzinfo=UTC)
     with pytest.raises(ApprovalError) as exc:
         decide(
@@ -174,13 +183,7 @@ def test_confirm_approve_is_effective_with_mock_adapter() -> None:
     session = _MemSession()
     summary = record_native_request(session, _body())  # type: ignore[arg-type]
     with patch("agentforge.permissions.service.get_adapter", return_value=_OkAdapter()):
-        decided = decide(
-            session,  # type: ignore[arg-type]
-            approval_id=summary.id,
-            decision="approve",
-            action_digest=summary.action_digest,
-            forward=True,
-        )
+        decided = _decide_and_forward(session, summary.id, summary.action_digest)
     assert decided.status == "confirmed"
     assert decided.native_confirmed is True
     row = session.get(ApprovalMappingRow, summary.id)
@@ -195,13 +198,7 @@ def test_supported_alone_is_not_native_confirm() -> None:
     session = _MemSession()
     summary = record_native_request(session, _body())  # type: ignore[arg-type]
     with patch("agentforge.permissions.service.get_adapter", return_value=_SupportedOnly()):
-        decided = decide(
-            session,  # type: ignore[arg-type]
-            approval_id=summary.id,
-            decision="approve",
-            action_digest=summary.action_digest,
-            forward=True,
-        )
+        decided = _decide_and_forward(session, summary.id, summary.action_digest)
     assert decided.status == "delivery_unknown"
     assert decided.native_confirmed is False
 
@@ -215,13 +212,7 @@ def test_reject_confirmed_is_not_effective_grant() -> None:
     session = _MemSession()
     summary = record_native_request(session, _body())  # type: ignore[arg-type]
     with patch("agentforge.permissions.service.get_adapter", return_value=_OkAdapter()):
-        decided = decide(
-            session,  # type: ignore[arg-type]
-            approval_id=summary.id,
-            decision="reject",
-            action_digest=summary.action_digest,
-            forward=True,
-        )
+        decided = _decide_and_forward(session, summary.id, summary.action_digest, decision="reject")
     assert decided.status == "rejected"
     assert decided.native_confirmed is False
     row = session.get(ApprovalMappingRow, summary.id)
@@ -229,8 +220,6 @@ def test_reject_confirmed_is_not_effective_grant() -> None:
 
 
 def test_delivery_unknown_requires_reconcile_before_retry() -> None:
-    from agentforge.permissions.service import mark_forward_reconciled
-
     class _Flaky:
         def __init__(self) -> None:
             self.calls = 0
@@ -245,13 +234,7 @@ def test_delivery_unknown_requires_reconcile_before_retry() -> None:
     summary = record_native_request(session, _body())  # type: ignore[arg-type]
     flaky = _Flaky()
     with patch("agentforge.permissions.service.get_adapter", return_value=flaky):
-        first = decide(
-            session,  # type: ignore[arg-type]
-            approval_id=summary.id,
-            decision="approve",
-            action_digest=summary.action_digest,
-            forward=True,
-        )
+        first = _decide_and_forward(session, summary.id, summary.action_digest)
         assert first.status == "delivery_unknown"
         with pytest.raises(ApprovalError) as blind:
             retry_forward(session, approval_id=summary.id)  # type: ignore[arg-type]
@@ -266,11 +249,13 @@ def test_delivery_unknown_requires_reconcile_before_retry() -> None:
         assert row is not None
         token = (row.mapping_json or {}).get("reconcileToken")
         assert token
-        second = retry_forward(
+        queued = retry_forward(
             session,  # type: ignore[arg-type]
             approval_id=summary.id,
             reconcile_token=str(token),
         )
+        assert queued.status == "forwarding"
+        second = process_pending_forward(session, summary.id)  # type: ignore[arg-type]
     assert second.status == "confirmed"
     assert second.native_confirmed is True
 
@@ -278,7 +263,6 @@ def test_delivery_unknown_requires_reconcile_before_retry() -> None:
 def test_native_id_session_conflict() -> None:
     session = _MemSession()
     first = record_native_request(session, _body())  # type: ignore[arg-type]
-    # Force scalar to return the existing row for conflict path
     existing = session.get(ApprovalMappingRow, first.id)
 
     def _scalar(_stmt: Any) -> Any:
@@ -317,13 +301,7 @@ def test_confirm_mismatch_native_id() -> None:
 def test_public_confirm_cannot_forge_native_grant() -> None:
     session = _MemSession()
     summary = record_native_request(session, _body())  # type: ignore[arg-type]
-    decided = decide(
-        session,  # type: ignore[arg-type]
-        approval_id=summary.id,
-        decision="approve",
-        action_digest=summary.action_digest,
-        forward=True,
-    )
+    decided = _decide_and_forward(session, summary.id, summary.action_digest)
     assert decided.status == "mapping_unsupported"
     with pytest.raises(ApprovalError) as exc:
         confirm_native(

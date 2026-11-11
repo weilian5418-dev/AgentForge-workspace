@@ -1,5 +1,6 @@
 """Native approval mapping and PermissionBridge (BE-06 / D04)."""
 
+from agentforge.permissions.action import ActionDescriptor, action_descriptor_digest
 from agentforge.permissions.bridge import BridgeResult, map_user_decision, scope_fits
 from agentforge.permissions.digest import compute_action_digest
 from agentforge.permissions.service import (
@@ -12,6 +13,7 @@ from agentforge.permissions.service import (
     is_effective_grant,
     list_approvals,
     mark_forward_reconciled,
+    process_pending_forward,
     record_native_request,
     retry_forward,
     revoke_grant,
@@ -19,8 +21,10 @@ from agentforge.permissions.service import (
 )
 
 __all__ = [
+    "ActionDescriptor",
     "ApprovalError",
     "BridgeResult",
+    "action_descriptor_digest",
     "assert_action_executable",
     "compute_action_digest",
     "confirm_native",
@@ -31,6 +35,7 @@ __all__ = [
     "list_approvals",
     "map_user_decision",
     "mark_forward_reconciled",
+    "process_pending_forward",
     "record_native_request",
     "retry_forward",
     "revoke_grant",

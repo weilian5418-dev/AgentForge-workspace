@@ -32,6 +32,12 @@ class _MemSession:
     def get(self, model: type, key: str) -> Any | None:
         return self.store.get((model, key))
 
+    def refresh(self, row: Any) -> None:
+        return None
+
+    def execute(self, *_a: Any, **_k: Any) -> Any:
+        raise RuntimeError("mem session has no SQL")
+
 
 def _issue(
     svc: RunnerService,
@@ -228,6 +234,63 @@ def test_symlink_escape(tmp_path: Path) -> None:
     with pytest.raises(RunnerPathError) as exc:
         resolve_under_workspace(root, "leak/secret.txt")
     assert exc.value.code in {"symlink_escape", "path_escape"}
+
+
+def test_approval_must_match_final_action_descriptor(tmp_path: Path) -> None:
+    """Approve read A; issue write B with same attempt → rejected at issue."""
+    from agentforge.permissions.action import ActionDescriptor, action_descriptor_digest
+    from agentforge.storage.models import ApprovalMappingRow
+
+    session = _MemSession()
+    now = datetime.now(UTC)
+    approved = ActionDescriptor(
+        operation_type="runner:read_snippet",
+        params={"path": "a.txt", "mode": "read"},
+        workspace_id="ws_1",
+        workspace_root=str(tmp_path.resolve()),
+        scope="ws_1/",
+        attempt_id="att_1",
+        generation=1,
+    )
+    digest = action_descriptor_digest(approved)
+    session.add(
+        ApprovalMappingRow(
+            id="appr_bind",
+            run_id=None,
+            instance_id=None,
+            role_id=None,
+            stage_id=None,
+            attempt_id="att_1",
+            action_digest=digest,
+            action="read",
+            native_request_id="n1",
+            status="confirmed",
+            user_decision="approve",
+            native_confirmed=True,
+            mapping_json={"semantic": "once", "sessionRef": "s1"},
+            expires_at=now + timedelta(hours=1),
+            created_at=now,
+            updated_at=now,
+        )
+    )
+    svc = RunnerService(session)  # type: ignore[arg-type]
+    with pytest.raises(RunnerError) as exc:
+        svc.issue(
+            RunnerTicketIssueRequest.model_validate(
+                {
+                    "profileId": "render",
+                    "workspaceId": "ws_1",
+                    "workspaceRoot": str(tmp_path),
+                    "scope": "ws_1/",
+                    "attemptId": "att_1",
+                    "params": {"path": "b.txt", "content": "write"},
+                    "expiresAt": now + timedelta(hours=1),
+                    "approvalId": "appr_bind",
+                    "requireEffectiveApproval": True,
+                }
+            )
+        )
+    assert exc.value.code == "approval_action_mismatch"
 
 
 def test_execute_profile_check_allowlist(tmp_path: Path) -> None:

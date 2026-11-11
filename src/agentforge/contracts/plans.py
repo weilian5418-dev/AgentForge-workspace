@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import Field
 
@@ -172,12 +172,18 @@ class NativeApprovalRecordRequest(ApiInputModel):
     expires_at: UtcDateTime
     action_digest: Sha256Hex | None = Field(
         default=None,
-        description="Optional client digest; server recomputes and rejects mismatches.",
+        description="Optional client digest; server recomputes ActionDescriptor and rejects mismatches.",
     )
     native_options: list[ShortText] = Field(
         default_factory=lambda: ["allow", "deny"],
         max_length=16,
     )
+    # Typed final-action bind (shared with Runner). When set, digest uses these fields.
+    workspace_id: OpaqueId | None = None
+    workspace_root: ShortText | None = None
+    params: dict[str, Any] | None = None
+    environment_id: OpaqueId | None = None
+    generation: int | None = Field(default=None, ge=1, strict=True)
     run_id: OpaqueId | None = None
     instance_id: OpaqueId | None = None
     role_id: OpaqueId | None = None

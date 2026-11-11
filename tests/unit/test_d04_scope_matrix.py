@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
+from typing import Any
+
 import pytest
 
 from agentforge.permissions.bridge import args_digest_for, map_user_decision, scope_fits
@@ -12,7 +15,6 @@ from agentforge.permissions.service import (
     try_consume_once,
 )
 from agentforge.storage.models import ApprovalMappingRow
-from datetime import UTC, datetime, timedelta
 
 
 def test_path_prefix_does_not_cover_sibling_name() -> None:
@@ -84,11 +86,16 @@ def test_once_consume_only_once() -> None:
         created_at=now,
         updated_at=now,
     )
-    session = _S(row)
+    class _S2(_S):
+        def execute(self, *_a: Any, **_k: Any) -> Any:
+            raise RuntimeError("mem")
+
+    session = _S2(row)
     assert grant_record_looks_valid(row) is True
-    assert try_consume_once(session, row) is True  # type: ignore[arg-type]
+    assert try_consume_once(session, row, operation_id="rop_1") is True  # type: ignore[arg-type]
     assert row.status == "consumed"
-    assert try_consume_once(session, row) is False  # type: ignore[arg-type]
+    assert try_consume_once(session, row, operation_id="rop_1") is True  # type: ignore[arg-type]
+    assert try_consume_once(session, row, operation_id="rop_2") is False  # type: ignore[arg-type]
 
 
 def test_assert_action_rejects_digest_and_session_mismatch() -> None:
