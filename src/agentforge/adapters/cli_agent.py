@@ -107,9 +107,15 @@ class CliCodingAgentAdapter:
         return unsupported("message delivery not verified in D03")
 
     def respond_approval(
-        self, *, session_ref: str, native_request_id: str, decision: str
+        self,
+        *,
+        session_ref: str,
+        native_request_id: str,
+        decision: str,
+        semantic: str | None = None,
+        mapped_options: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        _ = (session_ref, native_request_id, decision)
+        _ = (session_ref, native_request_id, decision, semantic, mapped_options)
         return unsupported(
             "cli agent native approval round-trip not evidenced; "
             "platform ledger may mark mapping_unsupported"

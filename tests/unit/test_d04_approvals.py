@@ -164,10 +164,10 @@ def test_expired_blocks_late_decision() -> None:
 
 def test_confirm_approve_is_effective_with_mock_adapter() -> None:
     class _OkAdapter:
-        def respond_approval(self, *, session_ref: str, native_request_id: str, decision: str):
+        def respond_approval(self, *, session_ref: str, native_request_id: str, decision: str, **_kw):
             assert decision == "allow"
             return {
-                "status": "supported",
+                "status": "acked",
                 "confirmationRef": f"ack:{native_request_id}:{session_ref}",
             }
 
@@ -187,11 +187,30 @@ def test_confirm_approve_is_effective_with_mock_adapter() -> None:
     assert is_effective_grant(row) is True  # type: ignore[arg-type]
 
 
+def test_supported_alone_is_not_native_confirm() -> None:
+    class _SupportedOnly:
+        def respond_approval(self, *, session_ref: str, native_request_id: str, decision: str, **_kw):
+            return {"status": "supported", "detail": "interface exists"}
+
+    session = _MemSession()
+    summary = record_native_request(session, _body())  # type: ignore[arg-type]
+    with patch("agentforge.permissions.service.get_adapter", return_value=_SupportedOnly()):
+        decided = decide(
+            session,  # type: ignore[arg-type]
+            approval_id=summary.id,
+            decision="approve",
+            action_digest=summary.action_digest,
+            forward=True,
+        )
+    assert decided.status == "delivery_unknown"
+    assert decided.native_confirmed is False
+
+
 def test_reject_confirmed_is_not_effective_grant() -> None:
     class _OkAdapter:
-        def respond_approval(self, *, session_ref: str, native_request_id: str, decision: str):
+        def respond_approval(self, *, session_ref: str, native_request_id: str, decision: str, **_kw):
             assert decision == "deny"
-            return {"status": "supported", "confirmationRef": "ack-deny"}
+            return {"status": "acked", "confirmationRef": "ack-deny"}
 
     session = _MemSession()
     summary = record_native_request(session, _body())  # type: ignore[arg-type]
@@ -203,22 +222,24 @@ def test_reject_confirmed_is_not_effective_grant() -> None:
             action_digest=summary.action_digest,
             forward=True,
         )
-    assert decided.status == "confirmed"
+    assert decided.status == "rejected"
     assert decided.native_confirmed is False
     row = session.get(ApprovalMappingRow, summary.id)
     assert is_effective_grant(row) is False  # type: ignore[arg-type]
 
 
-def test_delivery_unknown_retry_same_decision_only() -> None:
+def test_delivery_unknown_requires_reconcile_before_retry() -> None:
+    from agentforge.permissions.service import mark_forward_reconciled
+
     class _Flaky:
         def __init__(self) -> None:
             self.calls = 0
 
-        def respond_approval(self, *, session_ref: str, native_request_id: str, decision: str):
+        def respond_approval(self, *, session_ref: str, native_request_id: str, decision: str, **_kw):
             self.calls += 1
             if self.calls == 1:
                 return {"status": "unknown", "detail": "timeout"}
-            return {"status": "supported", "confirmationRef": "ack-late"}
+            return {"status": "acked", "confirmationRef": "ack-late"}
 
     session = _MemSession()
     summary = record_native_request(session, _body())  # type: ignore[arg-type]
@@ -232,7 +253,24 @@ def test_delivery_unknown_retry_same_decision_only() -> None:
             forward=True,
         )
         assert first.status == "delivery_unknown"
-        second = retry_forward(session, approval_id=summary.id)  # type: ignore[arg-type]
+        with pytest.raises(ApprovalError) as blind:
+            retry_forward(session, approval_id=summary.id)  # type: ignore[arg-type]
+        assert blind.value.code == "reconcile_required"
+        mark_forward_reconciled(
+            session,  # type: ignore[arg-type]
+            approval_id=summary.id,
+            unsent=True,
+            inspect_ref="inspect:unsent",
+        )
+        row = session.get(ApprovalMappingRow, summary.id)
+        assert row is not None
+        token = (row.mapping_json or {}).get("reconcileToken")
+        assert token
+        second = retry_forward(
+            session,  # type: ignore[arg-type]
+            approval_id=summary.id,
+            reconcile_token=str(token),
+        )
     assert second.status == "confirmed"
     assert second.native_confirmed is True
 

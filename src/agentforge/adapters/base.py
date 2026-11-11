@@ -61,7 +61,13 @@ class AgentAdapter(Protocol):
     def deliver_message(self, *, session_ref: str, message: dict[str, Any]) -> dict[str, Any]: ...
 
     def respond_approval(
-        self, *, session_ref: str, native_request_id: str, decision: str
+        self,
+        *,
+        session_ref: str,
+        native_request_id: str,
+        decision: str,
+        semantic: str | None = None,
+        mapped_options: dict[str, Any] | None = None,
     ) -> dict[str, Any]: ...
 
     def request_stop(self, *, session_ref: str, operation_id: str) -> dict[str, Any]: ...

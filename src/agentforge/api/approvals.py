@@ -56,6 +56,12 @@ def _map(exc: ApprovalError) -> HTTPException:
         "invalid_state": 400,
         "confirm_not_allowed": 409,
         "trusted_confirm_required": 403,
+        "reconcile_required": 409,
+        "grant_not_effective": 403,
+        "session_mismatch": 403,
+        "attempt_mismatch": 403,
+        "instance_mismatch": 403,
+        "stage_mismatch": 403,
     }.get(exc.code, 400)
     return HTTPException(status, f"{exc.code}: {exc.message}")
 
@@ -151,12 +157,15 @@ def post_retry_forward(
     request: Request,
     approval_id: str,
     settings: Annotated[Settings, Depends(_settings)],
+    reconcile_token: str | None = None,
 ) -> ApprovalSummary:
     if not admits_new_work(read_admission(settings)):
         raise HTTPException(503, "Admission does not accept new work")
     engine = _engine(request, settings)
     try:
         with unit_of_work_connection(engine) as uow:
-            return retry_forward(uow.session, approval_id=approval_id)
+            return retry_forward(
+                uow.session, approval_id=approval_id, reconcile_token=reconcile_token
+            )
     except ApprovalError as exc:
         raise _map(exc) from exc

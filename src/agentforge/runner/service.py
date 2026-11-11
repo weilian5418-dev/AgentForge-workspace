@@ -13,7 +13,11 @@ from agentforge.contracts.runner import (
     RunnerTicket,
     RunnerTicketIssueRequest,
 )
-from agentforge.permissions.service import is_effective_grant
+from agentforge.permissions.service import (
+    ApprovalError,
+    assert_action_executable,
+    try_consume_once,
+)
 from agentforge.runner.paths import RunnerPathError, resolve_workspace_root
 from agentforge.runner.profiles import execute_profile, get_profile
 from agentforge.runner.tickets import compute_runner_digest
@@ -156,10 +160,24 @@ class RunnerService:
             if not row.approval_id:
                 raise RunnerError("approval_required", "Effective approval_id required")
             approval = self.session.get(ApprovalMappingRow, row.approval_id)
-            if approval is None or not is_effective_grant(approval):
+            if approval is None:
                 raise RunnerError(
                     "approval_not_effective",
                     "D04 grant is not native-effective for this operation",
+                )
+            try:
+                # Runner digest ≠ approval digest; bind on attempt/instance when present.
+                assert_action_executable(
+                    approval,
+                    action_digest=None,
+                    attempt_id=row.attempt_id,
+                )
+            except ApprovalError as exc:
+                raise RunnerError("approval_not_effective", exc.message) from exc
+            if not try_consume_once(self.session, approval):
+                raise RunnerError(
+                    "approval_consumed",
+                    "Once-scoped grant already consumed",
                 )
 
         spec = get_profile(row.profile_id)
