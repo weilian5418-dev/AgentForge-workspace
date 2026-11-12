@@ -1513,6 +1513,47 @@ def run_get(
     emit(payload, as_json=json_out, human=f"run={view.id} status={view.status}")
 
 
+@run_app.command("select-integration")
+def run_select_integration(
+    run_id: str = typer.Option(..., "--run-id"),
+    handoff_ref: str = typer.Option(..., "--handoff-ref"),
+    handoff_hash: str = typer.Option(..., "--handoff-hash"),
+    idempotency_key: str = typer.Option(..., "--idempotency-key"),
+    merge_policy_ref: str | None = typer.Option(None, "--merge-policy-ref"),
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """Fix released handoff inputs into an immutable selection. Does not build."""
+    from agentforge.contracts.integrations import IntegrationSelectionRequest
+    from agentforge.integration.selection import SelectionError, create_selection
+    from agentforge.queries.authorization import api_principal
+
+    _settings, engine, uow_fn = _run_service()
+    try:
+        with uow_fn(engine) as uow:
+            view = create_selection(
+                uow.session,
+                principal=api_principal(),
+                run_id=run_id,
+                request=IntegrationSelectionRequest.model_validate(
+                    {
+                        "handoffRef": handoff_ref,
+                        "handoffHash": handoff_hash,
+                        "idempotencyKey": idempotency_key,
+                        "mergePolicyRef": merge_policy_ref,
+                    }
+                ),
+            )
+            payload = view.model_dump(mode="json", by_alias=True)
+    except SelectionError as exc:
+        typer.echo(f"{exc.code}: {exc.message}", err=True)
+        raise typer.Exit(FAILURE) from None
+    emit(
+        payload,
+        as_json=json_out,
+        human=f"selection={view.selection_id} hash={view.selection_hash[:12]}…",
+    )
+
+
 @run_app.command("events")
 def run_events(
     run_id: str = typer.Option(..., "--run-id"),

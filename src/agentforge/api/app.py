@@ -22,6 +22,7 @@ from agentforge.api.collaboration import router as collaboration_router
 from agentforge.api.discovery import router as discovery_router
 from agentforge.api.events import router as events_router
 from agentforge.api.git import router as git_router
+from agentforge.api.integrations import router as integrations_router
 from agentforge.api.instances import router as instances_router
 from agentforge.api.projects import router as projects_router
 from agentforge.api.providers import router as providers_router
@@ -305,6 +306,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(projects_router, dependencies=[Depends(authenticate)])
     app.include_router(runs_router, dependencies=[Depends(authenticate)])
     app.include_router(events_router, dependencies=[Depends(authenticate)])
+    app.include_router(integrations_router, dependencies=[Depends(authenticate)])
     app.include_router(collaboration_router, dependencies=[Depends(authenticate)])
     app.include_router(instances_router, dependencies=[Depends(authenticate)])
     app.include_router(stages_router, dependencies=[Depends(authenticate)])
