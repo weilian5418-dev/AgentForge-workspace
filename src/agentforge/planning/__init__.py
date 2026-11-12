@@ -6,12 +6,14 @@ from agentforge.planning.compiler import (
     CompilerFacts,
     compile_plan,
 )
+from agentforge.planning.context import PlanningContextBuilder, PlanningContextError
 from agentforge.planning.hashing import (
     CONTRACT_HASH_ALGO,
     PLAN_HASH_ALGO,
     compute_contract_hash,
     compute_plan_hash,
 )
+from agentforge.planning.proposals import ProposalError, ProposalGenerator, build_rules_draft
 from agentforge.planning.repository import PlanRepository, plan_row_from_spec
 
 __all__ = [
@@ -21,6 +23,11 @@ __all__ = [
     "CompilerFacts",
     "PLAN_HASH_ALGO",
     "PlanRepository",
+    "PlanningContextBuilder",
+    "PlanningContextError",
+    "ProposalError",
+    "ProposalGenerator",
+    "build_rules_draft",
     "compile_plan",
     "compute_contract_hash",
     "compute_plan_hash",
