@@ -1729,3 +1729,99 @@ def run_prepare(
         as_json=json_out,
         human=f"accepted operation={accepted.operation_id} (instances preparing)",
     )
+
+stage_app = typer.Typer(help="Stage gates / submissions / reviews (D10)")
+app.add_typer(stage_app, name="stage")
+
+
+@stage_app.command("list")
+def stage_list(
+    run_id: str = typer.Option(..., "--run-id"),
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """List stages and blocked waiting reasons for a run."""
+    from agentforge.stages.service import StageService
+
+    _settings, engine, uow_fn = _run_service()
+    with uow_fn(engine) as uow:
+        items = StageService(uow.session).list_stages(run_id)
+        payload = [i.model_dump(mode="json", by_alias=True) for i in items]
+    emit(payload, as_json=json_out, human=f"stages={len(payload)}")
+
+
+@stage_app.command("get")
+def stage_get(
+    stage_id: str = typer.Option(..., "--stage-id"),
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """Show current cycle, candidates, and gate status."""
+    from agentforge.stages.errors import StageError
+    from agentforge.stages.service import StageService
+
+    _settings, engine, uow_fn = _run_service()
+    try:
+        with uow_fn(engine) as uow:
+            view = StageService(uow.session).get_stage(stage_id)
+            payload = {
+                "stage": view["stage"].model_dump(mode="json", by_alias=True),
+                "reviewCycle": None
+                if view["reviewCycle"] is None
+                else view["reviewCycle"].model_dump(mode="json", by_alias=True),
+                "candidateSet": None
+                if view["candidateSet"] is None
+                else view["candidateSet"].model_dump(mode="json", by_alias=True),
+                "writeAccessClosed": view["writeAccessClosed"],
+            }
+    except StageError as exc:
+        typer.echo(f"{exc.code}: {exc.message}", err=True)
+        raise typer.Exit(FAILURE) from None
+    emit(payload, as_json=json_out, human=f"stage={stage_id} status={payload['stage'].get('status')}")
+
+
+@stage_app.command("submit")
+def stage_submit(
+    stage_id: str = typer.Option(..., "--stage-id"),
+    work_package_id: str = typer.Option(..., "--work-package-id"),
+    attempt_id: str = typer.Option(..., "--attempt-id"),
+    idempotency_key: str | None = typer.Option(None, "--idempotency-key"),
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """Accept submission intent only. No --force-pass."""
+    from agentforge.contracts.stages import StageSubmissionRequest
+    from agentforge.stages.errors import StageError
+    from agentforge.stages.service import StageService
+
+    _settings, engine, uow_fn = _run_service()
+    try:
+        with uow_fn(engine) as uow:
+            accepted = StageService(uow.session).submit(
+                stage_id,
+                StageSubmissionRequest.model_validate(
+                    {
+                        "workPackageIds": [work_package_id],
+                        "attemptRefs": [attempt_id],
+                        "idempotencyKey": idempotency_key,
+                    }
+                ),
+                submitter_ref="cli",
+            )
+            payload = accepted.model_dump(mode="json", by_alias=True)
+    except StageError as exc:
+        typer.echo(f"{exc.code}: {exc.message}", err=True)
+        raise typer.Exit(FAILURE) from None
+    emit(payload, as_json=json_out, human=f"accepted operation={accepted.operation_id}")
+
+
+@stage_app.command("rework")
+def stage_rework(
+    stage_id: str = typer.Option(..., "--stage-id"),
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """List rework orders and remaining rounds."""
+    from agentforge.stages.service import StageService
+
+    _settings, engine, uow_fn = _run_service()
+    with uow_fn(engine) as uow:
+        items = StageService(uow.session).list_rework_orders(stage_id)
+        payload = [i.model_dump(mode="json", by_alias=True) for i in items]
+    emit(payload, as_json=json_out, human=f"reworkOrders={len(payload)}")
