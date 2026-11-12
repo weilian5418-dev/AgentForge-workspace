@@ -926,10 +926,29 @@ class StageRow(Base):
         Text, ForeignKey("app.runs.id", ondelete="CASCADE"), nullable=False
     )
     plan_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    assignment_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    gate_policy_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
     gate_policy: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     status: Mapped[str] = mapped_column(Text, nullable=False)
+    waiting_reason: Mapped[str] = mapped_column(
+        Text, nullable=False, server_default=text("'none'")
+    )
+    concurrency_version: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default=text("1")
+    )
     repair_round: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
     current_candidate_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    current_review_cycle_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    current_candidate_set_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    required_work_packages: Mapped[list[Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    dependencies: Mapped[list[Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    write_access_closed: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("false")
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
@@ -953,7 +972,9 @@ class GateDecisionRow(Base):
 
     id: Mapped[str] = mapped_column(Text, nullable=False)
     stage_id: Mapped[str] = mapped_column(Text, nullable=False)
-    candidate_id: Mapped[str] = mapped_column(Text, nullable=False)
+    review_cycle_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    candidate_set_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    candidate_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     manifest_hash: Mapped[str] = mapped_column(Text, nullable=False)
     contract_hash: Mapped[str] = mapped_column(Text, nullable=False)
     gate_policy_version: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -961,6 +982,10 @@ class GateDecisionRow(Base):
         JSONB, nullable=False, server_default=text("'[]'::jsonb")
     )
     review_refs: Mapped[list[Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    user_decision_ref: Mapped[str | None] = mapped_column(Text, nullable=True)
+    allowed_consume_work_package_ids: Mapped[list[Any]] = mapped_column(
         JSONB, nullable=False, server_default=text("'[]'::jsonb")
     )
     result: Mapped[str] = mapped_column(Text, nullable=False)
@@ -1226,13 +1251,107 @@ class StageSubmissionRow(Base):
     stage_id: Mapped[str] = mapped_column(
         Text, ForeignKey("app.stages.id", ondelete="CASCADE"), nullable=False
     )
+    submitter_ref: Mapped[str | None] = mapped_column(Text, nullable=True)
+    work_package_ids: Mapped[list[Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
     attempt_refs: Mapped[list[Any]] = mapped_column(JSONB, nullable=False)
+    output_location_refs: Mapped[list[Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    candidate_refs: Mapped[list[Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
     stop_evidence_refs: Mapped[list[Any]] = mapped_column(
         JSONB, nullable=False, server_default=text("'[]'::jsonb")
     )
-    candidate_id: Mapped[str] = mapped_column(Text, nullable=False)
-    manifest_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    candidate_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    manifest_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    operation_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    plan_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    assignment_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    generation: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    idempotency_key: Mapped[str | None] = mapped_column(Text, nullable=True)
     submitted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class CandidateSetRow(Base):
+    __tablename__ = "candidate_sets"
+    __table_args__ = (
+        PrimaryKeyConstraint("id", name="candidate_sets_pkey"),
+        Index("candidate_sets_stage_idx", "stage_id", "created_at"),
+    )
+
+    id: Mapped[str] = mapped_column(Text, nullable=False)
+    stage_id: Mapped[str] = mapped_column(
+        Text, ForeignKey("app.stages.id", ondelete="CASCADE"), nullable=False
+    )
+    submission_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    members: Mapped[list[Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    required_work_packages_complete: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("false")
+    )
+    upstream_input_versions: Mapped[list[Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    baseline_or_integration_ref: Mapped[str | None] = mapped_column(Text, nullable=True)
+    stop_evidence_refs: Mapped[list[Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    contract_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    environment_fingerprint: Mapped[str] = mapped_column(Text, nullable=False)
+    manifest_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class ReviewCycleRow(Base):
+    __tablename__ = "review_cycles"
+    __table_args__ = (
+        PrimaryKeyConstraint("id", name="review_cycles_pkey"),
+        UniqueConstraint("submission_id", name="review_cycles_submission_unique"),
+    )
+
+    id: Mapped[str] = mapped_column(Text, nullable=False)
+    stage_id: Mapped[str] = mapped_column(
+        Text, ForeignKey("app.stages.id", ondelete="CASCADE"), nullable=False
+    )
+    submission_id: Mapped[str] = mapped_column(Text, nullable=False)
+    candidate_set_id: Mapped[str] = mapped_column(Text, nullable=False)
+    candidate_set_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    contract_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    gate_policy_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    environment_fingerprint: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(Text, nullable=False)
+    repair_round: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
+    opened_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class ReviewRequestRow(Base):
+    __tablename__ = "review_requests"
+    __table_args__ = (PrimaryKeyConstraint("id", name="review_requests_pkey"),)
+
+    id: Mapped[str] = mapped_column(Text, nullable=False)
+    review_cycle_id: Mapped[str] = mapped_column(Text, nullable=False)
+    stage_id: Mapped[str] = mapped_column(Text, nullable=False)
+    candidate_set_id: Mapped[str] = mapped_column(Text, nullable=False)
+    review_role_id: Mapped[str] = mapped_column(Text, nullable=False)
+    legal_responder_refs: Mapped[list[Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    scope: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(Text, nullable=False, server_default=text("'pending'"))
+    deadline_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
@@ -1243,13 +1362,16 @@ class ReviewReportRow(Base):
     __table_args__ = (PrimaryKeyConstraint("id", name="review_reports_pkey"),)
 
     id: Mapped[str] = mapped_column(Text, nullable=False)
+    review_request_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    review_cycle_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     reviewer_instance_id: Mapped[str] = mapped_column(
         Text, ForeignKey("app.agent_instances.id"), nullable=False
     )
     stage_id: Mapped[str] = mapped_column(
         Text, ForeignKey("app.stages.id", ondelete="CASCADE"), nullable=False
     )
-    candidate_id: Mapped[str] = mapped_column(Text, nullable=False)
+    candidate_set_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    candidate_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     manifest_hash: Mapped[str] = mapped_column(Text, nullable=False)
     contract_hash: Mapped[str] = mapped_column(Text, nullable=False)
     findings: Mapped[list[Any]] = mapped_column(
@@ -1257,6 +1379,124 @@ class ReviewReportRow(Base):
     )
     verdict: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class StageUserDecisionRow(Base):
+    __tablename__ = "stage_user_decisions"
+    __table_args__ = (
+        PrimaryKeyConstraint("id", name="stage_user_decisions_pkey"),
+        UniqueConstraint("request_id", name="stage_user_decisions_request_unique"),
+    )
+
+    id: Mapped[str] = mapped_column(Text, nullable=False)
+    request_id: Mapped[str] = mapped_column(Text, nullable=False)
+    stage_id: Mapped[str] = mapped_column(
+        Text, ForeignKey("app.stages.id", ondelete="CASCADE"), nullable=False
+    )
+    review_cycle_id: Mapped[str] = mapped_column(Text, nullable=False)
+    candidate_set_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    contract_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    gate_policy_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    decision: Mapped[str] = mapped_column(Text, nullable=False)
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    decided_by: Mapped[str] = mapped_column(Text, nullable=False)
+    decided_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class ReworkOrderRow(Base):
+    __tablename__ = "rework_orders"
+    __table_args__ = (
+        PrimaryKeyConstraint("id", name="rework_orders_pkey"),
+        UniqueConstraint(
+            "source_review_cycle_id",
+            "problem_digest",
+            name="rework_orders_cycle_digest_unique",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(Text, nullable=False)
+    stage_id: Mapped[str] = mapped_column(
+        Text, ForeignKey("app.stages.id", ondelete="CASCADE"), nullable=False
+    )
+    source_review_cycle_id: Mapped[str] = mapped_column(Text, nullable=False)
+    source_candidate_set_id: Mapped[str] = mapped_column(Text, nullable=False)
+    target_work_package_id: Mapped[str] = mapped_column(Text, nullable=False)
+    target_role_id: Mapped[str] = mapped_column(Text, nullable=False)
+    problem_digest: Mapped[str] = mapped_column(Text, nullable=False)
+    problems: Mapped[list[Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    allowed_modify_scopes: Mapped[list[Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    checks_to_rerun: Mapped[list[Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    remaining_rounds: Mapped[int] = mapped_column(Integer, nullable=False)
+    involves_plan_or_interface_change: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("false")
+    )
+    status: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class ReleaseRecordRow(Base):
+    __tablename__ = "release_records"
+    __table_args__ = (PrimaryKeyConstraint("id", name="release_records_pkey"),)
+
+    id: Mapped[str] = mapped_column(Text, nullable=False)
+    stage_id: Mapped[str] = mapped_column(
+        Text, ForeignKey("app.stages.id", ondelete="CASCADE"), nullable=False
+    )
+    review_cycle_id: Mapped[str] = mapped_column(Text, nullable=False)
+    gate_decision_id: Mapped[str] = mapped_column(Text, nullable=False)
+    scope_kind: Mapped[str] = mapped_column(Text, nullable=False)
+    work_package_ids: Mapped[list[Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    candidate_versions: Mapped[list[Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    dependency_satisfied_refs: Mapped[list[Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    shared_interface_still_blocked: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("false")
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class EvidenceFingerprintRow(Base):
+    __tablename__ = "evidence_fingerprints"
+    __table_args__ = (
+        PrimaryKeyConstraint("id", name="evidence_fingerprints_pkey"),
+        UniqueConstraint(
+            "content_hash",
+            "contract_hash",
+            "check_definition_hash",
+            "environment_fingerprint",
+            "input_versions_hash",
+            name="evidence_fingerprints_unique",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(Text, nullable=False)
+    evidence_ref: Mapped[str] = mapped_column(Text, nullable=False)
+    content_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    contract_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    check_definition_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    environment_fingerprint: Mapped[str] = mapped_column(Text, nullable=False)
+    input_versions_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    reuse_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
 
 
 class IntegrationVersionRow(Base):
@@ -1902,7 +2142,14 @@ APP_V14_TABLES = (
     "approval_mappings",
     "capability_checks",
     "stage_submissions",
+    "candidate_sets",
+    "review_cycles",
+    "review_requests",
     "review_reports",
+    "stage_user_decisions",
+    "rework_orders",
+    "release_records",
+    "evidence_fingerprints",
     "integration_versions",
     "run_status_reconciliation_batches",
     "run_status_reconciliations",
