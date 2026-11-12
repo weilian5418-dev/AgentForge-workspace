@@ -83,9 +83,18 @@ WorkPackageStatus = Literal[
 
 ArtifactState = Literal["candidate", "validating", "published", "rejected", "superseded"]
 PlanStatus = Literal["proposed", "approved", "rejected", "superseded"]
+CompilationStatus = Literal["valid", "needs_input", "blocked", "invalid"]
+ConfirmationRequestStatus = Literal[
+    "pending",
+    "approved",
+    "rejected",
+    "superseded",
+    "expired",
+]
 CheckStatus = Literal["passed", "failed", "blocked", "not_run"]
 FailureClass = Literal["content", "environment", "transient", "permission"]
 RoutingModeDecision = Literal["single", "team", "needs_input", "undecided"]
+ProposalSource = Literal["rules", "model", "auto"]
 
 
 def ensure_utc(value: datetime) -> datetime:

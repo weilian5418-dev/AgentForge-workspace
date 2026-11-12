@@ -31,7 +31,8 @@ class RunCreateRequest(ApiInputModel):
 
     ``mode=auto`` means the platform may auto-propose a plan; it does **not** mean
     the platform may confirm assignments or start executors without user decisions.
-    ``planningProviderProfileId`` configures the platform planning model only.
+    ``planningProviderProfileId`` configures the platform planning model only;
+    omit it for rules-only planning (do not invent a fake profile).
     """
 
     project_id: OpaqueId
@@ -42,7 +43,16 @@ class RunCreateRequest(ApiInputModel):
     execution_profile: ExecutionProfile = "container"
     failure_policy: FailurePolicy = "dependency-aware"
     budget: BudgetLimitsInput
-    planning_provider_profile_id: OpaqueId = Field(
+    baseline_id: OpaqueId | None = Field(
+        default=None,
+        description="Optional pin of the authorized baseline used for this run.",
+    )
+    idempotency_key: ShortText | None = Field(
+        default=None,
+        description="Client idempotency key for create; same key returns the same run.",
+    )
+    planning_provider_profile_id: OpaqueId | None = Field(
+        default=None,
         validation_alias=AliasChoices(
             "planningProviderProfileId",
             "providerProfileId",  # deprecated alias during migration
@@ -88,7 +98,8 @@ class RunSnapshotResponse(ContractModel):
     execution_profile: ExecutionProfile
     failure_policy: FailurePolicy
     budget: BudgetLimits
-    planning_provider_profile_id: OpaqueId
+    planning_provider_profile_id: OpaqueId | None = None
+    baseline_id: OpaqueId | None = None
     input_refs: list[OpaqueId] = Field(default_factory=list)
     outputs: list[ArtifactKind]
     cancel_requested_at: UtcDateTime | None = None

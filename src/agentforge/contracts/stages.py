@@ -41,6 +41,8 @@ class StageGatePolicy(ContractModel):
 
 
 class Stage(ContractModel):
+    """Runtime stage instance (D09+). Plan-time definitions live in PlanStageDefinition."""
+
     stage_id: OpaqueId
     plan_version: PlanVersion
     dependencies: list[OpaqueId] = Field(default_factory=list, max_length=32)

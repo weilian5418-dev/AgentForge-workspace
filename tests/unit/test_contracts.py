@@ -249,7 +249,7 @@ def test_api_input_model_is_strict_alias_subclass() -> None:
     assert issubclass(RunCreateRequest, ApiInputModel)
 
 
-def test_plan_decision_requires_assignment_and_gate_versions() -> None:
+def test_plan_decision_requires_confirmation_binding() -> None:
     with pytest.raises(ValidationError):
         PlanDecisionRequest.model_validate(
             {
@@ -261,14 +261,18 @@ def test_plan_decision_requires_assignment_and_gate_versions() -> None:
     model = PlanDecisionRequest.model_validate(
         {
             "decision": "approve",
+            "confirmationRequestId": "creq_1",
             "planVersion": 1,
             "planHash": "a" * 64,
             "assignmentVersion": 1,
             "gatePolicyVersion": 1,
+            "statusVersion": 3,
         }
     )
     assert model.assignment_version == 1
     assert model.gate_policy_version == 1
+    assert model.confirmation_request_id == "creq_1"
+    assert model.status_version == 3
 
 
 def test_approval_summary_approved_is_not_native_confirmed() -> None:
