@@ -60,6 +60,8 @@ runner_app = typer.Typer(help="Controlled Runner operations (D05)")
 artifact_app = typer.Typer(help="Artifact bus freeze/verify/publish (D06)")
 git_app = typer.Typer(help="Git worktrees / snapshots / integrate (D07)")
 run_app = typer.Typer(help="Runs / plan propose / confirm (D08)")
+recovery_app = typer.Typer(help="Recovery cases / decisions (D11)")
+driver_app = typer.Typer(help="Driver maintenance / sweep (D11)")
 app.add_typer(auth_app, name="auth")
 app.add_typer(grant_app, name="grant")
 app.add_typer(project_app, name="project")
@@ -71,6 +73,8 @@ app.add_typer(runner_app, name="runner")
 app.add_typer(artifact_app, name="artifact")
 app.add_typer(git_app, name="git")
 app.add_typer(run_app, name="run")
+app.add_typer(recovery_app, name="recovery")
+app.add_typer(driver_app, name="driver")
 
 
 def load_settings() -> Settings:
@@ -1783,6 +1787,208 @@ def run_prepare(
         as_json=json_out,
         human=f"accepted operation={accepted.operation_id} (instances preparing)",
     )
+
+
+@run_app.command("action")
+def run_action(
+    run_id: str = typer.Option(..., "--run-id"),
+    action: str = typer.Option(..., "--action", help="pause|resume|cancel|replan"),
+    expected_status_version: int = typer.Option(..., "--expected-status-version"),
+    idempotency_key: str = typer.Option(..., "--idempotency-key"),
+    reason: str | None = typer.Option(None, "--reason"),
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """Accept run control intent only — does not claim paused/canceled verified."""
+    from agentforge.contracts.runs import RunActionRequest
+    from agentforge.driver.control import RunControlError, RunControlService
+
+    _settings, engine, uow_fn = _run_service()
+    try:
+        with uow_fn(engine) as uow:
+            from agentforge.storage.models import Run
+
+            accepted = RunControlService(uow.session).request_action(
+                run_id,
+                RunActionRequest.model_validate(
+                    {
+                        "action": action,
+                        "expectedStatusVersion": expected_status_version,
+                        "idempotencyKey": idempotency_key,
+                        "reason": reason,
+                    }
+                ),
+                actor="user:cli",
+            )
+            payload = accepted.model_dump(mode="json", by_alias=True)
+            # Surface current coordination phase without claiming native stop.
+            run = uow.session.get(Run, run_id)
+            phase = run.status if run is not None else None
+            payload["coordinationPhase"] = phase
+    except RunControlError as exc:
+        typer.echo(f"{exc.code}: {exc.message}", err=True)
+        raise typer.Exit(FAILURE) from None
+    human = f"accepted operation={accepted.operation_id} phase={phase} (not verified stop)"
+    emit(payload, as_json=json_out, human=human)
+
+
+@run_app.command("waits")
+def run_waits(
+    run_id: str = typer.Option(..., "--run-id"),
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """List open waits for a run (bounded; not a full state snapshot)."""
+    from agentforge.driver.control import RunControlError
+    from agentforge.driver.queries import list_run_waits
+
+    _settings, engine, uow_fn = _run_service()
+    try:
+        with uow_fn(engine) as uow:
+            view = list_run_waits(uow.session, run_id)
+            payload = view.model_dump(mode="json", by_alias=True)
+    except RunControlError as exc:
+        typer.echo(f"{exc.code}: {exc.message}", err=True)
+        raise typer.Exit(FAILURE) from None
+    emit(payload, as_json=json_out, human=f"openWaits={len(view.items)}")
+
+
+@run_app.command("driver")
+def run_driver_status(
+    run_id: str = typer.Option(..., "--run-id"),
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """Public driver status — no lease token."""
+    from agentforge.driver.control import RunControlError
+    from agentforge.driver.queries import get_driver_status
+
+    _settings, engine, uow_fn = _run_service()
+    try:
+        with uow_fn(engine) as uow:
+            view = get_driver_status(uow.session, run_id)
+            payload = view.model_dump(mode="json", by_alias=True)
+    except RunControlError as exc:
+        typer.echo(f"{exc.code}: {exc.message}", err=True)
+        raise typer.Exit(FAILURE) from None
+    emit(
+        payload,
+        as_json=json_out,
+        human=(
+            f"run={run_id} collaboration={view.collaboration_state} "
+            f"waits={view.open_wait_count} wakes={view.pending_wake_count}"
+        ),
+    )
+
+
+@run_app.command("recover")
+def run_recover(
+    run_id: str = typer.Option(..., "--run-id"),
+    idempotency_key: str = typer.Option(..., "--idempotency-key"),
+    reason: str | None = typer.Option(None, "--reason"),
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """Open a recovery case for evidence collection."""
+    from agentforge.recovery.errors import RecoveryError
+    from agentforge.recovery.service import RecoveryService
+
+    _settings, engine, uow_fn = _run_service()
+    try:
+        with uow_fn(engine) as uow:
+            case = RecoveryService(uow.session).open_case(
+                run_id,
+                reason=reason or "cli_recovery_check",
+                request_operation_id=idempotency_key,
+                emit_outbox=True,
+            )
+            payload = case.model_dump(mode="json", by_alias=True)
+    except RecoveryError as exc:
+        typer.echo(f"{exc.code}: {exc.message}", err=True)
+        raise typer.Exit(FAILURE) from None
+    emit(payload, as_json=json_out, human=f"case={case.case_id} status={case.status}")
+
+
+@recovery_app.command("get")
+def recovery_get(
+    case_id: str = typer.Option(..., "--case-id"),
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """Show recovery report: observations, recommendation, applied decision."""
+    from agentforge.recovery.errors import RecoveryError
+    from agentforge.recovery.service import RecoveryService
+
+    _settings, engine, uow_fn = _run_service()
+    try:
+        with uow_fn(engine) as uow:
+            report = RecoveryService(uow.session).get_report(case_id)
+            payload = report.model_dump(mode="json", by_alias=True)
+    except RecoveryError as exc:
+        typer.echo(f"{exc.code}: {exc.message}", err=True)
+        raise typer.Exit(FAILURE) from None
+    rec = report.recommendation.action if report.recommendation else "-"
+    emit(
+        payload,
+        as_json=json_out,
+        human=f"case={case_id} status={report.case.status} recommend={rec}",
+    )
+
+
+@recovery_app.command("decide")
+def recovery_decide(
+    case_id: str = typer.Option(..., "--case-id"),
+    action: str = typer.Option(..., "--action"),
+    context_hash: str = typer.Option(..., "--context-hash"),
+    case_version: int = typer.Option(..., "--case-version"),
+    expected_status_version: int = typer.Option(..., "--expected-status-version"),
+    idempotency_key: str = typer.Option(..., "--idempotency-key"),
+    reason: str | None = typer.Option(None, "--reason"),
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """Apply an explicit recovery decision with version/hash fencing."""
+    from agentforge.contracts.recovery import RecoveryDecisionRequest
+    from agentforge.recovery.errors import RecoveryError
+    from agentforge.recovery.service import RecoveryService
+
+    _settings, engine, uow_fn = _run_service()
+    try:
+        with uow_fn(engine) as uow:
+            accepted = RecoveryService(uow.session).apply_decision(
+                case_id,
+                RecoveryDecisionRequest.model_validate(
+                    {
+                        "decisionKey": idempotency_key,
+                        "decision": action,
+                        "caseVersion": case_version,
+                        "contextHash": context_hash,
+                        "expectedStatusVersion": expected_status_version,
+                        "idempotencyKey": idempotency_key,
+                        "reason": reason,
+                    }
+                ),
+                actor="user:cli",
+            )
+            payload = accepted.model_dump(mode="json", by_alias=True)
+    except RecoveryError as exc:
+        typer.echo(f"{exc.code}: {exc.message}", err=True)
+        raise typer.Exit(FAILURE) from None
+    emit(payload, as_json=json_out, human=f"accepted decision operation={accepted.operation_id}")
+
+
+@driver_app.command("sweep")
+def driver_sweep(
+    once: bool = typer.Option(True, "--once/--loop", help="Single maintenance pass"),
+    limit: int = typer.Option(50, "--limit", min=1, max=500),
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """Trusted local maintenance sweep — does not skip authorization or invent stops."""
+    from agentforge.driver.sweep import sweep_once
+
+    if not once:
+        typer.echo("Only --once is supported in this release", err=True)
+        raise typer.Exit(CONFIG_ERROR)
+    from dataclasses import asdict
+
+    _settings, engine, _uow_fn = _run_service()
+    report = sweep_once(engine, limit=limit)
+    payload = asdict(report)
+    emit(payload, as_json=json_out, human=f"sweep complete limit={limit}")
 
 
 stage_app = typer.Typer(help="Stage gates / submissions / reviews (D10)")

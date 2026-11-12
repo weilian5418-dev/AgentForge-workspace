@@ -1,0 +1,159 @@
+{
+  "$defs": {
+    "RunWait": {
+      "additionalProperties": false,
+      "description": "Persistent wait barrier. Predicate is reason + versioned scope, not arbitrary SQL.",
+      "properties": {
+        "afterSequence": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Aftersequence",
+          "type": "integer"
+        },
+        "createdAt": {
+          "format": "date-time",
+          "title": "Createdat",
+          "type": "string"
+        },
+        "deadlineAt": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Deadlineat"
+        },
+        "predicateVersion": {
+          "minimum": 1,
+          "title": "Predicateversion",
+          "type": "integer"
+        },
+        "reason": {
+          "enum": [
+            "plan_confirmation",
+            "workspace_ready",
+            "session_ready",
+            "task_submission",
+            "native_approval",
+            "stage_review",
+            "user_gate_decision",
+            "stop_verification",
+            "recovery_evidence",
+            "capacity",
+            "dependency",
+            "driver_yield"
+          ],
+          "title": "Reason",
+          "type": "string"
+        },
+        "resolvedAt": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Resolvedat"
+        },
+        "resolvedByRef": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Resolvedbyref"
+        },
+        "runId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Runid",
+          "type": "string"
+        },
+        "scopeJson": {
+          "additionalProperties": true,
+          "title": "Scopejson",
+          "type": "object"
+        },
+        "status": {
+          "default": "open",
+          "enum": [
+            "open",
+            "resolved",
+            "canceled",
+            "superseded"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "threadId": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Threadid"
+        },
+        "waitId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Waitid",
+          "type": "string"
+        },
+        "waitKey": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Waitkey",
+          "type": "string"
+        }
+      },
+      "required": [
+        "waitId",
+        "runId",
+        "waitKey",
+        "reason",
+        "predicateVersion",
+        "createdAt"
+      ],
+      "title": "RunWait",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "items": {
+        "$ref": "#/$defs/RunWait"
+      },
+      "maxItems": 100,
+      "title": "Items",
+      "type": "array"
+    }
+  },
+  "title": "RunWaitListResponse",
+  "type": "object"
+}

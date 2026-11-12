@@ -112,6 +112,38 @@
       "default": null,
       "title": "Cancelrequestedat"
     },
+    "collaborationReadyAt": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Collaborationreadyat"
+    },
+    "collaborationState": {
+      "anyOf": [
+        {
+          "enum": [
+            "idle",
+            "running",
+            "waiting",
+            "ready_for_integration",
+            "blocked"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Collaborationstate"
+    },
     "createdAt": {
       "format": "date-time",
       "title": "Createdat",

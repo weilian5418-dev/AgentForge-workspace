@@ -18,6 +18,7 @@ from starlette.middleware.base import RequestResponseEndpoint
 from agentforge import __version__
 from agentforge.api.approvals import router as approvals_router
 from agentforge.api.artifacts import router as artifacts_router
+from agentforge.api.collaboration import router as collaboration_router
 from agentforge.api.discovery import router as discovery_router
 from agentforge.api.git import router as git_router
 from agentforge.api.instances import router as instances_router
@@ -285,6 +286,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.include_router(projects_router, dependencies=[Depends(authenticate)])
     app.include_router(runs_router, dependencies=[Depends(authenticate)])
+    app.include_router(collaboration_router, dependencies=[Depends(authenticate)])
     app.include_router(instances_router, dependencies=[Depends(authenticate)])
     app.include_router(stages_router, dependencies=[Depends(authenticate)])
     app.include_router(providers_router, dependencies=[Depends(authenticate)])

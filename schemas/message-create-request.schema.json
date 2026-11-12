@@ -162,7 +162,60 @@
     },
     "TaskAssignmentPayload": {
       "additionalProperties": false,
+      "description": "Platform-resolved assignment inputs — callers cannot invent local paths.",
       "properties": {
+        "attemptId": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Attemptid"
+        },
+        "contextBundleRef": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Contextbundleref"
+        },
+        "inputCandidateRefs": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "type": "string"
+          },
+          "maxItems": 32,
+          "title": "Inputcandidaterefs",
+          "type": "array"
+        },
+        "inputReleaseRefs": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "type": "string"
+          },
+          "maxItems": 32,
+          "title": "Inputreleaserefs",
+          "type": "array"
+        },
         "objective": {
           "maxLength": 512,
           "minLength": 1,

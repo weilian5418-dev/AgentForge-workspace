@@ -266,6 +266,76 @@
       "title": "AssignmentConfirmedPayload",
       "type": "object"
     },
+    "driver.wait_registered": {
+      "additionalProperties": false,
+      "properties": {
+        "reason": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        },
+        "threadId": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Threadid"
+        },
+        "waitId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Waitid",
+          "type": "string"
+        }
+      },
+      "required": [
+        "waitId",
+        "reason"
+      ],
+      "title": "DriverWaitRegisteredPayload",
+      "type": "object"
+    },
+    "driver.wake_recorded": {
+      "additionalProperties": false,
+      "properties": {
+        "sourceKind": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Sourcekind",
+          "type": "string"
+        },
+        "sourceRef": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Sourceref",
+          "type": "string"
+        },
+        "wakeSignalId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Wakesignalid",
+          "type": "string"
+        }
+      },
+      "required": [
+        "wakeSignalId",
+        "sourceKind",
+        "sourceRef"
+      ],
+      "title": "DriverWakeRecordedPayload",
+      "type": "object"
+    },
     "instance.needs_reconciliation": {
       "additionalProperties": false,
       "properties": {
@@ -914,6 +984,198 @@
       "title": "ProtocolRequestPayload",
       "type": "object"
     },
+    "recovery.applied": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Action"
+        },
+        "blockerCodes": {
+          "items": {
+            "maxLength": 512,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 16,
+          "title": "Blockercodes",
+          "type": "array"
+        },
+        "caseId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Caseid",
+          "type": "string"
+        },
+        "status": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "caseId",
+        "status"
+      ],
+      "title": "RecoveryLifecyclePayload",
+      "type": "object"
+    },
+    "recovery.blocked": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Action"
+        },
+        "blockerCodes": {
+          "items": {
+            "maxLength": 512,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 16,
+          "title": "Blockercodes",
+          "type": "array"
+        },
+        "caseId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Caseid",
+          "type": "string"
+        },
+        "status": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "caseId",
+        "status"
+      ],
+      "title": "RecoveryLifecyclePayload",
+      "type": "object"
+    },
+    "recovery.observed": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Action"
+        },
+        "blockerCodes": {
+          "items": {
+            "maxLength": 512,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 16,
+          "title": "Blockercodes",
+          "type": "array"
+        },
+        "caseId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Caseid",
+          "type": "string"
+        },
+        "status": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "caseId",
+        "status"
+      ],
+      "title": "RecoveryLifecyclePayload",
+      "type": "object"
+    },
+    "recovery.started": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Action"
+        },
+        "blockerCodes": {
+          "items": {
+            "maxLength": 512,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 16,
+          "title": "Blockercodes",
+          "type": "array"
+        },
+        "caseId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Caseid",
+          "type": "string"
+        },
+        "status": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "caseId",
+        "status"
+      ],
+      "title": "RecoveryLifecyclePayload",
+      "type": "object"
+    },
     "resync_required": {
       "additionalProperties": false,
       "properties": {
@@ -1025,6 +1287,129 @@
       "title": "RoutingDecidedPayload",
       "type": "object"
     },
+    "run.cancel_requested": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Action",
+          "type": "string"
+        },
+        "operationId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Operationid",
+          "type": "string"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "statusVersion": {
+          "minimum": 1,
+          "title": "Statusversion",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "operationId",
+        "action",
+        "statusVersion"
+      ],
+      "title": "RunControlPayload",
+      "type": "object"
+    },
+    "run.canceled": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Action",
+          "type": "string"
+        },
+        "operationId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Operationid",
+          "type": "string"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "statusVersion": {
+          "minimum": 1,
+          "title": "Statusversion",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "operationId",
+        "action",
+        "statusVersion"
+      ],
+      "title": "RunControlPayload",
+      "type": "object"
+    },
+    "run.collaboration_ready": {
+      "additionalProperties": false,
+      "properties": {
+        "assignmentVersion": {
+          "minimum": 1,
+          "title": "Assignmentversion",
+          "type": "integer"
+        },
+        "handoffHash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Handoffhash",
+          "type": "string"
+        },
+        "handoffId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Handoffid",
+          "type": "string"
+        },
+        "planVersion": {
+          "minimum": 1,
+          "title": "Planversion",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "handoffId",
+        "handoffHash",
+        "planVersion",
+        "assignmentVersion"
+      ],
+      "title": "CollaborationReadyPayload",
+      "type": "object"
+    },
     "run.delivery_ready": {
       "additionalProperties": false,
       "properties": {
@@ -1059,6 +1444,138 @@
         "artifactCount"
       ],
       "title": "DeliveryReadyPayload",
+      "type": "object"
+    },
+    "run.pause_requested": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Action",
+          "type": "string"
+        },
+        "operationId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Operationid",
+          "type": "string"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "statusVersion": {
+          "minimum": 1,
+          "title": "Statusversion",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "operationId",
+        "action",
+        "statusVersion"
+      ],
+      "title": "RunControlPayload",
+      "type": "object"
+    },
+    "run.paused": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Action",
+          "type": "string"
+        },
+        "operationId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Operationid",
+          "type": "string"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "statusVersion": {
+          "minimum": 1,
+          "title": "Statusversion",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "operationId",
+        "action",
+        "statusVersion"
+      ],
+      "title": "RunControlPayload",
+      "type": "object"
+    },
+    "run.resume_requested": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Action",
+          "type": "string"
+        },
+        "operationId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Operationid",
+          "type": "string"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "statusVersion": {
+          "minimum": 1,
+          "title": "Statusversion",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "operationId",
+        "action",
+        "statusVersion"
+      ],
+      "title": "RunControlPayload",
       "type": "object"
     },
     "run.status_changed": {

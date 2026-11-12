@@ -1,0 +1,159 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "assignmentVersion": {
+      "anyOf": [
+        {
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Assignmentversion"
+    },
+    "blockerCodes": {
+      "items": {
+        "anyOf": [
+          {
+            "enum": [
+              "native_state_unknown",
+              "workspace_mismatch",
+              "pending_side_effects",
+              "pending_stop_verification",
+              "recovery_evidence_stale",
+              "resume_unsupported",
+              "handoff_confirmation_required",
+              "authorization_invalid",
+              "candidate_hash_mismatch",
+              "budget_unknown",
+              "context_changed",
+              "login_expired"
+            ],
+            "type": "string"
+          },
+          {
+            "maxLength": 512,
+            "minLength": 1,
+            "type": "string"
+          }
+        ]
+      },
+      "maxItems": 16,
+      "title": "Blockercodes",
+      "type": "array"
+    },
+    "caseId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Caseid",
+      "type": "string"
+    },
+    "caseVersion": {
+      "minimum": 1,
+      "title": "Caseversion",
+      "type": "integer"
+    },
+    "contextHash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Contexthash",
+      "type": "string"
+    },
+    "createdAt": {
+      "format": "date-time",
+      "title": "Createdat",
+      "type": "string"
+    },
+    "planVersion": {
+      "anyOf": [
+        {
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Planversion"
+    },
+    "proposedAction": {
+      "anyOf": [
+        {
+          "enum": [
+            "observe_existing",
+            "continue_stage_processing",
+            "resume_existing",
+            "handoff_new_session",
+            "await_reconciliation",
+            "block_or_rework",
+            "wait_authorization",
+            "await_stop_verification",
+            "rebuild_projection"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Proposedaction"
+    },
+    "requestOperationId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Requestoperationid"
+    },
+    "runId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Runid",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "open",
+        "observing",
+        "awaiting_decision",
+        "applying",
+        "applied",
+        "blocked",
+        "superseded",
+        "canceled"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "updatedAt": {
+      "format": "date-time",
+      "title": "Updatedat",
+      "type": "string"
+    }
+  },
+  "required": [
+    "caseId",
+    "runId",
+    "contextHash",
+    "caseVersion",
+    "status",
+    "createdAt",
+    "updatedAt"
+  ],
+  "title": "RecoveryCase",
+  "type": "object"
+}

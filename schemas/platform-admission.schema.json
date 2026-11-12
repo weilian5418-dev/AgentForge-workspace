@@ -1,0 +1,53 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "environmentId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Environmentid",
+      "type": "string"
+    },
+    "mode": {
+      "enum": [
+        "open",
+        "draining",
+        "stopped"
+      ],
+      "title": "Mode",
+      "type": "string"
+    },
+    "reason": {
+      "anyOf": [
+        {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Reason"
+    },
+    "updatedAt": {
+      "format": "date-time",
+      "title": "Updatedat",
+      "type": "string"
+    },
+    "version": {
+      "minimum": 1,
+      "title": "Version",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "environmentId",
+    "mode",
+    "version",
+    "updatedAt"
+  ],
+  "title": "PlatformAdmission",
+  "type": "object"
+}

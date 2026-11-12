@@ -1,0 +1,81 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "caseVersion": {
+      "minimum": 1,
+      "title": "Caseversion",
+      "type": "integer"
+    },
+    "contextHash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Contexthash",
+      "type": "string"
+    },
+    "decision": {
+      "enum": [
+        "observe_existing",
+        "continue_stage_processing",
+        "resume_existing",
+        "handoff_new_session",
+        "await_reconciliation",
+        "block_or_rework",
+        "wait_authorization",
+        "await_stop_verification",
+        "rebuild_projection"
+      ],
+      "title": "Decision",
+      "type": "string"
+    },
+    "decisionKey": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Decisionkey",
+      "type": "string"
+    },
+    "evidenceRefs": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9._:-]+$",
+        "type": "string"
+      },
+      "maxItems": 32,
+      "title": "Evidencerefs",
+      "type": "array"
+    },
+    "expectedStatusVersion": {
+      "minimum": 1,
+      "title": "Expectedstatusversion",
+      "type": "integer"
+    },
+    "idempotencyKey": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Idempotencykey",
+      "type": "string"
+    },
+    "reason": {
+      "anyOf": [
+        {
+          "maxLength": 2048,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Reason"
+    }
+  },
+  "required": [
+    "decisionKey",
+    "decision",
+    "caseVersion",
+    "contextHash",
+    "expectedStatusVersion",
+    "idempotencyKey"
+  ],
+  "title": "RecoveryDecisionRequest",
+  "type": "object"
+}

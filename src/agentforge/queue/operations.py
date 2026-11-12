@@ -90,6 +90,8 @@ def get_operation(session: Session, operation_id: str) -> OperationStatusRespons
             StageSubmissionRow,
         )
 
+        from agentforge.storage.models import RecoveryCaseRow, RecoveryDecisionRow
+
         native = session.get(InstanceOperationRow, operation_id)
         if native:
             status = {
@@ -106,6 +108,43 @@ def get_operation(session: Session, operation_id: str) -> OperationStatusRespons
                 message=native.error_code,
                 created_at=native.prepared_at,
                 updated_at=native.completed_at or native.prepared_at,
+            )
+        decision = session.get(RecoveryDecisionRow, operation_id)
+        if decision is not None:
+            case = session.get(RecoveryCaseRow, decision.case_id)
+            return OperationStatusResponse(
+                operation_id=decision.id,
+                operation_type="recovery.decision",
+                run_id=case.run_id if case else None,
+                status="succeeded" if case and case.status == "applied" else "accepted",
+                result_ref=decision.case_id,
+                uncertain_side_effects=False,
+                message=decision.decision,
+                created_at=decision.created_at,
+                updated_at=decision.created_at,
+            )
+        case_row = session.get(RecoveryCaseRow, operation_id)
+        if case_row is not None:
+            status = {
+                "open": "accepted",
+                "observing": "running",
+                "awaiting_decision": "waiting_user",
+                "applying": "running",
+                "blocked": "blocked",
+                "applied": "succeeded",
+                "superseded": "canceled",
+                "canceled": "canceled",
+            }.get(case_row.status, "running")
+            return OperationStatusResponse(
+                operation_id=case_row.id,
+                operation_type="recovery.case",
+                run_id=case_row.run_id,
+                status=cast(Any, status),
+                result_ref=case_row.id,
+                uncertain_side_effects=case_row.status == "blocked",
+                message=case_row.proposed_action,
+                created_at=case_row.created_at,
+                updated_at=case_row.updated_at,
             )
         request = session.get(ExecutionRequestRow, operation_id)
         if request:

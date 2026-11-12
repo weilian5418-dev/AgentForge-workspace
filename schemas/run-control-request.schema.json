@@ -1,0 +1,47 @@
+{
+  "additionalProperties": false,
+  "description": "User run control intent. Does not claim stop verified or native paused.",
+  "properties": {
+    "action": {
+      "enum": [
+        "pause",
+        "resume",
+        "cancel",
+        "replan"
+      ],
+      "title": "Action",
+      "type": "string"
+    },
+    "expectedStatusVersion": {
+      "minimum": 1,
+      "title": "Expectedstatusversion",
+      "type": "integer"
+    },
+    "idempotencyKey": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Idempotencykey",
+      "type": "string"
+    },
+    "reason": {
+      "anyOf": [
+        {
+          "maxLength": 1024,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Reason"
+    }
+  },
+  "required": [
+    "action",
+    "expectedStatusVersion",
+    "idempotencyKey"
+  ],
+  "title": "RunControlRequest",
+  "type": "object"
+}

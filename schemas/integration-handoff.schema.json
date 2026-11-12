@@ -1,0 +1,96 @@
+{
+  "additionalProperties": false,
+  "description": "Immutable integration handoff after all required stages released (D11 end).",
+  "properties": {
+    "assignmentVersion": {
+      "minimum": 1,
+      "title": "Assignmentversion",
+      "type": "integer"
+    },
+    "candidateSetHashes": {
+      "items": {
+        "pattern": "^[0-9a-f]{64}$",
+        "type": "string"
+      },
+      "maxItems": 64,
+      "title": "Candidatesethashes",
+      "type": "array"
+    },
+    "contractHash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Contracthash",
+      "type": "string"
+    },
+    "createdAt": {
+      "format": "date-time",
+      "title": "Createdat",
+      "type": "string"
+    },
+    "environmentFingerprint": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Environmentfingerprint",
+      "type": "string"
+    },
+    "executionGeneration": {
+      "minimum": 1,
+      "title": "Executiongeneration",
+      "type": "integer"
+    },
+    "gatePolicyVersion": {
+      "minimum": 1,
+      "title": "Gatepolicyversion",
+      "type": "integer"
+    },
+    "handoffHash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Handoffhash",
+      "type": "string"
+    },
+    "handoffId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Handoffid",
+      "type": "string"
+    },
+    "planVersion": {
+      "minimum": 1,
+      "title": "Planversion",
+      "type": "integer"
+    },
+    "releaseRecordIds": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9._:-]+$",
+        "type": "string"
+      },
+      "maxItems": 64,
+      "minItems": 1,
+      "title": "Releaserecordids",
+      "type": "array"
+    },
+    "runId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Runid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "handoffId",
+    "runId",
+    "planVersion",
+    "assignmentVersion",
+    "gatePolicyVersion",
+    "executionGeneration",
+    "releaseRecordIds",
+    "contractHash",
+    "environmentFingerprint",
+    "handoffHash",
+    "createdAt"
+  ],
+  "title": "IntegrationHandoff",
+  "type": "object"
+}

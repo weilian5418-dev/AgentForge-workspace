@@ -2455,6 +2455,214 @@
         "title": "DiscoveryRunResponse",
         "type": "object"
       },
+      "DriverStatusResponse": {
+        "additionalProperties": false,
+        "description": "Safe public driver view — no lease token or signing material.",
+        "properties": {
+          "bindingHash": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bindinghash"
+          },
+          "collaborationState": {
+            "enum": [
+              "idle",
+              "running",
+              "waiting",
+              "ready_for_integration",
+              "blocked"
+            ],
+            "title": "Collaborationstate",
+            "type": "string"
+          },
+          "graphVersion": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Graphversion"
+          },
+          "lastObservedSequence": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Lastobservedsequence",
+            "type": "integer"
+          },
+          "openWaitCount": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Openwaitcount",
+            "type": "integer"
+          },
+          "pendingWakeCount": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Pendingwakecount",
+            "type": "integer"
+          },
+          "runId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Runid",
+            "type": "string"
+          },
+          "thread": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DriverThread"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "runId",
+          "collaborationState"
+        ],
+        "title": "DriverStatusResponse",
+        "type": "object"
+      },
+      "DriverThread": {
+        "additionalProperties": false,
+        "description": "Public coordination thread view — no lease token.",
+        "properties": {
+          "assignmentVersion": {
+            "minimum": 1.0,
+            "title": "Assignmentversion",
+            "type": "integer"
+          },
+          "bindingHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Bindinghash",
+            "type": "string"
+          },
+          "checkpointEpoch": {
+            "minimum": 1.0,
+            "title": "Checkpointepoch",
+            "type": "integer"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "executionGeneration": {
+            "minimum": 1.0,
+            "title": "Executiongeneration",
+            "type": "integer"
+          },
+          "gatePolicyVersion": {
+            "minimum": 1.0,
+            "title": "Gatepolicyversion",
+            "type": "integer"
+          },
+          "graphVersion": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Graphversion",
+            "type": "string"
+          },
+          "lastObservedSequence": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Lastobservedsequence",
+            "type": "integer"
+          },
+          "latestCheckpointId": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latestcheckpointid"
+          },
+          "planVersion": {
+            "minimum": 1.0,
+            "title": "Planversion",
+            "type": "integer"
+          },
+          "runId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Runid",
+            "type": "string"
+          },
+          "stateSchemaVersion": {
+            "minimum": 1.0,
+            "title": "Stateschemaversion",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "active",
+              "archived",
+              "superseded",
+              "blocked"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "threadId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Threadid",
+            "type": "string"
+          },
+          "threadRowId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Threadrowid",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "title": "Updatedat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "threadRowId",
+          "runId",
+          "threadId",
+          "planVersion",
+          "assignmentVersion",
+          "gatePolicyVersion",
+          "executionGeneration",
+          "graphVersion",
+          "stateSchemaVersion",
+          "checkpointEpoch",
+          "bindingHash",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ],
+        "title": "DriverThread",
+        "type": "object"
+      },
       "ErrorCode": {
         "enum": [
           "INVALID_REQUEST",
@@ -2486,7 +2694,19 @@
           "PROVIDER_UNAVAILABLE",
           "MODEL_AUTHORIZATION_DENIED",
           "CONTEXT_MANIFEST_MISMATCH",
-          "MODEL_CALL_UNKNOWN"
+          "MODEL_CALL_UNKNOWN",
+          "DRIVER_BUSY",
+          "DRIVER_FENCE_LOST",
+          "STALE_BINDING",
+          "WAIT_SCOPE_MISMATCH",
+          "CHECKPOINT_INCOMPATIBLE",
+          "NATIVE_STATE_UNKNOWN",
+          "WORKSPACE_MISMATCH",
+          "PENDING_SIDE_EFFECTS",
+          "PENDING_STOP_VERIFICATION",
+          "RECOVERY_EVIDENCE_STALE",
+          "RESUME_UNSUPPORTED",
+          "HANDOFF_CONFIRMATION_REQUIRED"
         ],
         "title": "ErrorCode",
         "type": "string"
@@ -6834,6 +7054,617 @@
         "title": "ReadinessResponse",
         "type": "object"
       },
+      "RecoveryCase": {
+        "additionalProperties": false,
+        "properties": {
+          "assignmentVersion": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assignmentversion"
+          },
+          "blockerCodes": {
+            "items": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "native_state_unknown",
+                    "workspace_mismatch",
+                    "pending_side_effects",
+                    "pending_stop_verification",
+                    "recovery_evidence_stale",
+                    "resume_unsupported",
+                    "handoff_confirmation_required",
+                    "authorization_invalid",
+                    "candidate_hash_mismatch",
+                    "budget_unknown",
+                    "context_changed",
+                    "login_expired"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "maxLength": 512,
+                  "minLength": 1,
+                  "type": "string"
+                }
+              ]
+            },
+            "maxItems": 16,
+            "title": "Blockercodes",
+            "type": "array"
+          },
+          "caseId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Caseid",
+            "type": "string"
+          },
+          "caseVersion": {
+            "minimum": 1.0,
+            "title": "Caseversion",
+            "type": "integer"
+          },
+          "contextHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Contexthash",
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "planVersion": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Planversion"
+          },
+          "proposedAction": {
+            "anyOf": [
+              {
+                "enum": [
+                  "observe_existing",
+                  "continue_stage_processing",
+                  "resume_existing",
+                  "handoff_new_session",
+                  "await_reconciliation",
+                  "block_or_rework",
+                  "wait_authorization",
+                  "await_stop_verification",
+                  "rebuild_projection"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Proposedaction"
+          },
+          "requestOperationId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requestoperationid"
+          },
+          "runId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Runid",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "open",
+              "observing",
+              "awaiting_decision",
+              "applying",
+              "applied",
+              "blocked",
+              "superseded",
+              "canceled"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "title": "Updatedat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "caseId",
+          "runId",
+          "contextHash",
+          "caseVersion",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ],
+        "title": "RecoveryCase",
+        "type": "object"
+      },
+      "RecoveryCaseListResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/RecoveryCase"
+            },
+            "maxItems": 100,
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "title": "RecoveryCaseListResponse",
+        "type": "object"
+      },
+      "RecoveryCheckRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "idempotencyKey": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Idempotencykey",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "maxLength": 1024,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "idempotencyKey"
+        ],
+        "title": "RecoveryCheckRequest",
+        "type": "object"
+      },
+      "RecoveryDecision": {
+        "additionalProperties": false,
+        "properties": {
+          "actor": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Actor",
+            "type": "string"
+          },
+          "caseId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Caseid",
+            "type": "string"
+          },
+          "caseVersion": {
+            "minimum": 1.0,
+            "title": "Caseversion",
+            "type": "integer"
+          },
+          "contextHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Contexthash",
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "decision": {
+            "enum": [
+              "observe_existing",
+              "continue_stage_processing",
+              "resume_existing",
+              "handoff_new_session",
+              "await_reconciliation",
+              "block_or_rework",
+              "wait_authorization",
+              "await_stop_verification",
+              "rebuild_projection"
+            ],
+            "title": "Decision",
+            "type": "string"
+          },
+          "decisionId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Decisionid",
+            "type": "string"
+          },
+          "decisionKey": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Decisionkey",
+            "type": "string"
+          },
+          "evidenceRefs": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            "maxItems": 32,
+            "title": "Evidencerefs",
+            "type": "array"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "decisionId",
+          "caseId",
+          "caseVersion",
+          "decisionKey",
+          "contextHash",
+          "decision",
+          "actor",
+          "createdAt"
+        ],
+        "title": "RecoveryDecision",
+        "type": "object"
+      },
+      "RecoveryDecisionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "caseVersion": {
+            "minimum": 1.0,
+            "title": "Caseversion",
+            "type": "integer"
+          },
+          "contextHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Contexthash",
+            "type": "string"
+          },
+          "decision": {
+            "enum": [
+              "observe_existing",
+              "continue_stage_processing",
+              "resume_existing",
+              "handoff_new_session",
+              "await_reconciliation",
+              "block_or_rework",
+              "wait_authorization",
+              "await_stop_verification",
+              "rebuild_projection"
+            ],
+            "title": "Decision",
+            "type": "string"
+          },
+          "decisionKey": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Decisionkey",
+            "type": "string"
+          },
+          "evidenceRefs": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            "maxItems": 32,
+            "title": "Evidencerefs",
+            "type": "array"
+          },
+          "expectedStatusVersion": {
+            "minimum": 1.0,
+            "title": "Expectedstatusversion",
+            "type": "integer"
+          },
+          "idempotencyKey": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Idempotencykey",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "maxLength": 2048,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "decisionKey",
+          "decision",
+          "caseVersion",
+          "contextHash",
+          "expectedStatusVersion",
+          "idempotencyKey"
+        ],
+        "title": "RecoveryDecisionRequest",
+        "type": "object"
+      },
+      "RecoveryObservation": {
+        "additionalProperties": false,
+        "description": "Append-only observation — never overwrite prior rows.",
+        "properties": {
+          "bindingJson": {
+            "additionalProperties": true,
+            "title": "Bindingjson",
+            "type": "object"
+          },
+          "caseId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Caseid",
+            "type": "string"
+          },
+          "evidenceHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Evidencehash",
+            "type": "string"
+          },
+          "evidenceRef": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidenceref"
+          },
+          "observationId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Observationid",
+            "type": "string"
+          },
+          "observedAt": {
+            "format": "date-time",
+            "title": "Observedat",
+            "type": "string"
+          },
+          "resultCode": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Resultcode",
+            "type": "string"
+          },
+          "subjectRef": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Subjectref",
+            "type": "string"
+          },
+          "subjectType": {
+            "enum": [
+              "native_session",
+              "workspace",
+              "instance_operation",
+              "delivery",
+              "candidate",
+              "authorization",
+              "budget",
+              "driver_projection"
+            ],
+            "title": "Subjecttype",
+            "type": "string"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
+          },
+          "support": {
+            "enum": [
+              "supported",
+              "unsupported",
+              "partial",
+              "unknown"
+            ],
+            "title": "Support",
+            "type": "string"
+          }
+        },
+        "required": [
+          "observationId",
+          "caseId",
+          "subjectType",
+          "subjectRef",
+          "observedAt",
+          "support",
+          "resultCode",
+          "evidenceHash"
+        ],
+        "title": "RecoveryObservation",
+        "type": "object"
+      },
+      "RecoveryRecommendation": {
+        "additionalProperties": false,
+        "description": "Pure policy output — does not mutate Run or call adapters.",
+        "properties": {
+          "action": {
+            "enum": [
+              "observe_existing",
+              "continue_stage_processing",
+              "resume_existing",
+              "handoff_new_session",
+              "await_reconciliation",
+              "block_or_rework",
+              "wait_authorization",
+              "await_stop_verification",
+              "rebuild_projection"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "reasonCodes": {
+            "items": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "native_state_unknown",
+                    "workspace_mismatch",
+                    "pending_side_effects",
+                    "pending_stop_verification",
+                    "recovery_evidence_stale",
+                    "resume_unsupported",
+                    "handoff_confirmation_required",
+                    "authorization_invalid",
+                    "candidate_hash_mismatch",
+                    "budget_unknown",
+                    "context_changed",
+                    "login_expired"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "maxLength": 512,
+                  "minLength": 1,
+                  "type": "string"
+                }
+              ]
+            },
+            "maxItems": 16,
+            "title": "Reasoncodes",
+            "type": "array"
+          },
+          "requiredEvidence": {
+            "items": {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 32,
+            "title": "Requiredevidence",
+            "type": "array"
+          },
+          "requiresUserDecision": {
+            "title": "Requiresuserdecision",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "action",
+          "requiresUserDecision"
+        ],
+        "title": "RecoveryRecommendation",
+        "type": "object"
+      },
+      "RecoveryReport": {
+        "additionalProperties": false,
+        "properties": {
+          "appliedDecision": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RecoveryDecision"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "case": {
+            "$ref": "#/components/schemas/RecoveryCase"
+          },
+          "observations": {
+            "items": {
+              "$ref": "#/components/schemas/RecoveryObservation"
+            },
+            "maxItems": 64,
+            "title": "Observations",
+            "type": "array"
+          },
+          "recommendation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RecoveryRecommendation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "case"
+        ],
+        "title": "RecoveryReport",
+        "type": "object"
+      },
       "ReviewCycle": {
         "additionalProperties": false,
         "description": "One audit cycle bound to a fixed candidate set fingerprint.",
@@ -7647,6 +8478,52 @@
         "title": "RunAcceptedResponse",
         "type": "object"
       },
+      "RunActionRequest": {
+        "additionalProperties": false,
+        "description": "Pause / resume / cancel / replan intent.\n\nClients cannot declare stopVerified or native paused; those stay platform-owned.",
+        "properties": {
+          "action": {
+            "enum": [
+              "pause",
+              "resume",
+              "cancel",
+              "replan"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "expectedStatusVersion": {
+            "minimum": 1.0,
+            "title": "Expectedstatusversion",
+            "type": "integer"
+          },
+          "idempotencyKey": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Idempotencykey",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "maxLength": 1024,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "action",
+          "expectedStatusVersion",
+          "idempotencyKey"
+        ],
+        "title": "RunActionRequest",
+        "type": "object"
+      },
       "RunCreateRequest": {
         "additionalProperties": false,
         "description": "Create a goal and enter preflight/planning. Does not dispatch development.\n\n``mode=auto`` means the platform may auto-propose a plan; it does **not** mean\nthe platform may confirm assignments or start executors without user decisions.\n``planningProviderProfileId`` configures the platform planning model only;\nomit it for rules-only planning (do not invent a fake profile).",
@@ -7822,6 +8699,36 @@
             ],
             "title": "Cancelrequestedat"
           },
+          "collaborationReadyAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Collaborationreadyat"
+          },
+          "collaborationState": {
+            "anyOf": [
+              {
+                "enum": [
+                  "idle",
+                  "running",
+                  "waiting",
+                  "ready_for_integration",
+                  "blocked"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Collaborationstate"
+          },
           "createdAt": {
             "format": "date-time",
             "title": "Createdat",
@@ -7987,6 +8894,159 @@
           "updatedAt"
         ],
         "title": "RunSnapshotResponse",
+        "type": "object"
+      },
+      "RunWait": {
+        "additionalProperties": false,
+        "description": "Persistent wait barrier. Predicate is reason + versioned scope, not arbitrary SQL.",
+        "properties": {
+          "afterSequence": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Aftersequence",
+            "type": "integer"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "deadlineAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deadlineat"
+          },
+          "predicateVersion": {
+            "minimum": 1.0,
+            "title": "Predicateversion",
+            "type": "integer"
+          },
+          "reason": {
+            "enum": [
+              "plan_confirmation",
+              "workspace_ready",
+              "session_ready",
+              "task_submission",
+              "native_approval",
+              "stage_review",
+              "user_gate_decision",
+              "stop_verification",
+              "recovery_evidence",
+              "capacity",
+              "dependency",
+              "driver_yield"
+            ],
+            "title": "Reason",
+            "type": "string"
+          },
+          "resolvedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolvedat"
+          },
+          "resolvedByRef": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolvedbyref"
+          },
+          "runId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Runid",
+            "type": "string"
+          },
+          "scopeJson": {
+            "additionalProperties": true,
+            "title": "Scopejson",
+            "type": "object"
+          },
+          "status": {
+            "default": "open",
+            "enum": [
+              "open",
+              "resolved",
+              "canceled",
+              "superseded"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "threadId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Threadid"
+          },
+          "waitId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Waitid",
+            "type": "string"
+          },
+          "waitKey": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Waitkey",
+            "type": "string"
+          }
+        },
+        "required": [
+          "waitId",
+          "runId",
+          "waitKey",
+          "reason",
+          "predicateVersion",
+          "createdAt"
+        ],
+        "title": "RunWait",
+        "type": "object"
+      },
+      "RunWaitListResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/RunWait"
+            },
+            "maxItems": 100,
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "title": "RunWaitListResponse",
         "type": "object"
       },
       "RunnerExecuteRequest": {
@@ -9050,7 +10110,58 @@
       },
       "TaskAssignmentPayload": {
         "additionalProperties": false,
+        "description": "Platform-resolved assignment inputs — callers cannot invent local paths.",
         "properties": {
+          "attemptId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attemptid"
+          },
+          "contextBundleRef": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contextbundleref"
+          },
+          "inputCandidateRefs": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            "maxItems": 32,
+            "title": "Inputcandidaterefs",
+            "type": "array"
+          },
+          "inputReleaseRefs": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            "maxItems": 32,
+            "title": "Inputreleaserefs",
+            "type": "array"
+          },
           "objective": {
             "maxLength": 512,
             "minLength": 1,
@@ -11615,6 +12726,104 @@
           }
         ],
         "summary": "Capabilities"
+      }
+    },
+    "/api/v1/collaboration/operations/{operation_id}": {
+      "get": {
+        "description": "Alias covering control/recovery ops; primary GET /operations/{id} remains.",
+        "operationId": "get_collaboration_operation_api_v1_collaboration_operations__operation_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "operation_id",
+            "required": true,
+            "schema": {
+              "title": "Operation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Get Collaboration Operation Api V1 Collaboration Operations  Operation Id  Get"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Collaboration Operation",
+        "tags": [
+          "collaboration"
+        ]
       }
     },
     "/api/v1/control/shutdown": {
@@ -14250,6 +15459,210 @@
         "summary": "Ready"
       }
     },
+    "/api/v1/recovery-cases/{case_id}": {
+      "get": {
+        "operationId": "get_recovery_case_api_v1_recovery_cases__case_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecoveryReport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Recovery Case",
+        "tags": [
+          "collaboration"
+        ]
+      }
+    },
+    "/api/v1/recovery-cases/{case_id}/decisions": {
+      "post": {
+        "operationId": "decide_recovery_case_api_v1_recovery_cases__case_id__decisions_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecoveryDecisionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationAccepted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Decide Recovery Case",
+        "tags": [
+          "collaboration"
+        ]
+      }
+    },
     "/api/v1/rework-orders/{order_id}/accept": {
       "post": {
         "operationId": "accept_rework_api_v1_rework_orders__order_id__accept_post",
@@ -15036,6 +16449,113 @@
         ]
       }
     },
+    "/api/v1/runs/{run_id}/actions": {
+      "post": {
+        "operationId": "run_action_api_v1_runs__run_id__actions_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunActionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationAccepted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Run Action",
+        "tags": [
+          "collaboration"
+        ]
+      }
+    },
     "/api/v1/runs/{run_id}/assignments": {
       "put": {
         "operationId": "put_assignments_api_v1_runs__run_id__assignments_put",
@@ -15140,6 +16660,103 @@
         "summary": "Put Assignments",
         "tags": [
           "runs"
+        ]
+      }
+    },
+    "/api/v1/runs/{run_id}/driver": {
+      "get": {
+        "operationId": "get_run_driver_api_v1_runs__run_id__driver_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DriverStatusResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Run Driver",
+        "tags": [
+          "collaboration"
         ]
       }
     },
@@ -15985,6 +17602,211 @@
         ]
       }
     },
+    "/api/v1/runs/{run_id}/recovery-cases": {
+      "get": {
+        "operationId": "list_recovery_cases_api_v1_runs__run_id__recovery_cases_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecoveryCaseListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Recovery Cases",
+        "tags": [
+          "collaboration"
+        ]
+      }
+    },
+    "/api/v1/runs/{run_id}/recovery-checks": {
+      "post": {
+        "description": "Open a recovery case for evidence collection — does not invent stop.",
+        "operationId": "open_recovery_check_api_v1_runs__run_id__recovery_checks_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecoveryCheckRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationAccepted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Open Recovery Check",
+        "tags": [
+          "collaboration"
+        ]
+      }
+    },
     "/api/v1/runs/{run_id}/stages": {
       "get": {
         "operationId": "list_stages_api_v1_runs__run_id__stages_get",
@@ -16079,6 +17901,103 @@
         "summary": "List Stages",
         "tags": [
           "stages"
+        ]
+      }
+    },
+    "/api/v1/runs/{run_id}/waits": {
+      "get": {
+        "operationId": "get_run_waits_api_v1_runs__run_id__waits_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunWaitListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Run Waits",
+        "tags": [
+          "collaboration"
         ]
       }
     },

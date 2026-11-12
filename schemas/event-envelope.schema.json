@@ -68,7 +68,19 @@
         "stage.candidate_frozen",
         "stage.rework_requested",
         "stage.released",
-        "integration.validated"
+        "integration.validated",
+        "driver.wait_registered",
+        "driver.wake_recorded",
+        "run.pause_requested",
+        "run.paused",
+        "run.resume_requested",
+        "run.cancel_requested",
+        "run.canceled",
+        "recovery.started",
+        "recovery.observed",
+        "recovery.blocked",
+        "recovery.applied",
+        "run.collaboration_ready"
       ],
       "title": "Type",
       "type": "string"

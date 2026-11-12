@@ -1,0 +1,213 @@
+{
+  "additionalProperties": false,
+  "description": "Bounded drive_once outcome.",
+  "properties": {
+    "errorCode": {
+      "anyOf": [
+        {
+          "enum": [
+            "driver_busy",
+            "driver_fence_lost",
+            "stale_binding",
+            "status_version_conflict",
+            "idempotency_conflict",
+            "wait_scope_mismatch",
+            "checkpoint_incompatible",
+            "native_state_unknown",
+            "workspace_mismatch",
+            "pending_side_effects",
+            "pending_stop_verification",
+            "recovery_evidence_stale",
+            "resume_unsupported",
+            "handoff_confirmation_required"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Errorcode"
+    },
+    "handoffRef": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Handoffref"
+    },
+    "message": {
+      "anyOf": [
+        {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Message"
+    },
+    "nextAction": {
+      "anyOf": [
+        {
+          "enum": [
+            "register_wait",
+            "ensure_workspaces",
+            "ensure_instances",
+            "dispatch_ready",
+            "accept_submissions",
+            "prepare_rework",
+            "coordinate_stop",
+            "open_recovery",
+            "prepare_handoff",
+            "refresh",
+            "end"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Nextaction"
+    },
+    "observedSequence": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Observedsequence"
+    },
+    "operationRef": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Operationref"
+    },
+    "outcome": {
+      "enum": [
+        "busy",
+        "interrupted",
+        "yielded",
+        "ready_for_integration",
+        "blocked",
+        "fence_lost",
+        "noop"
+      ],
+      "title": "Outcome",
+      "type": "string"
+    },
+    "recoveryCaseRef": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Recoverycaseref"
+    },
+    "runId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Runid",
+      "type": "string"
+    },
+    "threadId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Threadid"
+    },
+    "waitId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Waitid"
+    },
+    "waitReason": {
+      "anyOf": [
+        {
+          "enum": [
+            "plan_confirmation",
+            "workspace_ready",
+            "session_ready",
+            "task_submission",
+            "native_approval",
+            "stage_review",
+            "user_gate_decision",
+            "stop_verification",
+            "recovery_evidence",
+            "capacity",
+            "dependency",
+            "driver_yield"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Waitreason"
+    }
+  },
+  "required": [
+    "runId",
+    "outcome"
+  ],
+  "title": "DriverResult",
+  "type": "object"
+}

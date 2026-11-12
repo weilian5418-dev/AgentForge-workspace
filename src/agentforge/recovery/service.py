@@ -249,6 +249,76 @@ class RecoveryService:
             raise RecoveryError("case_not_found", case_id)
         return _to_case(row)
 
+    def list_cases(self, run_id: str, *, limit: int = 100) -> list[RecoveryCase]:
+        run = self.session.get(Run, run_id)
+        if run is None:
+            raise RecoveryError("run_not_found", run_id)
+        rows = self.session.scalars(
+            select(RecoveryCaseRow)
+            .where(RecoveryCaseRow.run_id == run_id)
+            .order_by(RecoveryCaseRow.created_at.desc())
+            .limit(min(limit, 100))
+        ).all()
+        return [_to_case(row) for row in rows]
+
+    def get_report(self, case_id: str) -> RecoveryReport:
+        from agentforge.contracts.recovery import RecoveryObservation
+
+        case = self.get_case(case_id)
+        obs_rows = self.list_observations(case_id)
+        observations = [
+            RecoveryObservation.model_validate(
+                {
+                    "observationId": o.id,
+                    "caseId": o.case_id,
+                    "subjectType": o.subject_type,
+                    "subjectRef": o.subject_ref,
+                    "observedAt": o.observed_at,
+                    "support": o.support,
+                    "resultCode": o.result_code,
+                    "evidenceHash": o.evidence_hash,
+                    "evidenceRef": o.evidence_ref,
+                    "bindingJson": o.binding_json or {},
+                    "summary": o.summary,
+                }
+            )
+            for o in obs_rows
+        ]
+        recommendation = None
+        if case.status not in {"applied", "superseded", "canceled"} or observations:
+            try:
+                recommendation = self.recommend(case_id)
+            except RecoveryError:
+                recommendation = None
+        applied = None
+        decision_row = self.session.scalar(
+            select(RecoveryDecisionRow)
+            .where(RecoveryDecisionRow.case_id == case_id)
+            .order_by(RecoveryDecisionRow.created_at.desc())
+            .limit(1)
+        )
+        if decision_row is not None:
+            applied = RecoveryDecision.model_validate(
+                {
+                    "decisionId": decision_row.id,
+                    "caseId": decision_row.case_id,
+                    "caseVersion": decision_row.case_version,
+                    "decisionKey": decision_row.decision_key,
+                    "contextHash": decision_row.context_hash,
+                    "decision": decision_row.decision,
+                    "actor": decision_row.actor,
+                    "reason": decision_row.reason,
+                    "evidenceRefs": list(decision_row.evidence_refs or []),
+                    "createdAt": decision_row.created_at,
+                }
+            )
+        return RecoveryReport(
+            case=case,
+            observations=observations,
+            recommendation=recommendation,
+            applied_decision=applied,
+        )
+
     def list_observations(self, case_id: str) -> list[RecoveryObservationRow]:
         return list(
             self.session.scalars(

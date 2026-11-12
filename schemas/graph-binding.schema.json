@@ -1,0 +1,61 @@
+{
+  "additionalProperties": false,
+  "description": "Immutable coordination identity for one driver thread.\n\nDo not embed lease tokens or statusVersion — wake must not mint a new thread.",
+  "properties": {
+    "assignmentVersion": {
+      "minimum": 1,
+      "title": "Assignmentversion",
+      "type": "integer"
+    },
+    "checkpointEpoch": {
+      "default": 1,
+      "minimum": 1,
+      "title": "Checkpointepoch",
+      "type": "integer"
+    },
+    "executionGeneration": {
+      "minimum": 1,
+      "title": "Executiongeneration",
+      "type": "integer"
+    },
+    "gatePolicyVersion": {
+      "minimum": 1,
+      "title": "Gatepolicyversion",
+      "type": "integer"
+    },
+    "graphVersion": {
+      "default": "d11.1",
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Graphversion",
+      "type": "string"
+    },
+    "planVersion": {
+      "minimum": 1,
+      "title": "Planversion",
+      "type": "integer"
+    },
+    "runId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Runid",
+      "type": "string"
+    },
+    "stateSchemaVersion": {
+      "default": 1,
+      "minimum": 1,
+      "title": "Stateschemaversion",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "runId",
+    "planVersion",
+    "assignmentVersion",
+    "gatePolicyVersion",
+    "executionGeneration"
+  ],
+  "title": "GraphBinding",
+  "type": "object"
+}

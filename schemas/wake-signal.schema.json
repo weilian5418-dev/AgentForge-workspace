@@ -1,0 +1,122 @@
+{
+  "additionalProperties": false,
+  "description": "Durable wake hint — not a business fact; Driver re-reads the ledger.",
+  "properties": {
+    "bindingJson": {
+      "additionalProperties": true,
+      "title": "Bindingjson",
+      "type": "object"
+    },
+    "claimExpiresAt": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Claimexpiresat"
+    },
+    "claimOwner": {
+      "anyOf": [
+        {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Claimowner"
+    },
+    "createdAt": {
+      "format": "date-time",
+      "title": "Createdat",
+      "type": "string"
+    },
+    "priority": {
+      "default": 100,
+      "maximum": 1000,
+      "minimum": 0,
+      "title": "Priority",
+      "type": "integer"
+    },
+    "runId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Runid",
+      "type": "string"
+    },
+    "sourceKind": {
+      "enum": [
+        "plan_confirmation",
+        "instance_operation",
+        "delivery",
+        "stage_gate",
+        "stage_submission",
+        "review_decision",
+        "user_decision",
+        "control",
+        "recovery",
+        "authorization",
+        "timer",
+        "sweep",
+        "native_event"
+      ],
+      "title": "Sourcekind",
+      "type": "string"
+    },
+    "sourceRef": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Sourceref",
+      "type": "string"
+    },
+    "sourceSequence": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Sourcesequence"
+    },
+    "status": {
+      "default": "pending",
+      "enum": [
+        "pending",
+        "claimed",
+        "completed",
+        "obsolete"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "wakeSignalId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Wakesignalid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "wakeSignalId",
+    "runId",
+    "sourceKind",
+    "sourceRef",
+    "createdAt"
+  ],
+  "title": "WakeSignal",
+  "type": "object"
+}

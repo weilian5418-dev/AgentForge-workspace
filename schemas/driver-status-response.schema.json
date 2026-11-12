@@ -1,0 +1,214 @@
+{
+  "$defs": {
+    "DriverThread": {
+      "additionalProperties": false,
+      "description": "Public coordination thread view — no lease token.",
+      "properties": {
+        "assignmentVersion": {
+          "minimum": 1,
+          "title": "Assignmentversion",
+          "type": "integer"
+        },
+        "bindingHash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Bindinghash",
+          "type": "string"
+        },
+        "checkpointEpoch": {
+          "minimum": 1,
+          "title": "Checkpointepoch",
+          "type": "integer"
+        },
+        "createdAt": {
+          "format": "date-time",
+          "title": "Createdat",
+          "type": "string"
+        },
+        "executionGeneration": {
+          "minimum": 1,
+          "title": "Executiongeneration",
+          "type": "integer"
+        },
+        "gatePolicyVersion": {
+          "minimum": 1,
+          "title": "Gatepolicyversion",
+          "type": "integer"
+        },
+        "graphVersion": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Graphversion",
+          "type": "string"
+        },
+        "lastObservedSequence": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Lastobservedsequence",
+          "type": "integer"
+        },
+        "latestCheckpointId": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Latestcheckpointid"
+        },
+        "planVersion": {
+          "minimum": 1,
+          "title": "Planversion",
+          "type": "integer"
+        },
+        "runId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Runid",
+          "type": "string"
+        },
+        "stateSchemaVersion": {
+          "minimum": 1,
+          "title": "Stateschemaversion",
+          "type": "integer"
+        },
+        "status": {
+          "enum": [
+            "active",
+            "archived",
+            "superseded",
+            "blocked"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "threadId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Threadid",
+          "type": "string"
+        },
+        "threadRowId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Threadrowid",
+          "type": "string"
+        },
+        "updatedAt": {
+          "format": "date-time",
+          "title": "Updatedat",
+          "type": "string"
+        }
+      },
+      "required": [
+        "threadRowId",
+        "runId",
+        "threadId",
+        "planVersion",
+        "assignmentVersion",
+        "gatePolicyVersion",
+        "executionGeneration",
+        "graphVersion",
+        "stateSchemaVersion",
+        "checkpointEpoch",
+        "bindingHash",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ],
+      "title": "DriverThread",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Safe public driver view — no lease token or signing material.",
+  "properties": {
+    "bindingHash": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Bindinghash"
+    },
+    "collaborationState": {
+      "enum": [
+        "idle",
+        "running",
+        "waiting",
+        "ready_for_integration",
+        "blocked"
+      ],
+      "title": "Collaborationstate",
+      "type": "string"
+    },
+    "graphVersion": {
+      "anyOf": [
+        {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Graphversion"
+    },
+    "lastObservedSequence": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Lastobservedsequence",
+      "type": "integer"
+    },
+    "openWaitCount": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Openwaitcount",
+      "type": "integer"
+    },
+    "pendingWakeCount": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Pendingwakecount",
+      "type": "integer"
+    },
+    "runId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Runid",
+      "type": "string"
+    },
+    "thread": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/DriverThread"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "runId",
+    "collaborationState"
+  ],
+  "title": "DriverStatusResponse",
+  "type": "object"
+}
