@@ -81,8 +81,23 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON
   app.stage_user_decisions,
   app.gate_decisions,
   app.rework_orders,
-  app.release_records
+  app.release_records,
+  app.evidence_fingerprints,
+  app.driver_threads,
+  app.scheduler_operations,
+  app.run_waits,
+  app.run_wake_signals,
+  app.recovery_cases,
+  app.recovery_observations,
+  app.recovery_decisions,
+  app.platform_admission
 TO agentforge_api, agentforge_driver;
+
+-- Graph checkpoint DML is driver-only (PostgresSaver tables installed separately).
+-- Ordinary workers must not write checkpoints.
+REVOKE ALL ON ALL TABLES IN SCHEMA graph FROM agentforge_worker;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA graph TO agentforge_driver;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA graph TO agentforge_driver;
 
 -- Queue transport DML (driver + worker). API must not hold queue credentials.
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA queue

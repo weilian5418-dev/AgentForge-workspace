@@ -253,6 +253,13 @@ class Run(Base):
     cancel_requested_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    # Collaboration progress (D11) — does not replace Run.status.
+    collaboration_state: Mapped[str] = mapped_column(
+        Text, nullable=False, server_default=text("'idle'")
+    )
+    collaboration_ready_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
@@ -867,6 +874,27 @@ class InstanceAttemptRow(Base):
     __table_args__ = (
         PrimaryKeyConstraint("id", name="instance_attempts_pkey"),
         Index("instance_attempts_instance_idx", "instance_id", "created_at"),
+        Index(
+            "instance_attempts_active_wp_uidx",
+            "run_id",
+            "work_package_id",
+            unique=True,
+            postgresql_where=text(
+                "status = ANY (ARRAY["
+                "'scheduled'::text, 'dispatching'::text, 'running'::text, "
+                "'submitted'::text, 'awaiting_stop_verification'::text, 'unknown'::text])"
+            ),
+        ),
+        Index(
+            "instance_attempts_active_instance_uidx",
+            "instance_id",
+            unique=True,
+            postgresql_where=text(
+                "status = ANY (ARRAY["
+                "'scheduled'::text, 'dispatching'::text, 'running'::text, "
+                "'submitted'::text, 'awaiting_stop_verification'::text, 'unknown'::text])"
+            ),
+        ),
     )
 
     id: Mapped[str] = mapped_column(Text, nullable=False)
@@ -881,6 +909,18 @@ class InstanceAttemptRow(Base):
     generation: Mapped[int] = mapped_column(Integer, nullable=False)
     workspace_id: Mapped[str] = mapped_column(Text, nullable=False)
     native_session_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(
+        Text, nullable=False, server_default=text("'scheduled'")
+    )
+    dispatch_delivery_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    scheduler_operation_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    stop_verified_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    submission_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    superseded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    error_code: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
@@ -1492,6 +1532,264 @@ class EvidenceFingerprintRow(Base):
     input_versions_hash: Mapped[str] = mapped_column(Text, nullable=False)
     reuse_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class DriverThreadRow(Base):
+    __tablename__ = "driver_threads"
+    __table_args__ = (
+        PrimaryKeyConstraint("id", name="driver_threads_pkey"),
+        UniqueConstraint("thread_id", name="driver_threads_thread_id_unique"),
+        UniqueConstraint(
+            "run_id",
+            "plan_version",
+            "assignment_version",
+            "gate_policy_version",
+            "execution_generation",
+            "graph_version",
+            "state_schema_version",
+            "checkpoint_epoch",
+            name="driver_threads_binding_unique",
+        ),
+        Index(
+            "driver_threads_active_run_uidx",
+            "run_id",
+            unique=True,
+            postgresql_where=text("status = 'active'"),
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(Text, nullable=False)
+    run_id: Mapped[str] = mapped_column(
+        Text, ForeignKey("app.runs.id", ondelete="CASCADE"), nullable=False
+    )
+    thread_id: Mapped[str] = mapped_column(Text, nullable=False)
+    plan_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    assignment_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    gate_policy_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    execution_generation: Mapped[int] = mapped_column(Integer, nullable=False)
+    graph_version: Mapped[str] = mapped_column(Text, nullable=False)
+    state_schema_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    checkpoint_epoch: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default=text("1")
+    )
+    binding_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(Text, nullable=False)
+    latest_checkpoint_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    last_observed_sequence: Mapped[int] = mapped_column(
+        BigInteger, nullable=False, server_default=text("0")
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class SchedulerOperationRow(Base):
+    __tablename__ = "scheduler_operations"
+    __table_args__ = (
+        PrimaryKeyConstraint("id", name="scheduler_operations_pkey"),
+        UniqueConstraint("run_id", "operation_key", name="scheduler_operations_run_key_unique"),
+    )
+
+    id: Mapped[str] = mapped_column(Text, nullable=False)
+    run_id: Mapped[str] = mapped_column(
+        Text, ForeignKey("app.runs.id", ondelete="CASCADE"), nullable=False
+    )
+    thread_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    kind: Mapped[str] = mapped_column(Text, nullable=False)
+    operation_key: Mapped[str] = mapped_column(Text, nullable=False)
+    request_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    binding_json: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'{}'::jsonb")
+    )
+    status: Mapped[str] = mapped_column(Text, nullable=False)
+    result_refs: Mapped[list[Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    error_code: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class RunWaitRow(Base):
+    __tablename__ = "run_waits"
+    __table_args__ = (
+        PrimaryKeyConstraint("id", name="run_waits_pkey"),
+        UniqueConstraint("run_id", "wait_key", name="run_waits_run_key_unique"),
+        Index("run_waits_run_status_deadline_idx", "run_id", "status", "deadline_at"),
+    )
+
+    id: Mapped[str] = mapped_column(Text, nullable=False)
+    run_id: Mapped[str] = mapped_column(
+        Text, ForeignKey("app.runs.id", ondelete="CASCADE"), nullable=False
+    )
+    thread_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    wait_key: Mapped[str] = mapped_column(Text, nullable=False)
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    scope_json: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'{}'::jsonb")
+    )
+    predicate_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    after_sequence: Mapped[int] = mapped_column(
+        BigInteger, nullable=False, server_default=text("0")
+    )
+    status: Mapped[str] = mapped_column(Text, nullable=False)
+    deadline_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    resolved_by_ref: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class RunWakeSignalRow(Base):
+    __tablename__ = "run_wake_signals"
+    __table_args__ = (
+        PrimaryKeyConstraint("id", name="run_wake_signals_pkey"),
+        UniqueConstraint(
+            "run_id",
+            "source_kind",
+            "source_ref",
+            name="run_wake_signals_source_unique",
+        ),
+        Index("run_wake_signals_claim_idx", "status", "priority", "created_at"),
+    )
+
+    id: Mapped[str] = mapped_column(Text, nullable=False)
+    run_id: Mapped[str] = mapped_column(
+        Text, ForeignKey("app.runs.id", ondelete="CASCADE"), nullable=False
+    )
+    source_kind: Mapped[str] = mapped_column(Text, nullable=False)
+    source_ref: Mapped[str] = mapped_column(Text, nullable=False)
+    source_sequence: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    binding_json: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'{}'::jsonb")
+    )
+    priority: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("100"))
+    status: Mapped[str] = mapped_column(Text, nullable=False)
+    claim_owner: Mapped[str | None] = mapped_column(Text, nullable=True)
+    claim_expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class RecoveryCaseRow(Base):
+    __tablename__ = "recovery_cases"
+    __table_args__ = (
+        PrimaryKeyConstraint("id", name="recovery_cases_pkey"),
+        Index(
+            "recovery_cases_open_request_uidx",
+            "request_operation_id",
+            unique=True,
+            postgresql_where=text(
+                "request_operation_id IS NOT NULL AND status = ANY (ARRAY["
+                "'open'::text, 'observing'::text, 'awaiting_decision'::text, "
+                "'applying'::text, 'blocked'::text])"
+            ),
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(Text, nullable=False)
+    run_id: Mapped[str] = mapped_column(
+        Text, ForeignKey("app.runs.id", ondelete="CASCADE"), nullable=False
+    )
+    request_operation_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    context_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    context_json: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'{}'::jsonb")
+    )
+    case_version: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("1"))
+    status: Mapped[str] = mapped_column(Text, nullable=False)
+    proposed_action: Mapped[str | None] = mapped_column(Text, nullable=True)
+    blocker_codes: Mapped[list[Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    plan_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    assignment_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class RecoveryObservationRow(Base):
+    __tablename__ = "recovery_observations"
+    __table_args__ = (PrimaryKeyConstraint("id", name="recovery_observations_pkey"),)
+
+    id: Mapped[str] = mapped_column(Text, nullable=False)
+    case_id: Mapped[str] = mapped_column(
+        Text, ForeignKey("app.recovery_cases.id", ondelete="CASCADE"), nullable=False
+    )
+    subject_type: Mapped[str] = mapped_column(Text, nullable=False)
+    subject_ref: Mapped[str] = mapped_column(Text, nullable=False)
+    observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    support: Mapped[str] = mapped_column(Text, nullable=False)
+    result_code: Mapped[str] = mapped_column(Text, nullable=False)
+    evidence_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    evidence_ref: Mapped[str | None] = mapped_column(Text, nullable=True)
+    binding_json: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'{}'::jsonb")
+    )
+    summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class RecoveryDecisionRow(Base):
+    __tablename__ = "recovery_decisions"
+    __table_args__ = (
+        PrimaryKeyConstraint("id", name="recovery_decisions_pkey"),
+        UniqueConstraint("case_id", "decision_key", name="recovery_decisions_case_key_unique"),
+    )
+
+    id: Mapped[str] = mapped_column(Text, nullable=False)
+    case_id: Mapped[str] = mapped_column(
+        Text, ForeignKey("app.recovery_cases.id", ondelete="CASCADE"), nullable=False
+    )
+    case_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    decision_key: Mapped[str] = mapped_column(Text, nullable=False)
+    context_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    decision: Mapped[str] = mapped_column(Text, nullable=False)
+    actor: Mapped[str] = mapped_column(Text, nullable=False)
+    reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    evidence_refs: Mapped[list[Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class PlatformAdmissionRow(Base):
+    __tablename__ = "platform_admission"
+    __table_args__ = (
+        PrimaryKeyConstraint("environment_id", name="platform_admission_pkey"),
+        CheckConstraint(
+            "mode = ANY (ARRAY['open'::text, 'draining'::text, 'stopped'::text])",
+            name="platform_admission_mode_check",
+        ),
+        CheckConstraint("version >= 1", name="platform_admission_version_check"),
+    )
+
+    environment_id: Mapped[str] = mapped_column(Text, nullable=False)
+    mode: Mapped[str] = mapped_column(Text, nullable=False)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
 
@@ -2151,6 +2449,14 @@ APP_V14_TABLES = (
     "rework_orders",
     "release_records",
     "evidence_fingerprints",
+    "driver_threads",
+    "scheduler_operations",
+    "run_waits",
+    "run_wake_signals",
+    "recovery_cases",
+    "recovery_observations",
+    "recovery_decisions",
+    "platform_admission",
     "integration_versions",
     "run_status_reconciliation_batches",
     "run_status_reconciliations",
