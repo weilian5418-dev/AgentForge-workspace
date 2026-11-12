@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Annotated, Any, cast
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Query, Request
 from starlette.exceptions import HTTPException
 
 from agentforge.contracts.agents import (
@@ -15,6 +15,7 @@ from agentforge.contracts.agents import (
     ProfileCreateRequest,
     ProfileValidateResponse,
 )
+from agentforge.contracts.snapshots import AgentSummaryResponse
 from agentforge.core.config import Settings
 from agentforge.discovery.registry import (
     DiscoveryRegistryError,
@@ -22,6 +23,7 @@ from agentforge.discovery.registry import (
     register_installation,
 )
 from agentforge.discovery.service import AgentDiscoveryService, DiscoveredInstallation
+from agentforge.queries.agents import build_agent_summary
 from agentforge.runtime.control import admits_new_work, read_admission
 from agentforge.storage.uow import unit_of_work_connection
 
@@ -45,6 +47,27 @@ def _map(exc: DiscoveryRegistryError) -> HTTPException:
         "inspect_failed": 400,
     }.get(exc.code, 400)
     return HTTPException(status, f"{exc.code}: {exc.message}")
+
+
+@router.get("/agents/summary", response_model=AgentSummaryResponse)
+def agents_summary(
+    request: Request,
+    settings: Annotated[Settings, Depends(_settings)],
+    environment_id: Annotated[str, Query(alias="environmentId")] = "local",
+    run_id: Annotated[str | None, Query(alias="runId")] = None,
+    required_capabilities: Annotated[
+        list[str] | None, Query(alias="requiredCapability")
+    ] = None,
+) -> AgentSummaryResponse:
+    """Inventory counts with inventoryRevision — independent of Run.sequence."""
+    engine = _engine(request, settings)
+    with unit_of_work_connection(engine) as uow:
+        return build_agent_summary(
+            uow.session,
+            environment_id=environment_id,
+            run_id=run_id,
+            required_capabilities=required_capabilities,
+        )
 
 
 @router.post("/agent-products/discover", response_model=DiscoveryRunResponse)

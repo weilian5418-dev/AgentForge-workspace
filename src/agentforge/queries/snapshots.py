@@ -10,22 +10,21 @@ import time
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
 from agentforge.contracts.common import BudgetLimits
 from agentforge.contracts.snapshots import (
-    AgentCounts,
     DeliveryOverview,
     ExecutionBindingOverview,
-    ProgressSummary,
     RunOverview,
     RunSnapshot,
     StageSummary,
     WaitSummary,
 )
 from agentforge.core.config import Settings
+from agentforge.queries.agents import summarize_agent_counts, summarize_progress
 from agentforge.queries.authorization import (
     AuthenticatedPrincipal,
     QueryAuthError,
@@ -33,14 +32,10 @@ from agentforge.queries.authorization import (
 )
 from agentforge.storage.models import (
     AgentInstanceRow,
-    AgentProductRow,
-    AgentProfileRow,
     DriverThreadRow,
     Event,
     EventReplayWindowRow,
     IntegrationSelectionRow,
-    Plan,
-    ReleaseRecordRow,
     Run,
     RunDeliveryRow,
     RunWaitRow,
@@ -252,31 +247,6 @@ def build_bounded_snapshot(
         failed=sum(1 for s in stages if s.status == "failed"),
     )
 
-    releases = list(
-        session.scalars(
-            select(ReleaseRecordRow)
-            .join(StageRow, StageRow.id == ReleaseRecordRow.stage_id)
-            .where(StageRow.run_id == run.id)
-        ).all()
-    )
-    released_wp: set[str] = set()
-    for rel in releases:
-        for wp in rel.work_package_ids or []:
-            released_wp.add(str(wp))
-
-    plan_wp_total = 0
-    required_total = 0
-    required_ids: set[str] = set()
-    if run.plan_version is not None:
-        plan = session.get(Plan, (run.id, run.plan_version))
-        if plan is not None and plan.spec_json:
-            from agentforge.contracts.plans import PlanSpec
-
-            spec = PlanSpec.model_validate(plan.spec_json)
-            plan_wp_total = len(spec.work_packages)
-            required_ids = {w.id for w in spec.work_packages if w.required}
-            required_total = len(required_ids)
-
     open_waits = list(
         session.scalars(
             select(RunWaitRow).where(RunWaitRow.run_id == run.id, RunWaitRow.status == "open")
@@ -292,64 +262,10 @@ def build_bounded_snapshot(
     env_id = "local"
     if instances:
         env_id = instances[0].execution_environment or "local"
-    product_count = int(
-        session.scalar(select(func.count()).select_from(AgentProductRow)) or 0
+    agent_counts = summarize_agent_counts(
+        session, environment_id=env_id, run_id=run.id, as_of=_now(session)
     )
-    # D12.3 provisional: authenticated profiles only; D12.4 refines schedulability.
-    profile_count = int(
-        session.scalar(
-            select(func.count())
-            .select_from(AgentProfileRow)
-            .where(AgentProfileRow.auth_status == "authenticated")
-        )
-        or 0
-    )
-    active_instances = sum(
-        1
-        for i in instances
-        if i.lifecycle in {"active", "starting", "stop_requested"}
-        or i.activity in {"busy", "waiting_input", "waiting_approval"}
-    )
-    agent_counts = AgentCounts.model_validate(
-        {
-            "environmentId": env_id,
-            "discoveredProductCount": product_count,
-            "schedulableProfileCount": profile_count,
-            "activeInstanceCount": active_instances,
-            "busyInstanceCount": sum(1 for i in instances if i.activity == "busy"),
-            "waitingApprovalInstanceCount": sum(
-                1 for i in instances if i.activity == "waiting_approval"
-            ),
-            "stoppedInstanceCount": sum(
-                1 for i in instances if i.lifecycle in {"stopped", "closed"}
-            ),
-            "unknownInstanceCount": sum(
-                1 for i in instances if i.lifecycle == "unknown" or i.status == "unknown"
-            ),
-            "needsReconciliationInstanceCount": sum(
-                1 for i in instances if "reconciliation" in (i.status or "")
-            ),
-            "inventoryRevision": max(1, product_count + profile_count + 1),
-            "asOf": _now(session),
-            "scopeNote": "snapshot inventory; see GET /agents/summary for scoped schedulability",
-        }
-    )
-
-    required_released = len(required_ids & released_wp)
-    progress = ProgressSummary.model_validate(
-        {
-            "workPackagesTotal": plan_wp_total,
-            "workPackagesReleased": len(released_wp),
-            "requiredPackagesTotal": required_total,
-            "requiredPackagesReleased": required_released,
-            "acceptanceStatus": (
-                delivery.acceptance_status if delivery is not None else "none"
-            ),
-            "collaborationProgressRatio": (
-                (required_released / required_total) if required_total else None
-            ),
-        }
-    )
+    progress = summarize_progress(session, run)
 
     overview = RunOverview.model_validate(
         {

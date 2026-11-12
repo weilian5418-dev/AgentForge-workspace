@@ -116,8 +116,8 @@ def test_build_bounded_snapshot_returns_plain_dto() -> None:
         return result
 
     session.scalars.side_effect = _scalars
-    # thread, selection, product count, profile count
-    session.scalar.side_effect = [None, None, 0, 0]
+    # thread + selection (counts/progress use scalars)
+    session.scalar.side_effect = [None, None]
 
     with patch("agentforge.queries.snapshots.db_now", return_value=now):
         snap = build_bounded_snapshot(session, settings, run)

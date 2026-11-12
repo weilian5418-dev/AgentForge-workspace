@@ -903,6 +903,46 @@ def queue_replay(
     emit(payload, as_json=json_out, human=f"Replay accepted for {operation_id}")
 
 
+@agent_app.command("summary")
+def agent_summary(
+    environment_id: str = typer.Option("local", "--environment-id"),
+    run_id: str | None = typer.Option(None, "--run-id"),
+    required_capability: list[str] | None = typer.Option(
+        None, "--required-capability", help="Repeatable capability filter"
+    ),
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """Agent inventory summary (products/profiles/instances). Not Run.sequence."""
+    from agentforge.queries.agents import build_agent_summary
+    from agentforge.storage.database import create_database_engine
+    from agentforge.storage.uow import unit_of_work_connection
+
+    settings = load_settings()
+    engine = create_database_engine(settings)
+    if engine is None:
+        typer.echo("Database is not configured", err=True)
+        raise typer.Exit(DEPENDENCY_UNAVAILABLE)
+    with unit_of_work_connection(engine) as uow:
+        summary = build_agent_summary(
+            uow.session,
+            environment_id=environment_id,
+            run_id=run_id,
+            required_capabilities=required_capability,
+        )
+    payload = summary.model_dump(mode="json", by_alias=True)
+    counts = summary.counts
+    emit(
+        payload,
+        as_json=json_out,
+        human=(
+            f"products={counts.discovered_product_count} "
+            f"schedulable={counts.schedulable_profile_count} "
+            f"activeInstances={counts.active_instance_count} "
+            f"rev={counts.inventory_revision}"
+        ),
+    )
+
+
 @agent_app.command("discover")
 def agent_discover(
     persist: bool = typer.Option(True, "--persist/--no-persist"),
