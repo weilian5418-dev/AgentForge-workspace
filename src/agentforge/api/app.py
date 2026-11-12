@@ -110,6 +110,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         audience = (
             "stage-review"
             if request.url.path.endswith("/reviews")
+            else "integration-review"
+            if "/integration-review-requests/" in request.url.path
+            and request.url.path.endswith("/responses")
             else "agent-message"
             if request.url.path == "/api/v1/internal/agent-messages"
             else "native-event"

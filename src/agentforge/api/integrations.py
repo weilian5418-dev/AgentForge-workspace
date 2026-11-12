@@ -1,4 +1,4 @@
-"""Integration selection / build API (D12)."""
+"""Integration selection / build / final-review API (D12)."""
 
 from __future__ import annotations
 
@@ -9,14 +9,19 @@ from sqlalchemy import select
 from starlette.exceptions import HTTPException
 
 from agentforge.contracts.integrations import (
+    FinalReviewReportView,
+    FinalReviewRequestView,
+    FinalReviewResponseRequest,
     IntegrationBuildRequest,
     IntegrationBuildView,
+    IntegrationEvaluation,
     IntegrationSelection,
     IntegrationSelectionRequest,
     ValidationCycleRequest,
     ValidationCycleView,
 )
 from agentforge.core.config import Settings
+from agentforge.core.service_identity import verify_ticket
 from agentforge.integration.check_worker import (
     CheckWorkerError,
     start_validation_for_version,
@@ -27,7 +32,9 @@ from agentforge.integration.coordinator import (
     reconcile_integration_build,
     request_integration_build,
 )
+from agentforge.integration.reviews import ReviewError, open_final_review
 from agentforge.integration.selection import SelectionError, create_selection
+from agentforge.integration.service import evaluate_integration_cycle, submit_trusted_final_review
 from agentforge.queries.authorization import AuthenticatedPrincipal, api_principal
 from agentforge.storage.database import create_database_engine
 from agentforge.storage.models import IntegrationBuildRow
@@ -204,3 +211,100 @@ def open_validation_cycle_api(
             "check_not_registered": 400,
         }.get(exc.code, 400)
         raise HTTPException(status, f"{exc.code}: {exc.message}") from exc
+
+
+def _map_review(exc: ReviewError) -> HTTPException:
+    status = {
+        "cycle_not_found": 404,
+        "version_not_found": 404,
+        "run_not_found": 404,
+        "review_request_not_found": 404,
+        "review_binding_mismatch": 409,
+        "idempotency_conflict": 409,
+    }.get(exc.code, 400)
+    return HTTPException(status, f"{exc.code}: {exc.message}")
+
+
+@router.post(
+    "/validation-cycles/{cycle_id}/final-reviews",
+    response_model=FinalReviewRequestView,
+    status_code=201,
+)
+def open_final_review_api(
+    request: Request,
+    cycle_id: str,
+    settings: Annotated[Settings, Depends(_settings)],
+) -> FinalReviewRequestView:
+    """Open a final review for the reviewer instance named in X-Reviewer-Instance-Id.
+
+    Header alone does not grant identity — open binds the current assignment;
+    responses still require an integration-review ticket.
+    """
+    instance_id = request.headers.get("X-Reviewer-Instance-Id") or ""
+    if not instance_id:
+        raise HTTPException(400, "reviewer_instance_required: X-Reviewer-Instance-Id required")
+    engine = _require_engine(request, settings)
+    try:
+        with unit_of_work_connection(engine) as uow:
+            return open_final_review(
+                uow.session,
+                cycle_id=cycle_id,
+                reviewer_assignment_ref=instance_id,
+            )
+    except ReviewError as exc:
+        raise _map_review(exc) from exc
+
+
+@router.post(
+    "/integration-review-requests/{request_id}/responses",
+    response_model=FinalReviewReportView,
+    status_code=201,
+)
+def submit_final_review_api(
+    request: Request,
+    request_id: str,
+    body: FinalReviewResponseRequest,
+    settings: Annotated[Settings, Depends(_settings)],
+) -> FinalReviewReportView:
+    """Trusted reviewer response — ordinary user bearer cannot satisfy ticket check."""
+    try:
+        reviewer = verify_ticket(
+            settings,
+            request.headers.get("X-Agent-Ticket", ""),
+            audience="integration-review",
+            request_id=request_id,
+        )
+    except (ValueError, TypeError, KeyError):
+        raise HTTPException(
+            403, "trusted_reviewer_required: Signed integration-review ticket required"
+        ) from None
+    # Reject plain user bearer pretending via X-Reviewer-Instance-Id without ticket
+    engine = _require_engine(request, settings)
+    try:
+        with unit_of_work_connection(engine) as uow:
+            return submit_trusted_final_review(
+                uow.session,
+                trusted_identity=reviewer,
+                request_id=request_id,
+                body=body,
+            )
+    except ReviewError as exc:
+        raise _map_review(exc) from exc
+
+
+@router.post(
+    "/validation-cycles/{cycle_id}/evaluate",
+    response_model=IntegrationEvaluation,
+)
+def evaluate_cycle_api(
+    request: Request,
+    cycle_id: str,
+    settings: Annotated[Settings, Depends(_settings)],
+) -> IntegrationEvaluation:
+    """Technical evaluation from server-assembled facts — clients cannot pass outcomes."""
+    engine = _require_engine(request, settings)
+    try:
+        with unit_of_work_connection(engine) as uow:
+            return evaluate_integration_cycle(uow.session, cycle_id=cycle_id)
+    except ReviewError as exc:
+        raise _map_review(exc) from exc
