@@ -117,7 +117,12 @@ def collaboration_operation(
 
             return str(process_workspace_preparation(engine, payload, settings=settings)["status"])
         if intent_type == "recovery.inspect":
-            return "recovery_inspect_deferred"  # D11.9 fills probe_case.
+            from agentforge.recovery.probe import probe_case
+
+            case_id = str(payload.get("caseId") or "")
+            if not case_id:
+                raise ValueError("recovery.inspect requires caseId")
+            return str(probe_case(engine, settings, case_id)["status"])
         raise ValueError("Unsupported collaboration intent")
     finally:
         engine.dispose()

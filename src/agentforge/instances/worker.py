@@ -118,13 +118,18 @@ def _process_instance_operation(
         token = uuid.uuid4().hex
         op.status = "unknown"
         op.claim_token = token
+        prior_payload = dict(op.payload_json or {})
         op.payload_json = {
-            **(op.payload_json or {}),
+            **prior_payload,
             "dispatchStartedAt": now().isoformat(),
             "context": ctx.as_adapter_payload(),
         }
-        snapshot = (op.kind, profile.adapter_id, ctx, token)
-    kind, adapter_id, ctx, token = snapshot
+        resume_binding = (
+            str(prior_payload.get("sessionRef") or ctx.session_ref or ""),
+            str(prior_payload.get("nativeSessionId") or instance.native_session_id or ""),
+        )
+        snapshot = (op.kind, profile.adapter_id, ctx, token, resume_binding)
+    kind, adapter_id, ctx, token, resume_binding = snapshot
     try:
         adapter = (adapter_factory or get_adapter)(adapter_id)
         if kind == "create_session":
@@ -155,6 +160,33 @@ def _process_instance_operation(
             }
         elif kind == "close":
             result = adapter.close_session(session_ref=ctx.session_ref)
+        elif kind == "resume":
+            from agentforge.recovery.resume import classify_resume_result
+
+            raw_resume = adapter.resume_or_handoff(
+                session_ref=ctx.session_ref, context=ctx.as_adapter_payload()
+            )
+            if not isinstance(raw_resume, dict):
+                raw_resume = {"status": "unknown", "detail": "non-dict resume result"}
+            classified = classify_resume_result(
+                raw_resume,
+                expected_session_ref=resume_binding[0],
+                expected_native_session_id=resume_binding[1],
+            )
+            # Map coordinator kinds onto ledger statuses without inventing success.
+            ledger_status = {
+                "resumed_existing": "succeeded",
+                "handoff_required": "failed",
+                "unsupported": "failed",
+                "failed": "failed",
+                "unknown": "unknown",
+            }.get(classified.kind, "unknown")
+            result = {
+                "status": ledger_status,
+                "resumeKind": classified.kind,
+                "resume": classified.model_dump(mode="json", by_alias=True),
+                "raw": raw_resume,
+            }
         else:
             result = {"status": "unsupported"}
     except Exception:
@@ -236,6 +268,27 @@ def _process_instance_operation(
             native.closed_at = now()
             instance.lifecycle = "closed"
             instance.status = "closed"
+        elif kind == "resume":
+            resume_kind = result.get("resumeKind")
+            if resume_kind == "resumed_existing" and support == "succeeded":
+                instance.lifecycle = "active"
+                instance.activity = "idle"
+                instance.status = "idle"
+                op.status = "succeeded"
+                op.completed_at = now()
+                op.claim_token = None
+                _wake_instance_operation(session, run.id, op)
+                return {"status": "succeeded", "resumeKind": resume_kind}
+            if resume_kind in {"handoff_required", "unsupported", "failed"}:
+                op.status = "failed"
+                op.error_code = str(resume_kind)
+                op.completed_at = now()
+                op.claim_token = None
+                _wake_instance_operation(session, run.id, op)
+                return {"status": "failed", "resumeKind": resume_kind}
+            op.error_code = "native_outcome_unknown"
+            _wake_instance_operation(session, run.id, op)
+            return {"status": "unknown", "resumeKind": resume_kind}
         else:
             op.error_code = "native_outcome_unknown"
             _wake_instance_operation(session, run.id, op)

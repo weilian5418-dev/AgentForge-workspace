@@ -300,9 +300,7 @@ def register_wait_action(
 
 
 def open_recovery_stub(session: Session, fence: LeaseFence, action: NextAction) -> dict[str, Any]:
-    """D11.8 stub: durable inspect intent; D11.9 fills probe_case."""
-    from agentforge.storage.models import Outbox
-
+    """Open RecoveryCase + scheduler op; probe runs via recovery.inspect outbox."""
     assert_driver_fence(session, fence, require_active_thread=fence.thread_id is not None)
     run = session.get(Run, fence.run_id, with_for_update=True)
     if run is None:
@@ -323,8 +321,18 @@ def open_recovery_stub(session: Session, fence: LeaseFence, action: NextAction) 
             "operationId": existing.id,
             "recoveryCaseRef": (existing.result_refs or [None])[0],
         }
-    case_id = _id("rcv")
+
+    from agentforge.recovery.service import RecoveryService
+
+    reason = action.recovery_reason or action.detail or "open_recovery"
     op_id = _id("sop")
+    case = RecoveryService(session).open_case(
+        run.id,
+        reason=str(reason),
+        request_operation_id=op_id,
+        work_package_id=action.work_package_id,
+        emit_outbox=True,
+    )
     repo.add_operation(
         SchedulerOperationRow(
             id=op_id,
@@ -333,35 +341,24 @@ def open_recovery_stub(session: Session, fence: LeaseFence, action: NextAction) 
             kind="recovery_inspect",
             operation_key=op_key,
             request_hash=sha256_hex(
-                {"reason": action.recovery_reason or action.detail, "wp": action.work_package_id}
+                {"reason": reason, "wp": action.work_package_id, "caseId": case.case_id}
             ),
             binding_json={
-                "caseId": case_id,
-                "reason": action.recovery_reason or action.detail,
+                "caseId": case.case_id,
+                "reason": reason,
                 "workPackageId": action.work_package_id,
             },
             status="waiting",
-            result_refs=[case_id],
+            result_refs=[case.case_id],
             created_at=_now(session),
             updated_at=_now(session),
         )
     )
-    session.add(
-        Outbox(
-            id=_id("obx"),
-            run_id=run.id,
-            event_id=None,
-            intent_type="recovery.inspect",
-            target="recovery",
-            payload={"operationId": op_id, "caseId": case_id, "runId": run.id, "taskVersion": 1},
-            idempotency_key=f"recovery.inspect:{op_id}",
-            delivery_status="pending",
-            attempt_count=0,
-            created_at=_now(session),
-            updated_at=_now(session),
-        )
-    )
-    return {"status": "waiting", "operationId": op_id, "recoveryCaseRef": case_id}
+    return {
+        "status": "waiting",
+        "operationId": op_id,
+        "recoveryCaseRef": case.case_id,
+    }
 
 
 # --- Graph node wrappers ---
