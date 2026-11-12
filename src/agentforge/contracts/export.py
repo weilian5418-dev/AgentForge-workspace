@@ -71,7 +71,20 @@ from agentforge.contracts.providers import (
     ProviderProfile,
 )
 from agentforge.contracts.runs import RunCreateRequest, RunSnapshotResponse
-from agentforge.contracts.stages import GateDecision, IntegrationVersion, ReviewReport, Stage
+from agentforge.contracts.stages import (
+    CandidateSet,
+    GateDecision,
+    GateEvaluationInput,
+    GateEvaluationResult,
+    IntegrationVersion,
+    ReleaseRecord,
+    ReviewCycle,
+    ReviewReport,
+    ReviewRequest,
+    ReworkOrder,
+    Stage,
+    StageUserDecision,
+)
 from agentforge.contracts.system import CapabilityResponse, HealthResponse, ReadinessResponse
 from agentforge.contracts.templates import TemplateDocument, TemplateImportRequest
 from agentforge.contracts.validations import ValidationReport
@@ -115,7 +128,15 @@ SCHEMA_MODELS: dict[str, type[Any]] = {
     "execution-eligibility.schema.json": ExecutionEligibility,
     "execution-request.schema.json": ExecutionRequest,
     "stage.schema.json": Stage,
+    "candidate-set.schema.json": CandidateSet,
+    "review-cycle.schema.json": ReviewCycle,
+    "review-request.schema.json": ReviewRequest,
+    "stage-user-decision.schema.json": StageUserDecision,
+    "gate-evaluation-input.schema.json": GateEvaluationInput,
+    "gate-evaluation-result.schema.json": GateEvaluationResult,
     "gate-decision.schema.json": GateDecision,
+    "rework-order.schema.json": ReworkOrder,
+    "release-record.schema.json": ReleaseRecord,
     "review-report.schema.json": ReviewReport,
     "integration-version.schema.json": IntegrationVersion,
     "approval-summary.schema.json": ApprovalSummary,

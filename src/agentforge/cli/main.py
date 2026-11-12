@@ -1622,7 +1622,7 @@ def instance_stop(
     reason: str | None = typer.Option(None, "--reason"),
     json_out: bool = typer.Option(False, "--json"),
 ) -> None:
-    """Request stop. 202/accepted only ¡ª poll operation for completion."""
+    """Request stop. 202/accepted only - poll operation for completion."""
     from agentforge.contracts.agents import AgentInstanceActionRequest
     from agentforge.instances.actions import InstanceActionService
     from agentforge.instances.errors import InstanceError
@@ -1653,7 +1653,7 @@ def instance_operation(
     operation_id: str = typer.Option(..., "--operation-id"),
     json_out: bool = typer.Option(False, "--json"),
 ) -> None:
-    """Query persistent operation result. 202 accept ¡Ù start/delivery complete."""
+    """Query persistent operation result. 202 accept != start/delivery complete."""
     from agentforge.instances.errors import InstanceError
     from agentforge.messaging.service import MessageService
 
