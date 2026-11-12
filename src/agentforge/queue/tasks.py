@@ -113,7 +113,9 @@ def collaboration_operation(
         if intent_type == "stage.released":
             return "release_recorded"  # D11 consumes readiness, never bypasses eligibility.
         if intent_type == "workspace.prepare":
-            return "workspace_prepare_deferred"  # D11.6 fills process_workspace_preparation.
+            from agentforge.driver.workspace_preparation import process_workspace_preparation
+
+            return str(process_workspace_preparation(engine, payload, settings=settings)["status"])
         if intent_type == "recovery.inspect":
             return "recovery_inspect_deferred"  # D11.9 fills probe_case.
         raise ValueError("Unsupported collaboration intent")

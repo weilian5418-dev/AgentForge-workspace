@@ -105,7 +105,19 @@ class GitWorkspaceService:
             created_at=row.created_at,
         )
 
-    def prepare_worktree(self, body: PrepareWorktreeRequest) -> WorktreeView:
+    def prepare_worktree(
+        self,
+        body: PrepareWorktreeRequest,
+        *,
+        fixed_workspace_id: str | None = None,
+        fixed_worktree_path: Path | None = None,
+    ) -> WorktreeView:
+        """Prepare a worktree.
+
+        Driver/coordinator may pass ``fixed_workspace_id`` + ``fixed_worktree_path`` so a
+        crash after Git create but before DB commit can reclaim the same identity instead
+        of minting a second random worktree.
+        """
         project, baseline, grant = self._load_project_baseline(body.project_id, body.baseline_id)
         self._assert_source_binding(grant, body.source_root)
         if body.directory_identity != grant.directory_identity:
@@ -158,8 +170,28 @@ class GitWorkspaceService:
             # Do not auto stash/reset/clean — proceed with commit-only worktree.
             pass
 
-        workspace_id = f"gwt_{uuid.uuid4().hex[:16]}"
-        path = self.wt_root / project.id / workspace_id
+        workspace_id = fixed_workspace_id or f"gwt_{uuid.uuid4().hex[:16]}"
+        path = (
+            Path(fixed_worktree_path)
+            if fixed_worktree_path is not None
+            else self.wt_root / project.id / workspace_id
+        )
+        # Reclaim: DB missing but directory already prepared for this identity.
+        existing = self.session.get(GitWorkspaceRow, workspace_id)
+        if existing is not None:
+            return self._worktree_view(existing)
+        if path.exists() and fixed_workspace_id:
+            return self.reconcile_existing_worktree(
+                workspace_id=workspace_id,
+                path=path,
+                body=body,
+                project_id=project.id,
+                baseline=baseline,
+                source=source,
+                restrictions=list(restrictions),
+                dirty_included=dirty_included,
+            )
+
         path.parent.mkdir(parents=True, exist_ok=True)
         try:
             run_git(
@@ -195,6 +227,55 @@ class GitWorkspaceService:
             role_id=body.role_id,
             restrictions=list(restrictions),
             message="worktree prepared; isolation≠full host isolation",
+            created_at=_now(),
+            updated_at=_now(),
+        )
+        self.session.add(row)
+        self.session.flush()
+        return self._worktree_view(row)
+
+    def reconcile_existing_worktree(
+        self,
+        *,
+        workspace_id: str,
+        path: Path,
+        body: PrepareWorktreeRequest,
+        project_id: str,
+        baseline: ProjectBaselineRow,
+        source: Path,
+        restrictions: list[str],
+        dirty_included: bool,
+    ) -> WorktreeView:
+        """Claim an on-disk worktree whose DB row was lost mid-commit — never delete it."""
+        if not path.is_dir():
+            raise GitWorkspaceError(
+                "workspace_path_mismatch",
+                "fixed worktree path exists but is not a directory",
+            )
+        observed_head = head_commit(path)
+        if baseline.git_commit and observed_head and observed_head != baseline.git_commit:
+            # Detached worktree may have advanced; still require common ancestry later.
+            # For reclaim we require exact expected head at prepare time.
+            raise GitWorkspaceError(
+                "workspace_identity_unverified",
+                "existing path head does not match expected baseline commit",
+            )
+        status = "restricted" if any("restricted" in n for n in restrictions) else "active"
+        row = GitWorkspaceRow(
+            id=workspace_id,
+            project_id=project_id,
+            baseline_id=baseline.id,
+            strategy=body.strategy,
+            status=status,
+            worktree_path=str(path.resolve()),
+            source_root=str(source.resolve()),
+            head_commit=observed_head or baseline.git_commit,
+            dirty_included=dirty_included,
+            dirty_snapshot_id=body.dirty_snapshot_id,
+            attempt_id=body.attempt_id,
+            role_id=body.role_id,
+            restrictions=list(restrictions),
+            message="reclaimed existing worktree after interrupted prepare",
             created_at=_now(),
             updated_at=_now(),
         )

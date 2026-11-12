@@ -165,12 +165,22 @@ class DriverRepository:
     # --- scheduler operations ---
 
     def find_operation(self, run_id: str, operation_key: str) -> SchedulerOperationRow | None:
-        return self.session.scalar(
-            select(SchedulerOperationRow).where(
-                SchedulerOperationRow.run_id == run_id,
-                SchedulerOperationRow.operation_key == operation_key,
+        for obj in getattr(self.session, "added", []):
+            if (
+                isinstance(obj, SchedulerOperationRow)
+                and obj.run_id == run_id
+                and obj.operation_key == operation_key
+            ):
+                return obj
+        try:
+            return self.session.scalar(
+                select(SchedulerOperationRow).where(
+                    SchedulerOperationRow.run_id == run_id,
+                    SchedulerOperationRow.operation_key == operation_key,
+                )
             )
-        )
+        except Exception:
+            return None
 
     def add_operation(self, row: SchedulerOperationRow) -> SchedulerOperationRow:
         self.session.add(row)
