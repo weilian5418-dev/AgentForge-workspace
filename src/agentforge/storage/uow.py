@@ -51,7 +51,11 @@ def unit_of_work_connection(engine: Engine) -> Iterator[UnitOfWork]:
 
 
 def db_now(session: Session) -> Any:
-    """Database clock for lease/claim expiry comparisons."""
+    """Database clock for lease/claim expiry comparisons.
+
+    Prefer ``clock_timestamp()`` so lock-wait time is reflected (statement_timestamp
+    / ``now()`` stay fixed for the transaction start).
+    """
     from sqlalchemy import text
 
-    return session.execute(text("SELECT now()")).scalar_one()
+    return session.execute(text("SELECT clock_timestamp()")).scalar_one()

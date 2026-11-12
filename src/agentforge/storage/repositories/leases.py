@@ -111,27 +111,32 @@ class LeaseRepository:
         ttl_seconds: int = 60,
     ) -> RunLease:
         session = self._uow.session
+        # Lock Run first; never treat acquire as renew — generation stays fixed.
+        self._lock_run(run_id)
+        lease = session.execute(
+            select(RunLease)
+            .where(RunLease.run_id == run_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        ).scalar_one_or_none()
         now = db_now(session)
-        expires = now + timedelta(seconds=ttl_seconds)
-        result = session.execute(
-            update(RunLease)
-            .where(
-                RunLease.run_id == run_id,
-                RunLease.owner == owner,
-                RunLease.token == token,
-                RunLease.generation == generation,
-                RunLease.expires_at > now,
-            )
-            .values(expires_at=expires, updated_at=now)
-            .returning(RunLease)
-        )
-        row = result.scalar_one_or_none()
-        if row is None:
+        if (
+            lease is None
+            or lease.owner != owner
+            or lease.token != token
+            or int(lease.generation) != int(generation)
+            or lease.expires_at <= now
+        ):
             raise LeaseExpiredError(f"cannot renew run lease {run_id}")
-        return row
+        expires = now + timedelta(seconds=ttl_seconds)
+        lease.expires_at = expires
+        lease.updated_at = now
+        session.flush()
+        return lease
 
     def release_run_lease(self, *, run_id: str, owner: str, token: str, generation: int) -> None:
         session = self._uow.session
+        self._lock_run(run_id)
         now = db_now(session)
         released = session.execute(
             update(RunLease)
@@ -148,8 +153,9 @@ class LeaseRepository:
             raise LeaseConflictError(f"cannot release run lease {run_id}")
 
     def verify_run_lease(self, *, run_id: str, owner: str, token: str, generation: int) -> RunLease:
+        """Lock Run then lease; compare expiry with post-lock ``clock_timestamp()``."""
         session = self._uow.session
-        now = db_now(session)
+        self._lock_run(run_id)
         lease = session.execute(
             select(RunLease)
             .where(RunLease.run_id == run_id)
@@ -158,11 +164,12 @@ class LeaseRepository:
         ).scalar_one_or_none()
         if lease is not None:
             session.refresh(lease)
+        now = db_now(session)
         if (
             lease is None
             or lease.owner != owner
             or lease.token != token
-            or lease.generation != generation
+            or int(lease.generation) != int(generation)
             or lease.expires_at <= now
         ):
             raise LeaseExpiredError(f"run lease {run_id} is not valid")
