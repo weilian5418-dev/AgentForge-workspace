@@ -12,6 +12,7 @@ from agentforge.planning.hashing import (
     compute_contract_hash,
     compute_plan_hash,
 )
+from agentforge.planning.repository import PlanRepository, plan_row_from_spec
 
 __all__ = [
     "COMPILER_VERSION",
@@ -19,7 +20,9 @@ __all__ = [
     "CapabilityEvidenceFact",
     "CompilerFacts",
     "PLAN_HASH_ALGO",
+    "PlanRepository",
     "compile_plan",
     "compute_contract_hash",
     "compute_plan_hash",
+    "plan_row_from_spec",
 ]

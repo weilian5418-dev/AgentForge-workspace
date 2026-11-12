@@ -48,7 +48,7 @@ AGENTFORGE_DATABASE_URL=postgresql+psycopg://agentforge_api:YOUR_PASSWORD@127.0.
 AGENTFORGE_QUEUE_DATABASE_URL=postgresql+psycopg://agentforge_driver:YOUR_PASSWORD@127.0.0.1:5432/agentforge
 ```
 
-迁移使用 `agentforge_migrator` 临时覆盖连接串；服务角色授权见 `deploy/postgres/grants.sql`。期望 Alembic head：`20261111_0012`。
+迁移使用 `agentforge_migrator` 临时覆盖连接串；服务角色授权见 `deploy/postgres/grants.sql`。期望 Alembic head：`20261111_0013`。
 
 ## 开发与验证
 

@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     # Driver/worker URL with queue schema DML. API role alone cannot enqueue.
     queue_database_url: SecretStr | None = Field(default=None, repr=False)
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
-    expected_alembic_revision: str = "20261111_0012"
+    expected_alembic_revision: str = "20261111_0013"
 
     @field_validator("api_token")
     @classmethod

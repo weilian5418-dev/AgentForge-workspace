@@ -241,7 +241,11 @@ class Run(Base):
     failure_policy: Mapped[str] = mapped_column(Text, nullable=False)
     budget: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     # Planning model profile only — not role executors (see agent_instances).
-    planning_provider_profile_id: Mapped[str] = mapped_column(Text, nullable=False)
+    # Nullable: rules-only planning must not invent a fake provider profile.
+    planning_provider_profile_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    baseline_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    idempotency_key: Mapped[str | None] = mapped_column(Text, nullable=True)
+    current_confirmation_request_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     input_refs: Mapped[list[Any]] = mapped_column(
         JSONB, nullable=False, server_default=text("'[]'::jsonb")
     )
@@ -258,6 +262,8 @@ class Run(Base):
 
 
 class Plan(Base):
+    """Immutable plan revision. Full definition lives in ``spec_json`` (source of truth)."""
+
     __tablename__ = "plans"
     __table_args__ = (
         PrimaryKeyConstraint("run_id", "version", name="plans_pkey"),
@@ -275,9 +281,130 @@ class Plan(Base):
     )
     version: Mapped[int] = mapped_column(Integer, nullable=False)
     contract_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    plan_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(Text, nullable=False)
     summary: Mapped[str] = mapped_column(Text, nullable=False, server_default=text("''::text"))
+    spec_json: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    compilation_json: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    context_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    baseline_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    input_ids: Mapped[list[Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    gate_policy_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    supersedes_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    hash_algo_version: Mapped[str] = mapped_column(
+        Text, nullable=False, server_default=text("'plan-hash-v1'")
+    )
     created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class PlanningContextRow(Base):
+    __tablename__ = "planning_contexts"
+    __table_args__ = (
+        PrimaryKeyConstraint("id", name="planning_contexts_pkey"),
+        Index("ix_planning_contexts_run", "run_id"),
+    )
+
+    id: Mapped[str] = mapped_column(Text, nullable=False)
+    project_id: Mapped[str] = mapped_column(Text, nullable=False)
+    run_id: Mapped[str] = mapped_column(
+        Text, ForeignKey("app.runs.id", ondelete="CASCADE"), nullable=False
+    )
+    baseline_id: Mapped[str] = mapped_column(Text, nullable=False)
+    input_ids: Mapped[list[Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    read_scopes: Mapped[list[Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    summary: Mapped[str] = mapped_column(Text, nullable=False)
+    content_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    context_manifest_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class PlanProposalRow(Base):
+    __tablename__ = "plan_proposals"
+    __table_args__ = (
+        PrimaryKeyConstraint("id", name="plan_proposals_pkey"),
+        Index("ix_plan_proposals_run", "run_id"),
+    )
+
+    id: Mapped[str] = mapped_column(Text, nullable=False)
+    run_id: Mapped[str] = mapped_column(
+        Text, ForeignKey("app.runs.id", ondelete="CASCADE"), nullable=False
+    )
+    context_id: Mapped[str] = mapped_column(Text, nullable=False)
+    source: Mapped[str] = mapped_column(Text, nullable=False)
+    model_call_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    draft_json: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    diagnostics_json: Mapped[list[Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    status: Mapped[str] = mapped_column(Text, nullable=False, server_default=text("'active'"))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class PlanConfirmationRequestRow(Base):
+    __tablename__ = "plan_confirmation_requests"
+    __table_args__ = (
+        PrimaryKeyConstraint("id", name="plan_confirmation_requests_pkey"),
+        Index("ix_plan_confirmation_requests_run", "run_id", "status"),
+        ForeignKeyConstraint(
+            ["run_id", "plan_version"],
+            ["app.plans.run_id", "app.plans.version"],
+            name="plan_confirmation_requests_plan_fk",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(Text, nullable=False)
+    run_id: Mapped[str] = mapped_column(
+        Text, ForeignKey("app.runs.id", ondelete="CASCADE"), nullable=False
+    )
+    plan_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    plan_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    assignment_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    gate_policy_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    status_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    compilation_report_ref: Mapped[str | None] = mapped_column(Text, nullable=True)
+    capability_check_refs: Mapped[list[Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    status: Mapped[str] = mapped_column(Text, nullable=False, server_default=text("'pending'"))
+    failure_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class PlanDecisionRow(Base):
+    __tablename__ = "plan_decisions"
+    __table_args__ = (
+        PrimaryKeyConstraint("id", name="plan_decisions_pkey"),
+        UniqueConstraint("request_id", name="plan_decisions_request_unique"),
+    )
+
+    id: Mapped[str] = mapped_column(Text, nullable=False)
+    request_id: Mapped[str] = mapped_column(
+        Text,
+        ForeignKey("app.plan_confirmation_requests.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    run_id: Mapped[str] = mapped_column(
+        Text, ForeignKey("app.runs.id", ondelete="CASCADE"), nullable=False
+    )
+    actor: Mapped[str] = mapped_column(Text, nullable=False)
+    decision: Mapped[str] = mapped_column(Text, nullable=False)
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    decided_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
 
@@ -605,6 +732,10 @@ class RoleAssignmentRow(Base):
     assignment_version: Mapped[int] = mapped_column(Integer, nullable=False)
     role_id: Mapped[str] = mapped_column(Text, nullable=False)
     agent_profile_id: Mapped[str] = mapped_column(Text, nullable=False)
+    capability_check_refs: Mapped[list[Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    profile_config_version: Mapped[str | None] = mapped_column(Text, nullable=True)
     confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()

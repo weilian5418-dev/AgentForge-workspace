@@ -56,7 +56,12 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON
   app.git_dirty_snapshots,
   app.git_workspaces,
   app.git_workspace_snapshots,
-  app.git_integrations
+  app.git_integrations,
+  app.planning_contexts,
+  app.plan_proposals,
+  app.plan_confirmation_requests,
+  app.plan_decisions,
+  app.role_assignments
 TO agentforge_api, agentforge_driver;
 
 -- Queue transport DML (driver + worker). API must not hold queue credentials.
