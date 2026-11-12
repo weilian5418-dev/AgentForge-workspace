@@ -750,6 +750,13 @@ class AgentInstanceRow(Base):
         PrimaryKeyConstraint("id", name="agent_instances_pkey"),
         Index("agent_instances_run_idx", "run_id"),
         Index("agent_instances_status_idx", "status"),
+        Index("agent_instances_lifecycle_idx", "lifecycle", "activity"),
+        UniqueConstraint(
+            "run_id",
+            "assignment_id",
+            "role_id",
+            name="agent_instances_run_assignment_role_uidx",
+        ),
     )
 
     id: Mapped[str] = mapped_column(Text, nullable=False)
@@ -759,16 +766,150 @@ class AgentInstanceRow(Base):
     )
     role_id: Mapped[str] = mapped_column(Text, nullable=False)
     agent_profile_id: Mapped[str] = mapped_column(Text, nullable=False)
+    assignment_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    plan_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    plan_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
+    gate_policy_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
     session_ref: Mapped[str | None] = mapped_column(Text, nullable=True)
+    native_session_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     workspace_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     stage_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    current_work_package_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    generation: Mapped[int | None] = mapped_column(Integer, nullable=True)
     status: Mapped[str] = mapped_column(Text, nullable=False)
+    lifecycle: Mapped[str] = mapped_column(Text, nullable=False, server_default=text("'created'"))
+    activity: Mapped[str] = mapped_column(Text, nullable=False, server_default=text("'idle'"))
     execution_environment: Mapped[str] = mapped_column(Text, nullable=False)
     current_attempt_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    permission_scope_ref: Mapped[str | None] = mapped_column(Text, nullable=True)
+    budget_ref: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
     updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class NativeSessionRow(Base):
+    __tablename__ = "native_sessions"
+    __table_args__ = (
+        PrimaryKeyConstraint("id", name="native_sessions_pkey"),
+        Index("native_sessions_instance_idx", "instance_id", "created_at"),
+        UniqueConstraint("create_operation_id", name="native_sessions_create_op_uidx"),
+        Index(
+            "native_sessions_active_per_instance_uidx",
+            "instance_id",
+            unique=True,
+            postgresql_where=text("binding_status = 'active'"),
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(Text, nullable=False)
+    instance_id: Mapped[str] = mapped_column(
+        Text, ForeignKey("app.agent_instances.id", ondelete="CASCADE"), nullable=False
+    )
+    product_id: Mapped[str] = mapped_column(Text, nullable=False)
+    profile_id: Mapped[str] = mapped_column(Text, nullable=False)
+    config_version: Mapped[str] = mapped_column(Text, nullable=False)
+    environment_id: Mapped[str] = mapped_column(Text, nullable=False)
+    session_ref: Mapped[str | None] = mapped_column(Text, nullable=True)
+    create_operation_id: Mapped[str] = mapped_column(Text, nullable=False)
+    binding_status: Mapped[str] = mapped_column(Text, nullable=False)
+    workspace_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    evidence_json: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'{}'::jsonb")
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class InstanceOperationRow(Base):
+    __tablename__ = "instance_operations"
+    __table_args__ = (
+        PrimaryKeyConstraint("id", name="instance_operations_pkey"),
+        Index(
+            "instance_operations_claim_idx",
+            "status",
+            "claim_expires_at",
+            postgresql_where=text("status IN ('prepared', 'claimed')"),
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(Text, nullable=False)
+    instance_id: Mapped[str] = mapped_column(
+        Text, ForeignKey("app.agent_instances.id", ondelete="CASCADE"), nullable=False
+    )
+    kind: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(Text, nullable=False)
+    idempotency_key: Mapped[str | None] = mapped_column(Text, nullable=True)
+    native_ref: Mapped[str | None] = mapped_column(Text, nullable=True)
+    attempt_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    claim_owner: Mapped[str | None] = mapped_column(Text, nullable=True)
+    claim_token: Mapped[str | None] = mapped_column(Text, nullable=True)
+    claim_expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    payload_json: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'{}'::jsonb")
+    )
+    error_code: Mapped[str | None] = mapped_column(Text, nullable=True)
+    prepared_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class InstanceAttemptRow(Base):
+    __tablename__ = "instance_attempts"
+    __table_args__ = (
+        PrimaryKeyConstraint("id", name="instance_attempts_pkey"),
+        Index("instance_attempts_instance_idx", "instance_id", "created_at"),
+    )
+
+    id: Mapped[str] = mapped_column(Text, nullable=False)
+    instance_id: Mapped[str] = mapped_column(
+        Text, ForeignKey("app.agent_instances.id", ondelete="CASCADE"), nullable=False
+    )
+    run_id: Mapped[str] = mapped_column(
+        Text, ForeignKey("app.runs.id", ondelete="CASCADE"), nullable=False
+    )
+    work_package_id: Mapped[str] = mapped_column(Text, nullable=False)
+    stage_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    generation: Mapped[int] = mapped_column(Integer, nullable=False)
+    workspace_id: Mapped[str] = mapped_column(Text, nullable=False)
+    native_session_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class ExecutionRequestRow(Base):
+    __tablename__ = "execution_requests"
+    __table_args__ = (
+        PrimaryKeyConstraint("id", name="execution_requests_pkey"),
+        UniqueConstraint(
+            "run_id", "idempotency_key", name="execution_requests_run_idempotency_uidx"
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(Text, nullable=False)
+    run_id: Mapped[str] = mapped_column(
+        Text, ForeignKey("app.runs.id", ondelete="CASCADE"), nullable=False
+    )
+    idempotency_key: Mapped[str] = mapped_column(Text, nullable=False)
+    plan_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    plan_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    assignment_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    gate_policy_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(Text, nullable=False)
+    actor: Mapped[str] = mapped_column(Text, nullable=False)
+    result_json: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'{}'::jsonb")
+    )
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
 
@@ -840,13 +981,28 @@ class CollaborationMessageRow(Base):
     run_id: Mapped[str] = mapped_column(
         Text, ForeignKey("app.runs.id", ondelete="CASCADE"), nullable=False
     )
+    project_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     stage_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     work_package_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     message_type: Mapped[str] = mapped_column(Text, nullable=False)
     sender_ref: Mapped[str] = mapped_column(Text, nullable=False)
+    recipient_refs: Mapped[list[Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
     payload: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    artifact_refs: Mapped[list[Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
     plan_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
     assignment_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    reply_required: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("false")
+    )
+    reply_to: Mapped[str | None] = mapped_column(Text, nullable=True)
+    request_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    correlation_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    derived_from_gate_decision_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
@@ -874,6 +1030,12 @@ class MessageDeliveryRow(Base):
             name="message_deliveries_recipient_instance_id_fkey",
             ondelete="CASCADE",
         ),
+        Index(
+            "message_deliveries_claim_idx",
+            "transmission_status",
+            "claim_expires_at",
+            postgresql_where=text("transmission_status IN ('pending', 'claimed')"),
+        ),
     )
 
     id: Mapped[str] = mapped_column(Text, nullable=False)
@@ -882,13 +1044,120 @@ class MessageDeliveryRow(Base):
     # Delivery-ledger attempt identity (not task_attempts FK).
     attempt_id: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(Text, nullable=False)
+    transmission_status: Mapped[str] = mapped_column(
+        Text, nullable=False, server_default=text("'pending'")
+    )
+    reply_status: Mapped[str] = mapped_column(
+        Text, nullable=False, server_default=text("'not_required'")
+    )
+    delivery_mode: Mapped[str | None] = mapped_column(Text, nullable=True)
     native_receipt_ref: Mapped[str | None] = mapped_column(Text, nullable=True)
+    received_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    responded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    next_attempt_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    claim_owner: Mapped[str | None] = mapped_column(Text, nullable=True)
+    claim_token: Mapped[str | None] = mapped_column(Text, nullable=True)
+    claim_expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    assignment_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    plan_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
     retry_count: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
     error_code: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
     updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class DeliveryAttemptRow(Base):
+    __tablename__ = "delivery_attempts"
+    __table_args__ = (
+        PrimaryKeyConstraint("id", name="delivery_attempts_pkey"),
+        Index("delivery_attempts_delivery_idx", "delivery_id", "started_at"),
+    )
+
+    id: Mapped[str] = mapped_column(Text, nullable=False)
+    delivery_id: Mapped[str] = mapped_column(
+        Text, ForeignKey("app.message_deliveries.id", ondelete="CASCADE"), nullable=False
+    )
+    operation_id: Mapped[str] = mapped_column(Text, nullable=False)
+    transmission_status: Mapped[str] = mapped_column(Text, nullable=False)
+    native_receipt_ref: Mapped[str | None] = mapped_column(Text, nullable=True)
+    error_code: Mapped[str | None] = mapped_column(Text, nullable=True)
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class ProtocolRequestRow(Base):
+    __tablename__ = "protocol_requests"
+    __table_args__ = (
+        PrimaryKeyConstraint("id", name="protocol_requests_pkey"),
+        Index("protocol_requests_instance_idx", "instance_id", "status"),
+    )
+
+    id: Mapped[str] = mapped_column(Text, nullable=False)
+    request_type: Mapped[str] = mapped_column(Text, nullable=False)
+    allowed_response_types: Mapped[list[Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    instance_id: Mapped[str] = mapped_column(
+        Text, ForeignKey("app.agent_instances.id", ondelete="CASCADE"), nullable=False
+    )
+    native_session_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    attempt_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    generation: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    plan_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    assignment_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    stage_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(Text, nullable=False)
+    initiated_by: Mapped[str] = mapped_column(Text, nullable=False)
+    legal_responder_refs: Mapped[list[Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    matched_response_ref: Mapped[str | None] = mapped_column(Text, nullable=True)
+    conflict_refs: Mapped[list[Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    deadline_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class NativeEventReceiptRow(Base):
+    __tablename__ = "native_event_receipts"
+    __table_args__ = (
+        PrimaryKeyConstraint("id", name="native_event_receipts_pkey"),
+        UniqueConstraint(
+            "instance_id",
+            "source",
+            "dedupe_key",
+            name="native_event_receipts_dedupe_uidx",
+        ),
+        Index("native_event_receipts_cursor_idx", "instance_id", "source", "cursor"),
+    )
+
+    id: Mapped[str] = mapped_column(Text, nullable=False)
+    instance_id: Mapped[str] = mapped_column(
+        Text, ForeignKey("app.agent_instances.id", ondelete="CASCADE"), nullable=False
+    )
+    native_session_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    source: Mapped[str] = mapped_column(Text, nullable=False)
+    dedupe_key: Mapped[str] = mapped_column(Text, nullable=False)
+    cursor: Mapped[str | None] = mapped_column(Text, nullable=True)
+    event_type: Mapped[str] = mapped_column(Text, nullable=False)
+    normalized_payload: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'{}'::jsonb")
+    )
+    authentic: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("false"))
+    received_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
 
@@ -1619,10 +1888,17 @@ APP_V14_TABLES = (
     "agent_profiles",
     "role_assignments",
     "agent_instances",
+    "native_sessions",
+    "instance_operations",
+    "instance_attempts",
+    "execution_requests",
     "stages",
     "gate_decisions",
     "collaboration_messages",
     "message_deliveries",
+    "delivery_attempts",
+    "protocol_requests",
+    "native_event_receipts",
     "approval_mappings",
     "capability_checks",
     "stage_submissions",
