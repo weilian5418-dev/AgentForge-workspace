@@ -298,7 +298,11 @@ class NativeSession(ContractModel):
 
 
 class InstanceAttempt(ContractModel):
-    """One actual execution under the current context (task/stage/generation/workspace)."""
+    """One work-package execution attempt — unique active slot per WP / instance.
+
+    ``unknown`` occupies the write slot; timeout must not clear it. ``failed`` does
+    not by itself prove children stopped.
+    """
 
     attempt_id: OpaqueId
     instance_id: OpaqueId
@@ -308,6 +312,25 @@ class InstanceAttempt(ContractModel):
     generation: int = Field(ge=1, strict=True)
     workspace_id: OpaqueId
     native_session_id: OpaqueId | None = None
+    status: Literal[
+        "scheduled",
+        "dispatching",
+        "running",
+        "submitted",
+        "awaiting_stop_verification",
+        "stopped",
+        "failed",
+        "unknown",
+        "canceled",
+        "superseded",
+    ] = "scheduled"
+    dispatch_delivery_id: OpaqueId | None = None
+    scheduler_operation_id: OpaqueId | None = None
+    started_at: UtcDateTime | None = None
+    stop_verified_at: UtcDateTime | None = None
+    submission_id: OpaqueId | None = None
+    superseded_at: UtcDateTime | None = None
+    error_code: ShortText | None = None
     created_at: UtcDateTime
 
 

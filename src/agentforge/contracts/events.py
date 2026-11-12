@@ -58,6 +58,19 @@ EventType = Literal[
     "stage.rework_requested",
     "stage.released",
     "integration.validated",
+    # D11 driver / control / recovery
+    "driver.wait_registered",
+    "driver.wake_recorded",
+    "run.pause_requested",
+    "run.paused",
+    "run.resume_requested",
+    "run.cancel_requested",
+    "run.canceled",
+    "recovery.started",
+    "recovery.observed",
+    "recovery.blocked",
+    "recovery.applied",
+    "run.collaboration_ready",
 ]
 
 
@@ -219,6 +232,39 @@ class IntegrationValidatedPayload(ContractModel):
     passed: bool = Field(strict=True)
 
 
+class DriverWaitRegisteredPayload(ContractModel):
+    wait_id: OpaqueId
+    reason: ShortText
+    thread_id: OpaqueId | None = None
+
+
+class DriverWakeRecordedPayload(ContractModel):
+    wake_signal_id: OpaqueId
+    source_kind: ShortText
+    source_ref: ShortText
+
+
+class RunControlPayload(ContractModel):
+    operation_id: OpaqueId
+    action: ShortText
+    status_version: int = Field(ge=1, strict=True)
+    reason: ShortText | None = None
+
+
+class RecoveryLifecyclePayload(ContractModel):
+    case_id: OpaqueId
+    status: ShortText
+    action: ShortText | None = None
+    blocker_codes: list[ShortText] = Field(default_factory=list, max_length=16)
+
+
+class CollaborationReadyPayload(ContractModel):
+    handoff_id: OpaqueId
+    handoff_hash: Sha256Hex
+    plan_version: PlanVersion
+    assignment_version: AssignmentVersion
+
+
 class EventEnvelope(ContractModel):
     """Business or control event. `eventId` is unique; `sequence` orders within a run."""
 
@@ -280,6 +326,18 @@ _PAYLOAD_BY_TYPE: dict[str, type[ContractModel]] = {
     "stage.rework_requested": StageReworkRequestedPayload,
     "stage.released": StageReleasedPayload,
     "integration.validated": IntegrationValidatedPayload,
+    "driver.wait_registered": DriverWaitRegisteredPayload,
+    "driver.wake_recorded": DriverWakeRecordedPayload,
+    "run.pause_requested": RunControlPayload,
+    "run.paused": RunControlPayload,
+    "run.resume_requested": RunControlPayload,
+    "run.cancel_requested": RunControlPayload,
+    "run.canceled": RunControlPayload,
+    "recovery.started": RecoveryLifecyclePayload,
+    "recovery.observed": RecoveryLifecyclePayload,
+    "recovery.blocked": RecoveryLifecyclePayload,
+    "recovery.applied": RecoveryLifecyclePayload,
+    "run.collaboration_ready": CollaborationReadyPayload,
 }
 
 

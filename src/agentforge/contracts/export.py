@@ -70,7 +70,22 @@ from agentforge.contracts.providers import (
     ProviderCreateRequest,
     ProviderProfile,
 )
-from agentforge.contracts.runs import RunCreateRequest, RunSnapshotResponse
+from agentforge.contracts.collaboration import (
+    DriverResult,
+    DriverStatusResponse,
+    GraphBinding,
+    IntegrationHandoff,
+    RunControlRequest,
+    RunWait,
+    WakeSignal,
+)
+from agentforge.contracts.recovery import (
+    HandoffManifest,
+    RecoveryCase,
+    RecoveryDecisionRequest,
+    RecoveryReport,
+)
+from agentforge.contracts.runs import RunActionRequest, RunCreateRequest, RunSnapshotResponse
 from agentforge.contracts.stages import (
     CandidateSet,
     GateDecision,
@@ -106,7 +121,19 @@ SCHEMA_MODELS: dict[str, type[Any]] = {
     "model-call-create-request.schema.json": ModelCallCreateRequest,
     "budget-account-create-request.schema.json": BudgetAccountCreateRequest,
     "run-create-request.schema.json": RunCreateRequest,
+    "run-action-request.schema.json": RunActionRequest,
     "run-snapshot-response.schema.json": RunSnapshotResponse,
+    "graph-binding.schema.json": GraphBinding,
+    "wake-signal.schema.json": WakeSignal,
+    "run-wait.schema.json": RunWait,
+    "driver-result.schema.json": DriverResult,
+    "driver-status-response.schema.json": DriverStatusResponse,
+    "run-control-request.schema.json": RunControlRequest,
+    "integration-handoff.schema.json": IntegrationHandoff,
+    "recovery-case.schema.json": RecoveryCase,
+    "recovery-report.schema.json": RecoveryReport,
+    "recovery-decision-request.schema.json": RecoveryDecisionRequest,
+    "handoff-manifest.schema.json": HandoffManifest,
     "plan-response.schema.json": PlanResponse,
     "plan-spec.schema.json": PlanSpec,
     "plan-proposal.schema.json": PlanProposal,
@@ -197,6 +224,18 @@ EVENT_PAYLOAD_TYPES = (
     "stage.rework_requested",
     "stage.released",
     "integration.validated",
+    "driver.wait_registered",
+    "driver.wake_recorded",
+    "run.pause_requested",
+    "run.paused",
+    "run.resume_requested",
+    "run.cancel_requested",
+    "run.canceled",
+    "recovery.started",
+    "recovery.observed",
+    "recovery.blocked",
+    "recovery.applied",
+    "run.collaboration_ready",
 )
 
 

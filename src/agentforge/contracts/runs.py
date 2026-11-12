@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import AliasChoices, Field
+from pydantic import AliasChoices, Field, model_validator
 
 from agentforge.contracts.base import ApiInputModel, ContractModel
+from agentforge.contracts.collaboration import CollaborationProgress
 from agentforge.contracts.common import (
     ArtifactKind,
     AssignmentVersion,
@@ -103,13 +104,46 @@ class RunSnapshotResponse(ContractModel):
     input_refs: list[OpaqueId] = Field(default_factory=list)
     outputs: list[ArtifactKind]
     cancel_requested_at: UtcDateTime | None = None
+    collaboration_state: CollaborationProgress | None = None
+    collaboration_ready_at: UtcDateTime | None = None
     created_at: UtcDateTime
     updated_at: UtcDateTime
 
 
 class RunActionRequest(ApiInputModel):
+    """Pause / resume / cancel / replan intent.
+
+    Clients cannot declare stopVerified or native paused; those stay platform-owned.
+    """
+
     action: Literal["pause", "resume", "cancel", "replan"]
+    expected_status_version: ResourceRevision
+    idempotency_key: ShortText
     reason: str | None = Field(default=None, max_length=1024)
+
+    @model_validator(mode="before")
+    @classmethod
+    def reject_trusted_flags(cls, data: object) -> object:
+        if not isinstance(data, dict):
+            return data
+        forbidden = {
+            "stopped",
+            "verified",
+            "stopVerified",
+            "stop_verified",
+            "stopEvidenceRefs",
+            "stop_evidence_refs",
+            "nativeStopped",
+            "native_stopped",
+            "forcePass",
+            "force_pass",
+        }
+        for key in data:
+            if key in forbidden:
+                raise ValueError(
+                    f"clients cannot declare trusted run-control facts ({key})"
+                )
+        return data
 
 
 class OperationAccepted(ContractModel):

@@ -97,10 +97,16 @@ class PublicMessagePayloadModel(ApiInputModel):
 
 
 class TaskAssignmentPayload(PublicMessagePayloadModel):
+    """Platform-resolved assignment inputs — callers cannot invent local paths."""
+
     type: Literal["task.assignment"]
     work_package_id: OpaqueId
     objective: ShortText
     stage_id: OpaqueId | None = None
+    attempt_id: OpaqueId | None = None
+    input_release_refs: list[OpaqueId] = Field(default_factory=list, max_length=32)
+    input_candidate_refs: list[OpaqueId] = Field(default_factory=list, max_length=32)
+    context_bundle_ref: OpaqueId | None = None
 
 
 class ClarificationRequestPayload(PublicMessagePayloadModel):
