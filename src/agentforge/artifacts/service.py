@@ -285,8 +285,9 @@ class ArtifactService:
                 allowed=False,
                 reason="publication_not_found",
             )
-        # D10 gate not integrated — never default to released.
-        if not pub.stage_released:
+        # Publication alone is never enough — require D10 ReleaseRecord membership
+        # (or the denormalized stage_released flag set from a real release).
+        if not pub.stage_released and not self._candidate_has_release(pub.candidate_id):
             return ConsumeCheckResponse(
                 artifact_id=artifact_id,
                 version=version,
@@ -306,6 +307,56 @@ class ArtifactService:
             allowed=True,
             reason="ok",
         )
+
+    def can_consume_released_candidate(self, candidate_id: str) -> ConsumeCheckResponse:
+        """Strict entry: only candidates listed on a ReleaseRecord may be consumed."""
+        candidate = self.session.get(ArtifactCandidateRow, candidate_id)
+        if candidate is None:
+            return ConsumeCheckResponse(
+                artifact_id=candidate_id,
+                version=1,
+                allowed=False,
+                reason="candidate_not_found",
+            )
+        if candidate.state in {"rejected", "superseded"}:
+            return ConsumeCheckResponse(
+                artifact_id=candidate_id,
+                version=1,
+                allowed=False,
+                reason="candidate_not_consumable",
+            )
+        if not self._candidate_has_release(candidate_id):
+            return ConsumeCheckResponse(
+                artifact_id=candidate_id,
+                version=1,
+                allowed=False,
+                reason="stage_not_released_d10_required",
+            )
+        if not self.store.has(candidate.content_hash):
+            return ConsumeCheckResponse(
+                artifact_id=candidate_id,
+                version=1,
+                allowed=False,
+                reason="object_missing",
+            )
+        return ConsumeCheckResponse(
+            artifact_id=candidate_id,
+            version=1,
+            allowed=True,
+            reason="ok",
+        )
+
+    def _candidate_has_release(self, candidate_id: str) -> bool:
+        from agentforge.storage.models import ReleaseRecordRow
+
+        for release in self.session.scalars(select(ReleaseRecordRow)).all():
+            for raw in release.candidate_versions or []:
+                if not isinstance(raw, dict):
+                    continue
+                cid = raw.get("candidateId") or raw.get("candidate_id")
+                if cid == candidate_id:
+                    return True
+        return False
 
     def get_candidate(self, candidate_id: str) -> CandidateView:
         row = self.session.get(ArtifactCandidateRow, candidate_id)

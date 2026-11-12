@@ -9,6 +9,8 @@ from sqlalchemy.orm import Session
 
 from agentforge.contracts.agents import ExecutionRequest
 from agentforge.contracts.collaboration import LeaseFence, NextAction
+from agentforge.driver.dispatch import DispatchService
+from agentforge.driver.submissions import SubmissionBridge
 from agentforge.driver.workspace_preparation import ensure_workspace_operation
 from agentforge.instances.errors import InstanceError
 from agentforge.instances.preparation import ExecutionPreparationService
@@ -105,3 +107,37 @@ def ensure_instances(
         "operationId": accepted.operation_id,
         "note": "await session_ready; prepare 202 is not session ready",
     }
+
+
+def dispatch_ready(
+    session: Session,
+    fence: LeaseFence,
+    action: NextAction,
+) -> dict[str, Any]:
+    """Reserve attempt + create task.assignment (does not wait for native ack)."""
+    if not action.work_package_id:
+        raise ValueError("dispatch_ready requires work_package_id")
+    try:
+        return DispatchService(session).reserve_and_create_message(
+            fence,
+            action.work_package_id,
+            stage_id=action.stage_id,
+        )
+    except InstanceError as exc:
+        return {"status": "blocked", "errorCode": exc.code, "message": exc.message}
+
+
+def accept_submission(
+    session: Session,
+    fence: LeaseFence,
+    *,
+    message_ref: str,
+) -> dict[str, Any]:
+    """Bridge a verified stage.submission message into StageService.submit."""
+    from agentforge.driver.fencing import assert_driver_fence
+
+    assert_driver_fence(session, fence, require_active_thread=fence.thread_id is not None)
+    try:
+        return SubmissionBridge(session).accept(message_ref)
+    except InstanceError as exc:
+        return {"status": "blocked", "errorCode": exc.code, "message": exc.message}

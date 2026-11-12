@@ -174,6 +174,18 @@ def test_task_sent_through_submit_not_message_and_uses_current_attempt(setup):
     instance = s.get(m.AgentInstanceRow, op.instance_id)
     stage = next(r for r in s.added if isinstance(r, m.StageRow))
     wp = spec.work_packages[0]
+    attempt = m.InstanceAttemptRow(
+        id="ia_reserved",
+        instance_id=instance.id,
+        run_id="run",
+        work_package_id=wp.id,
+        stage_id=stage.id,
+        generation=1,
+        workspace_id=instance.workspace_id,
+        native_session_id=instance.native_session_id,
+        status="scheduled",
+    )
+    s.add(attempt)
     MessageService(s).create(
         "run",
         MessageCreateRequest.model_validate(
@@ -186,6 +198,7 @@ def test_task_sent_through_submit_not_message_and_uses_current_attempt(setup):
                     "workPackageId": wp.id,
                     "stageId": stage.id,
                     "objective": wp.objective,
+                    "attemptId": attempt.id,
                 },
             }
         ),

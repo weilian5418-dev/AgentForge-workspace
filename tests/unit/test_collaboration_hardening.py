@@ -141,6 +141,18 @@ def test_filesystem_pipeline_without_boolean_gate_shortcuts(tmp_path, monkeypatc
     }
     monkeypatch.setattr("agentforge.instances.worker.get_adapter", lambda _: adapter)
     process_instance_operation(object(), operation.id)
+    attempt = m.InstanceAttemptRow(
+        id="ia_reserved",
+        instance_id=instance.id,
+        run_id="run",
+        work_package_id=wp.id,
+        stage_id=stage.id,
+        generation=1,
+        workspace_id=instance.workspace_id,
+        native_session_id=instance.native_session_id,
+        status="scheduled",
+    )
+    s.add(attempt)
     MessageService(s).create(
         "run",
         MessageCreateRequest.model_validate(
@@ -154,6 +166,7 @@ def test_filesystem_pipeline_without_boolean_gate_shortcuts(tmp_path, monkeypatc
                     "workPackageId": wp.id,
                     "stageId": stage.id,
                     "objective": wp.objective,
+                    "attemptId": attempt.id,
                 },
             }
         ),

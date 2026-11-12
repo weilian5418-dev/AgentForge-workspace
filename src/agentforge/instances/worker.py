@@ -331,8 +331,21 @@ def _process_delivery(engine: Any, delivery_id: str, *, adapter_factory: Any = N
         if message.message_type == "task.assignment":
             stage_id = message.stage_id or message.payload.get("stageId")
             wp_id = message.work_package_id or message.payload.get("workPackageId")
+            reserved_attempt_id = message.payload.get("attemptId") or message.payload.get(
+                "attempt_id"
+            )
             if not stage_id or not wp_id:
                 raise InstanceError("execution_blocked", "Task must bind stage and work package")
+            if not reserved_attempt_id:
+                raise InstanceError(
+                    "execution_blocked",
+                    "Task must reference a reserved InstanceAttempt (D11 dispatch)",
+                )
+            if run.status not in {"preparing", "running"}:
+                delivery.transmission_status = "failed"
+                delivery.status = "failed"
+                delivery.error_code = "run_control_blocked"
+                return {"status": "failed"}
             EligibilityService(session).assert_may_dispatch(
                 run_id=run.id, stage_id=stage_id, work_package_id=wp_id
             )
@@ -343,18 +356,37 @@ def _process_delivery(engine: Any, delivery_id: str, *, adapter_factory: Any = N
                 raise InstanceError("illegal_recipient", "Task belongs to a different role")
             if instance.activity == "busy":
                 raise InstanceError("instance_busy", "Current execution has not stopped")
-            attempt = InstanceAttemptRow(
-                id="ia_" + uuid.uuid4().hex,
-                instance_id=instance.id,
-                run_id=run.id,
-                work_package_id=wp_id,
-                stage_id=stage_id,
-                generation=run.active_generation,
-                workspace_id=instance.workspace_id,
-                native_session_id=instance.native_session_id,
+            attempt = required(
+                session,
+                InstanceAttemptRow,
+                reserved_attempt_id,
+                with_for_update=True,
+                populate_existing=True,
             )
-            session.add(attempt)
-            session.flush()
+            if (
+                attempt.run_id != run.id
+                or attempt.work_package_id != wp_id
+                or attempt.instance_id != instance.id
+                or attempt.generation != run.active_generation
+            ):
+                raise InstanceError("stale_attempt", "Reserved attempt does not match delivery")
+            if attempt.status == "scheduled":
+                attempt.status = "dispatching"
+                attempt.dispatch_delivery_id = delivery.id
+                attempt.started_at = attempt.started_at or now()
+            elif attempt.status in {"dispatching", "running", "unknown"}:
+                # Crash before native send: reuse the same reserved slot; never mint another.
+                if attempt.dispatch_delivery_id not in {None, delivery.id}:
+                    raise InstanceError(
+                        "attempt_bound_elsewhere",
+                        "Reserved attempt already bound to another delivery",
+                    )
+                attempt.dispatch_delivery_id = delivery.id
+            else:
+                raise InstanceError(
+                    "illegal_attempt_status",
+                    f"Attempt status {attempt.status} cannot be dispatched",
+                )
             instance.current_attempt_id = attempt.id
             instance.stage_id = stage_id
             instance.current_work_package_id = wp_id
@@ -497,6 +529,19 @@ def _process_delivery(engine: Any, delivery_id: str, *, adapter_factory: Any = N
         row.transmission_status = d.transmission_status
         row.finished_at = now()
         row.native_receipt_ref = receipt
+        if message.message_type == "task.assignment":
+            reserved_id = message.payload.get("attemptId") or message.payload.get("attempt_id")
+            if reserved_id:
+                ia = uow.session.get(InstanceAttemptRow, reserved_id)
+                if ia is not None and ia.status in {"dispatching", "scheduled"}:
+                    if d.transmission_status in {"received", "sent"}:
+                        ia.status = "running"
+                    elif d.transmission_status == "failed":
+                        ia.status = "failed"
+                        ia.error_code = d.error_code or "delivery_failed"
+                    else:
+                        # Native side effect may have occurred — occupy the slot as unknown.
+                        ia.status = "unknown"
         append_fact(
             uow.session,
             message.run_id,
