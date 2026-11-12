@@ -81,12 +81,39 @@ from agentforge.contracts.collaboration import (
     RunWaitListResponse,
     WakeSignal,
 )
+from agentforge.contracts.delivery import (
+    AcceptanceDecisionRequest,
+    AcceptanceResult,
+    DeliveryManifestPayload,
+    DeliveryManifestView,
+    DeliveryPointerView,
+)
+from agentforge.contracts.event_stream import (
+    EventBatch,
+    PublicEventEnvelope,
+    ResolvedCursor,
+    SseControlFrame,
+)
+from agentforge.contracts.integrations import (
+    CheckPolicy,
+    FinalReviewResponseRequest,
+    IntegrationEvaluation,
+    IntegrationSelection,
+    IntegrationSelectionRequest,
+    IntegrationVersionView,
+    ValidationCycleRequest,
+)
 from agentforge.contracts.recovery import (
     HandoffManifest,
     RecoveryCase,
     RecoveryCaseListResponse,
     RecoveryDecisionRequest,
     RecoveryReport,
+)
+from agentforge.contracts.snapshots import (
+    AgentCounts,
+    AgentSummaryResponse,
+    RunSnapshot,
 )
 from agentforge.contracts.runs import RunActionRequest, RunCreateRequest, RunSnapshotResponse
 from agentforge.contracts.stages import (
@@ -140,6 +167,25 @@ SCHEMA_MODELS: dict[str, type[Any]] = {
     "recovery-report.schema.json": RecoveryReport,
     "recovery-decision-request.schema.json": RecoveryDecisionRequest,
     "handoff-manifest.schema.json": HandoffManifest,
+    "run-snapshot.schema.json": RunSnapshot,
+    "agent-counts.schema.json": AgentCounts,
+    "agent-summary-response.schema.json": AgentSummaryResponse,
+    "sse-control-frame.schema.json": SseControlFrame,
+    "resolved-cursor.schema.json": ResolvedCursor,
+    "public-event-envelope.schema.json": PublicEventEnvelope,
+    "event-batch.schema.json": EventBatch,
+    "integration-selection-request.schema.json": IntegrationSelectionRequest,
+    "integration-selection.schema.json": IntegrationSelection,
+    "integration-version-view.schema.json": IntegrationVersionView,
+    "check-policy.schema.json": CheckPolicy,
+    "validation-cycle-request.schema.json": ValidationCycleRequest,
+    "final-review-response-request.schema.json": FinalReviewResponseRequest,
+    "integration-evaluation.schema.json": IntegrationEvaluation,
+    "delivery-manifest-payload.schema.json": DeliveryManifestPayload,
+    "delivery-manifest-view.schema.json": DeliveryManifestView,
+    "delivery-pointer-view.schema.json": DeliveryPointerView,
+    "acceptance-decision-request.schema.json": AcceptanceDecisionRequest,
+    "acceptance-result.schema.json": AcceptanceResult,
     "plan-response.schema.json": PlanResponse,
     "plan-spec.schema.json": PlanSpec,
     "plan-proposal.schema.json": PlanProposal,
@@ -242,6 +288,15 @@ EVENT_PAYLOAD_TYPES = (
     "recovery.blocked",
     "recovery.applied",
     "run.collaboration_ready",
+    "integration.build_requested",
+    "integration.built",
+    "integration.conflicted",
+    "integration.check_completed",
+    "integration.review_completed",
+    "delivery.manifest_published",
+    "delivery.manifest_invalidated",
+    "acceptance.decided",
+    "state.invalidated",
 )
 
 

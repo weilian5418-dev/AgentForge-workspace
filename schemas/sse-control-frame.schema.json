@@ -1,0 +1,90 @@
+{
+  "additionalProperties": false,
+  "description": "Connection control frame — never carries a business event id/sequence.",
+  "properties": {
+    "event": {
+      "enum": [
+        "resync_required",
+        "auth_revoked",
+        "server_draining",
+        "stream_limit_reached",
+        "snapshot_required"
+      ],
+      "title": "Event",
+      "type": "string"
+    },
+    "message": {
+      "anyOf": [
+        {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Message"
+    },
+    "reason": {
+      "enum": [
+        "cursor_expired",
+        "gap_detected",
+        "retention_elapsed",
+        "cursor_ahead",
+        "cursor_invalid",
+        "cursor_conflict",
+        "cursor_scope_mismatch",
+        "auth_revoked",
+        "server_draining",
+        "stream_limit_reached",
+        "snapshot_required",
+        "unknown_event_type"
+      ],
+      "title": "Reason",
+      "type": "string"
+    },
+    "runId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Runid"
+    },
+    "schemaVersion": {
+      "const": "1",
+      "default": "1",
+      "title": "Schemaversion",
+      "type": "string"
+    },
+    "snapshotUrl": {
+      "anyOf": [
+        {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Snapshoturl"
+    }
+  },
+  "required": [
+    "event",
+    "reason"
+  ],
+  "title": "SseControlFrame",
+  "type": "object"
+}

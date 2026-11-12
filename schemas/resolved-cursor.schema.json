@@ -1,0 +1,82 @@
+{
+  "additionalProperties": false,
+  "description": "Result of resolving Last-Event-ID / afterSequence — no secrets.",
+  "properties": {
+    "afterSequence": {
+      "minimum": 0,
+      "title": "Aftersequence",
+      "type": "integer"
+    },
+    "lastEventId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Lasteventid"
+    },
+    "latestSequence": {
+      "minimum": 0,
+      "title": "Latestsequence",
+      "type": "integer"
+    },
+    "reason": {
+      "anyOf": [
+        {
+          "enum": [
+            "cursor_expired",
+            "gap_detected",
+            "retention_elapsed",
+            "cursor_ahead",
+            "cursor_invalid",
+            "cursor_conflict",
+            "cursor_scope_mismatch",
+            "auth_revoked",
+            "server_draining",
+            "stream_limit_reached",
+            "snapshot_required",
+            "unknown_event_type"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Reason"
+    },
+    "replayFloorSequence": {
+      "minimum": 0,
+      "title": "Replayfloorsequence",
+      "type": "integer"
+    },
+    "resyncRequired": {
+      "title": "Resyncrequired",
+      "type": "boolean"
+    },
+    "runId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Runid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "runId",
+    "afterSequence",
+    "latestSequence",
+    "replayFloorSequence",
+    "resyncRequired"
+  ],
+  "title": "ResolvedCursor",
+  "type": "object"
+}

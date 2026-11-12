@@ -1,0 +1,968 @@
+{
+  "$defs": {
+    "AgentCounts": {
+      "additionalProperties": false,
+      "description": "Three inventory counts — never collapse products/profiles/instances.",
+      "properties": {
+        "activeInstanceCount": {
+          "minimum": 0,
+          "title": "Activeinstancecount",
+          "type": "integer"
+        },
+        "asOf": {
+          "format": "date-time",
+          "title": "Asof",
+          "type": "string"
+        },
+        "busyInstanceCount": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Busyinstancecount",
+          "type": "integer"
+        },
+        "discoveredProductCount": {
+          "minimum": 0,
+          "title": "Discoveredproductcount",
+          "type": "integer"
+        },
+        "environmentId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Environmentid",
+          "type": "string"
+        },
+        "inventoryRevision": {
+          "minimum": 1,
+          "title": "Inventoryrevision",
+          "type": "integer"
+        },
+        "limitedAutoProfileCount": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Limitedautoprofilecount",
+          "type": "integer"
+        },
+        "manualAssistedProfileCount": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Manualassistedprofilecount",
+          "type": "integer"
+        },
+        "needsReconciliationInstanceCount": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Needsreconciliationinstancecount",
+          "type": "integer"
+        },
+        "schedulableProfileCount": {
+          "minimum": 0,
+          "title": "Schedulableprofilecount",
+          "type": "integer"
+        },
+        "scopeNote": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Scopenote"
+        },
+        "stoppedInstanceCount": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Stoppedinstancecount",
+          "type": "integer"
+        },
+        "unknownInstanceCount": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Unknowninstancecount",
+          "type": "integer"
+        },
+        "unknownProfileCount": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Unknownprofilecount",
+          "type": "integer"
+        },
+        "verifiedButBusyProfileCount": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Verifiedbutbusyprofilecount",
+          "type": "integer"
+        },
+        "waitingApprovalInstanceCount": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Waitingapprovalinstancecount",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "environmentId",
+        "discoveredProductCount",
+        "schedulableProfileCount",
+        "activeInstanceCount",
+        "inventoryRevision",
+        "asOf"
+      ],
+      "title": "AgentCounts",
+      "type": "object"
+    },
+    "BudgetLimits": {
+      "additionalProperties": false,
+      "properties": {
+        "currency": {
+          "anyOf": [
+            {
+              "maxLength": 8,
+              "minLength": 3,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Currency"
+        },
+        "maxCost": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Maxcost"
+        },
+        "maxTokens": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Maxtokens"
+        },
+        "maxWallTimeSeconds": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Maxwalltimeseconds"
+        }
+      },
+      "title": "BudgetLimits",
+      "type": "object"
+    },
+    "DeliveryOverview": {
+      "additionalProperties": false,
+      "properties": {
+        "acceptanceStatus": {
+          "default": "none",
+          "enum": [
+            "none",
+            "awaiting_acceptance",
+            "accepted",
+            "rejected",
+            "partially_accepted",
+            "invalidated"
+          ],
+          "title": "Acceptancestatus",
+          "type": "string"
+        },
+        "currentIntegrationVersion": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Currentintegrationversion"
+        },
+        "currentManifestId": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Currentmanifestid"
+        },
+        "deliveryRevision": {
+          "minimum": 1,
+          "title": "Deliveryrevision",
+          "type": "integer"
+        },
+        "invalidatedReason": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Invalidatedreason"
+        },
+        "manifestHash": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Manifesthash"
+        },
+        "manifestRevision": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Manifestrevision"
+        },
+        "technicalStatus": {
+          "default": "not_started",
+          "enum": [
+            "not_started",
+            "building",
+            "conflicted",
+            "checking",
+            "waiting_review",
+            "passed",
+            "failed",
+            "blocked",
+            "unknown"
+          ],
+          "title": "Technicalstatus",
+          "type": "string"
+        }
+      },
+      "required": [
+        "deliveryRevision"
+      ],
+      "title": "DeliveryOverview",
+      "type": "object"
+    },
+    "ExecutionBindingOverview": {
+      "additionalProperties": false,
+      "properties": {
+        "activeGeneration": {
+          "minimum": 1,
+          "title": "Activegeneration",
+          "type": "integer"
+        },
+        "assignmentVersion": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Assignmentversion"
+        },
+        "bindingHash": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Bindinghash"
+        },
+        "gatePolicyVersion": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Gatepolicyversion"
+        },
+        "graphVersion": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Graphversion"
+        },
+        "handoffHash": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Handoffhash"
+        },
+        "handoffRef": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Handoffref"
+        },
+        "planVersion": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Planversion"
+        }
+      },
+      "required": [
+        "activeGeneration"
+      ],
+      "title": "ExecutionBindingOverview",
+      "type": "object"
+    },
+    "ProgressSummary": {
+      "additionalProperties": false,
+      "description": "Explicit counters — not a misleading single percentage of Run completion.",
+      "properties": {
+        "acceptanceStatus": {
+          "default": "none",
+          "enum": [
+            "none",
+            "awaiting_acceptance",
+            "accepted",
+            "rejected",
+            "partially_accepted",
+            "invalidated"
+          ],
+          "title": "Acceptancestatus",
+          "type": "string"
+        },
+        "collaborationProgressRatio": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "releasedRequiredPackages/totalRequiredPackages only; 1.0 ≠ Run completed",
+          "title": "Collaborationprogressratio"
+        },
+        "finalChecksFailed": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Finalchecksfailed",
+          "type": "integer"
+        },
+        "finalChecksNotRun": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Finalchecksnotrun",
+          "type": "integer"
+        },
+        "finalChecksPassed": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Finalcheckspassed",
+          "type": "integer"
+        },
+        "finalChecksRequired": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Finalchecksrequired",
+          "type": "integer"
+        },
+        "finalChecksUnknown": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Finalchecksunknown",
+          "type": "integer"
+        },
+        "finalReviewsPassed": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Finalreviewspassed",
+          "type": "integer"
+        },
+        "finalReviewsPending": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Finalreviewspending",
+          "type": "integer"
+        },
+        "finalReviewsRequired": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Finalreviewsrequired",
+          "type": "integer"
+        },
+        "requiredPackagesReleased": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Requiredpackagesreleased",
+          "type": "integer"
+        },
+        "requiredPackagesTotal": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Requiredpackagestotal",
+          "type": "integer"
+        },
+        "workPackagesBlocked": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Workpackagesblocked",
+          "type": "integer"
+        },
+        "workPackagesFailed": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Workpackagesfailed",
+          "type": "integer"
+        },
+        "workPackagesReady": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Workpackagesready",
+          "type": "integer"
+        },
+        "workPackagesReleased": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Workpackagesreleased",
+          "type": "integer"
+        },
+        "workPackagesRunning": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Workpackagesrunning",
+          "type": "integer"
+        },
+        "workPackagesSubmitted": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Workpackagessubmitted",
+          "type": "integer"
+        },
+        "workPackagesTotal": {
+          "minimum": 0,
+          "title": "Workpackagestotal",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "workPackagesTotal"
+      ],
+      "title": "ProgressSummary",
+      "type": "object"
+    },
+    "RunOverview": {
+      "additionalProperties": false,
+      "properties": {
+        "activeGeneration": {
+          "minimum": 1,
+          "title": "Activegeneration",
+          "type": "integer"
+        },
+        "assignmentVersion": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Assignmentversion"
+        },
+        "baselineId": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Baselineid"
+        },
+        "budget": {
+          "$ref": "#/$defs/BudgetLimits"
+        },
+        "cancelRequestedAt": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cancelrequestedat"
+        },
+        "collaborationReadyAt": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Collaborationreadyat"
+        },
+        "collaborationState": {
+          "anyOf": [
+            {
+              "enum": [
+                "idle",
+                "running",
+                "waiting",
+                "ready_for_integration",
+                "blocked"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Collaborationstate"
+        },
+        "createdAt": {
+          "format": "date-time",
+          "title": "Createdat",
+          "type": "string"
+        },
+        "executionProfile": {
+          "enum": [
+            "container",
+            "host_authorized"
+          ],
+          "title": "Executionprofile",
+          "type": "string"
+        },
+        "failurePolicy": {
+          "enum": [
+            "dependency-aware",
+            "layer-atomic"
+          ],
+          "title": "Failurepolicy",
+          "type": "string"
+        },
+        "gatePolicyVersion": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Gatepolicyversion"
+        },
+        "goal": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Goal",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "inputRefs": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "type": "string"
+          },
+          "maxItems": 64,
+          "title": "Inputrefs",
+          "type": "array"
+        },
+        "mode": {
+          "enum": [
+            "auto",
+            "single",
+            "team"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "outputs": {
+          "items": {
+            "enum": [
+              "code",
+              "markdown",
+              "pptx"
+            ],
+            "type": "string"
+          },
+          "maxItems": 8,
+          "title": "Outputs",
+          "type": "array"
+        },
+        "planVersion": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Planversion"
+        },
+        "planningProviderProfileId": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Planningproviderprofileid"
+        },
+        "projectId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Projectid",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "preflight",
+            "routing",
+            "planning",
+            "awaiting_approval",
+            "awaiting_confirmation",
+            "preparing",
+            "running",
+            "awaiting_acceptance",
+            "completed",
+            "pause_requested",
+            "paused",
+            "blocked",
+            "cancel_requested",
+            "canceled",
+            "failed"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "statusVersion": {
+          "minimum": 1,
+          "title": "Statusversion",
+          "type": "integer"
+        },
+        "updatedAt": {
+          "format": "date-time",
+          "title": "Updatedat",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "projectId",
+        "goal",
+        "mode",
+        "status",
+        "statusVersion",
+        "activeGeneration",
+        "executionProfile",
+        "failurePolicy",
+        "budget",
+        "createdAt",
+        "updatedAt"
+      ],
+      "title": "RunOverview",
+      "type": "object"
+    },
+    "StageSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "blocked": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Blocked",
+          "type": "integer"
+        },
+        "executing": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Executing",
+          "type": "integer"
+        },
+        "failed": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Failed",
+          "type": "integer"
+        },
+        "pending": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Pending",
+          "type": "integer"
+        },
+        "released": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Released",
+          "type": "integer"
+        },
+        "reviewing": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Reviewing",
+          "type": "integer"
+        },
+        "rework": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Rework",
+          "type": "integer"
+        },
+        "total": {
+          "minimum": 0,
+          "title": "Total",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "total"
+      ],
+      "title": "StageSummary",
+      "type": "object"
+    },
+    "WaitSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "byReason": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "maxProperties": 32,
+          "title": "Byreason",
+          "type": "object"
+        },
+        "openCount": {
+          "minimum": 0,
+          "title": "Opencount",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "openCount"
+      ],
+      "title": "WaitSummary",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Single-transaction bounded snapshot — not a dump of ORM graphs.",
+  "properties": {
+    "agentCounts": {
+      "$ref": "#/$defs/AgentCounts"
+    },
+    "binding": {
+      "$ref": "#/$defs/ExecutionBindingOverview"
+    },
+    "currentDelivery": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/DeliveryOverview"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "inventoryRevision": {
+      "anyOf": [
+        {
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Inventoryrevision"
+    },
+    "latestEventId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Latesteventid"
+    },
+    "latestSequence": {
+      "minimum": 0,
+      "title": "Latestsequence",
+      "type": "integer"
+    },
+    "progress": {
+      "$ref": "#/$defs/ProgressSummary"
+    },
+    "replayFloorSequence": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Replayfloorsequence",
+      "type": "integer"
+    },
+    "run": {
+      "$ref": "#/$defs/RunOverview"
+    },
+    "schemaVersion": {
+      "const": "1",
+      "default": "1",
+      "title": "Schemaversion",
+      "type": "string"
+    },
+    "snapshotToken": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Snapshottoken",
+      "type": "string"
+    },
+    "stageSummary": {
+      "$ref": "#/$defs/StageSummary"
+    },
+    "waitSummary": {
+      "$ref": "#/$defs/WaitSummary"
+    }
+  },
+  "required": [
+    "run",
+    "binding",
+    "agentCounts",
+    "stageSummary",
+    "progress",
+    "waitSummary",
+    "latestSequence",
+    "snapshotToken"
+  ],
+  "title": "RunSnapshot",
+  "type": "object"
+}

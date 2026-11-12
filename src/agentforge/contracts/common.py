@@ -16,7 +16,7 @@ from pydantic import (
 
 from agentforge.contracts.base import ApiInputModel, ContractModel
 
-SCHEMA_VERSION = "1.4"
+SCHEMA_VERSION = "1.5"
 
 OpaqueId = Annotated[
     str,

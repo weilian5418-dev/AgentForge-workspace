@@ -1,0 +1,97 @@
+{
+  "$defs": {
+    "CheckPolicyItem": {
+      "additionalProperties": false,
+      "properties": {
+        "checkId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Checkid",
+          "type": "string"
+        },
+        "checkVersion": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Checkversion",
+          "type": "string"
+        },
+        "configHash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Confighash",
+          "type": "string"
+        },
+        "notApplicableReason": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Notapplicablereason"
+        },
+        "required": {
+          "title": "Required",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "checkId",
+        "checkVersion",
+        "required",
+        "configHash"
+      ],
+      "title": "CheckPolicyItem",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "environmentConstraints": {
+      "additionalProperties": true,
+      "maxProperties": 32,
+      "title": "Environmentconstraints",
+      "type": "object"
+    },
+    "policyHash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Policyhash",
+      "type": "string"
+    },
+    "policyRef": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Policyref",
+      "type": "string"
+    },
+    "requiredChecks": {
+      "items": {
+        "$ref": "#/$defs/CheckPolicyItem"
+      },
+      "maxItems": 64,
+      "title": "Requiredchecks",
+      "type": "array"
+    },
+    "requiredReviewRoles": {
+      "items": {
+        "maxLength": 512,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 16,
+      "title": "Requiredreviewroles",
+      "type": "array"
+    }
+  },
+  "required": [
+    "policyRef",
+    "policyHash"
+  ],
+  "title": "CheckPolicy",
+  "type": "object"
+}

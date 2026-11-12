@@ -1,0 +1,501 @@
+{
+  "$defs": {
+    "ManifestCheckEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "checkId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Checkid",
+          "type": "string"
+        },
+        "checkRunId": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Checkrunid"
+        },
+        "checkVersion": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Checkversion",
+          "type": "string"
+        },
+        "configHash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Confighash",
+          "type": "string"
+        },
+        "environmentHash": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Environmenthash"
+        },
+        "inputFingerprint": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Inputfingerprint"
+        },
+        "outcome": {
+          "enum": [
+            "passed",
+            "failed",
+            "blocked",
+            "not_run",
+            "unknown",
+            "not_applicable",
+            "skipped",
+            "timeout"
+          ],
+          "title": "Outcome",
+          "type": "string"
+        },
+        "reportHash": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reporthash"
+        },
+        "reportId": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reportid"
+        }
+      },
+      "required": [
+        "checkId",
+        "checkVersion",
+        "configHash",
+        "outcome"
+      ],
+      "title": "ManifestCheckEntry",
+      "type": "object"
+    },
+    "ManifestMember": {
+      "additionalProperties": false,
+      "properties": {
+        "applicableCheckIds": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "type": "string"
+          },
+          "maxItems": 32,
+          "title": "Applicablecheckids",
+          "type": "array"
+        },
+        "applicableReviewRequestIds": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "type": "string"
+          },
+          "maxItems": 16,
+          "title": "Applicablereviewrequestids",
+          "type": "array"
+        },
+        "dependsOnMemberIds": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "type": "string"
+          },
+          "maxItems": 32,
+          "title": "Dependsonmemberids",
+          "type": "array"
+        },
+        "kind": {
+          "enum": [
+            "code_tree",
+            "markdown",
+            "pptx",
+            "other_artifact",
+            "diagnostic"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "memberId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Memberid",
+          "type": "string"
+        },
+        "memberTechnicalStatus": {
+          "enum": [
+            "not_started",
+            "building",
+            "conflicted",
+            "checking",
+            "waiting_review",
+            "passed",
+            "failed",
+            "blocked",
+            "unknown"
+          ],
+          "title": "Membertechnicalstatus",
+          "type": "string"
+        },
+        "objectHash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Objecthash",
+          "type": "string"
+        },
+        "required": {
+          "title": "Required",
+          "type": "boolean"
+        },
+        "safeRelativePath": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Saferelativepath",
+          "type": "string"
+        },
+        "sourceCandidateRef": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sourcecandidateref"
+        },
+        "sourceReleaseRef": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sourcereleaseref"
+        }
+      },
+      "required": [
+        "memberId",
+        "kind",
+        "required",
+        "safeRelativePath",
+        "objectHash",
+        "memberTechnicalStatus"
+      ],
+      "title": "ManifestMember",
+      "type": "object"
+    },
+    "ManifestReviewEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "bindingFingerprint": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Bindingfingerprint"
+        },
+        "reportId": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reportid"
+        },
+        "requestId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Requestid",
+          "type": "string"
+        },
+        "reviewerIdentityRef": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Revieweridentityref"
+        },
+        "verdict": {
+          "enum": [
+            "approve",
+            "reject",
+            "needs_rework",
+            "abstain",
+            "pending"
+          ],
+          "title": "Verdict",
+          "type": "string"
+        }
+      },
+      "required": [
+        "requestId",
+        "verdict"
+      ],
+      "title": "ManifestReviewEntry",
+      "type": "object"
+    },
+    "ManifestRisk": {
+      "additionalProperties": false,
+      "properties": {
+        "detail": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Detail",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "known_failure",
+            "unsupported",
+            "not_run",
+            "unknown_cost",
+            "manual_step",
+            "other"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "memberIds": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "type": "string"
+          },
+          "maxItems": 32,
+          "title": "Memberids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "kind",
+        "detail"
+      ],
+      "title": "ManifestRisk",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Immutable hashed subject — manifestHash itself is not part of the hash input.",
+  "properties": {
+    "assignmentVersion": {
+      "minimum": 1,
+      "title": "Assignmentversion",
+      "type": "integer"
+    },
+    "baselineHash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Baselinehash",
+      "type": "string"
+    },
+    "checks": {
+      "items": {
+        "$ref": "#/$defs/ManifestCheckEntry"
+      },
+      "maxItems": 64,
+      "title": "Checks",
+      "type": "array"
+    },
+    "contractHash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Contracthash",
+      "type": "string"
+    },
+    "environmentFingerprint": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Environmentfingerprint",
+      "type": "string"
+    },
+    "gatePolicyVersion": {
+      "minimum": 1,
+      "title": "Gatepolicyversion",
+      "type": "integer"
+    },
+    "integrationPolicyHash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Integrationpolicyhash",
+      "type": "string"
+    },
+    "integrationVersion": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Integrationversion",
+      "type": "string"
+    },
+    "knownRisks": {
+      "items": {
+        "$ref": "#/$defs/ManifestRisk"
+      },
+      "maxItems": 32,
+      "title": "Knownrisks",
+      "type": "array"
+    },
+    "manifestRevision": {
+      "minimum": 1,
+      "title": "Manifestrevision",
+      "type": "integer"
+    },
+    "members": {
+      "items": {
+        "$ref": "#/$defs/ManifestMember"
+      },
+      "maxItems": 128,
+      "title": "Members",
+      "type": "array"
+    },
+    "planVersion": {
+      "minimum": 1,
+      "title": "Planversion",
+      "type": "integer"
+    },
+    "reviews": {
+      "items": {
+        "$ref": "#/$defs/ManifestReviewEntry"
+      },
+      "maxItems": 32,
+      "title": "Reviews",
+      "type": "array"
+    },
+    "runId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Runid",
+      "type": "string"
+    },
+    "schemaVersion": {
+      "const": "1",
+      "default": "1",
+      "title": "Schemaversion",
+      "type": "string"
+    },
+    "selectionHash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Selectionhash",
+      "type": "string"
+    },
+    "technicalStatus": {
+      "enum": [
+        "not_started",
+        "building",
+        "conflicted",
+        "checking",
+        "waiting_review",
+        "passed",
+        "failed",
+        "blocked",
+        "unknown"
+      ],
+      "title": "Technicalstatus",
+      "type": "string"
+    },
+    "treeManifestHash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Treemanifesthash",
+      "type": "string"
+    },
+    "validationCycleId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Validationcycleid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "runId",
+    "integrationVersion",
+    "validationCycleId",
+    "manifestRevision",
+    "planVersion",
+    "assignmentVersion",
+    "gatePolicyVersion",
+    "selectionHash",
+    "baselineHash",
+    "treeManifestHash",
+    "contractHash",
+    "integrationPolicyHash",
+    "environmentFingerprint",
+    "technicalStatus"
+  ],
+  "title": "DeliveryManifestPayload",
+  "type": "object"
+}

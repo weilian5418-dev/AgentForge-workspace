@@ -1,0 +1,187 @@
+{
+  "$defs": {
+    "IntegrationSourceBinding": {
+      "additionalProperties": false,
+      "properties": {
+        "candidateId": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Candidateid"
+        },
+        "contentHash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Contenthash",
+          "type": "string"
+        },
+        "releaseId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Releaseid",
+          "type": "string"
+        },
+        "snapshotId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Snapshotid",
+          "type": "string"
+        },
+        "stageId": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stageid"
+        },
+        "treeHash": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Treehash"
+        },
+        "workPackageId": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Workpackageid"
+        }
+      },
+      "required": [
+        "releaseId",
+        "snapshotId",
+        "contentHash"
+      ],
+      "title": "IntegrationSourceBinding",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "baselineRef": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Baselineref"
+    },
+    "baselineTreeHash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Baselinetreehash",
+      "type": "string"
+    },
+    "createdAt": {
+      "format": "date-time",
+      "title": "Createdat",
+      "type": "string"
+    },
+    "createdBy": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Createdby",
+      "type": "string"
+    },
+    "handoffHash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Handoffhash",
+      "type": "string"
+    },
+    "handoffRef": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Handoffref",
+      "type": "string"
+    },
+    "mergePolicyVersion": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Mergepolicyversion",
+      "type": "string"
+    },
+    "runId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Runid",
+      "type": "string"
+    },
+    "selectionHash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Selectionhash",
+      "type": "string"
+    },
+    "selectionId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Selectionid",
+      "type": "string"
+    },
+    "sourceBindings": {
+      "items": {
+        "$ref": "#/$defs/IntegrationSourceBinding"
+      },
+      "maxItems": 64,
+      "minItems": 1,
+      "title": "Sourcebindings",
+      "type": "array"
+    }
+  },
+  "required": [
+    "selectionId",
+    "runId",
+    "handoffRef",
+    "handoffHash",
+    "baselineTreeHash",
+    "sourceBindings",
+    "mergePolicyVersion",
+    "selectionHash",
+    "createdBy",
+    "createdAt"
+  ],
+  "title": "IntegrationSelection",
+  "type": "object"
+}

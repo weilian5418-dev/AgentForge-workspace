@@ -32,6 +32,28 @@ from agentforge.contracts.collaboration import (
     SchedulerOperation,
     WakeSignal,
 )
+from agentforge.contracts.delivery import (
+    AcceptanceDecisionRequest,
+    AcceptanceResult,
+    DeliveryManifestPayload,
+    DeliveryManifestView,
+    DeliveryPointerView,
+)
+from agentforge.contracts.event_stream import (
+    EventBatch,
+    PublicEventEnvelope,
+    ResolvedCursor,
+    SseControlFrame,
+)
+from agentforge.contracts.integrations import (
+    CheckPolicy,
+    FinalReviewResponseRequest,
+    IntegrationEvaluation,
+    IntegrationSelection,
+    IntegrationSelectionRequest,
+    IntegrationVersionView,
+    ValidationCycleRequest,
+)
 from agentforge.contracts.recovery import (
     HandoffManifest,
     RecoveryCase,
@@ -41,6 +63,11 @@ from agentforge.contracts.recovery import (
     RecoveryObservation,
     RecoveryRecommendation,
     RecoveryReport,
+)
+from agentforge.contracts.snapshots import (
+    AgentCounts,
+    AgentSummaryResponse,
+    RunSnapshot,
 )
 from agentforge.contracts.artifacts import (
     AcceptanceRequest,
@@ -167,8 +194,12 @@ from agentforge.contracts.validations import ChecksRerunRequest, ValidationRepor
 __all__ = [
     "SCHEMA_VERSION",
     "AcceptanceRequest",
+    "AcceptanceDecisionRequest",
     "AcceptanceResponse",
+    "AcceptanceResult",
+    "AgentCounts",
     "AgentInstance",
+    "AgentSummaryResponse",
     "AgentInstanceActionRequest",
     "AgentInstanceListResponse",
     "AgentProduct",
@@ -191,8 +222,19 @@ __all__ = [
     "DriverStatusResponse",
     "GraphBinding",
     "HandoffManifest",
+    "CheckPolicy",
+    "FinalReviewResponseRequest",
+    "IntegrationEvaluation",
     "IntegrationHandoff",
+    "IntegrationSelection",
+    "IntegrationSelectionRequest",
+    "IntegrationVersionView",
     "LeaseFence",
+    "PublicEventEnvelope",
+    "ResolvedCursor",
+    "RunSnapshot",
+    "SseControlFrame",
+    "ValidationCycleRequest",
     "NextAction",
     "PlatformAdmission",
     "RecoveryCase",
@@ -210,7 +252,11 @@ __all__ = [
     "CurrentExecutionRef",
     "DeliveryAttempt",
     "DeliveryManifest",
+    "DeliveryManifestPayload",
+    "DeliveryManifestView",
+    "DeliveryPointerView",
     "DependencyStatus",
+    "EventBatch",
     "DirectoryGrant",
     "DirectoryGrantCreateRequest",
     "DirectoryGrantRevokeRequest",

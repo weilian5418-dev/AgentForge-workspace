@@ -1,0 +1,116 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "acceptanceStatus": {
+      "enum": [
+        "none",
+        "awaiting_acceptance",
+        "accepted",
+        "rejected",
+        "partially_accepted",
+        "invalidated"
+      ],
+      "title": "Acceptancestatus",
+      "type": "string"
+    },
+    "currentManifestId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Currentmanifestid"
+    },
+    "currentVersionId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Currentversionid"
+    },
+    "deliveryRevision": {
+      "minimum": 1,
+      "title": "Deliveryrevision",
+      "type": "integer"
+    },
+    "etag": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Etag",
+      "type": "string"
+    },
+    "invalidatedReason": {
+      "anyOf": [
+        {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Invalidatedreason"
+    },
+    "manifestHash": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Manifesthash"
+    },
+    "runId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Runid",
+      "type": "string"
+    },
+    "technicalStatus": {
+      "enum": [
+        "not_started",
+        "building",
+        "conflicted",
+        "checking",
+        "waiting_review",
+        "passed",
+        "failed",
+        "blocked",
+        "unknown"
+      ],
+      "title": "Technicalstatus",
+      "type": "string"
+    }
+  },
+  "required": [
+    "runId",
+    "deliveryRevision",
+    "technicalStatus",
+    "acceptanceStatus",
+    "etag"
+  ],
+  "title": "DeliveryPointerView",
+  "type": "object"
+}

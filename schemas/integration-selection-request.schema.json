@@ -1,0 +1,58 @@
+{
+  "additionalProperties": false,
+  "description": "Fix released handoff inputs — clients cannot invent arbitrary snapshotIds.",
+  "properties": {
+    "handoffHash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Handoffhash",
+      "type": "string"
+    },
+    "handoffRef": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Handoffref",
+      "type": "string"
+    },
+    "idempotencyKey": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Idempotencykey",
+      "type": "string"
+    },
+    "mergePolicyRef": {
+      "anyOf": [
+        {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Mergepolicyref"
+    },
+    "note": {
+      "anyOf": [
+        {
+          "maxLength": 1024,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Note"
+    }
+  },
+  "required": [
+    "handoffRef",
+    "handoffHash",
+    "idempotencyKey"
+  ],
+  "title": "IntegrationSelectionRequest",
+  "type": "object"
+}

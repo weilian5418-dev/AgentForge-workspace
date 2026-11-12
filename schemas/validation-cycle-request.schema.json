@@ -1,0 +1,23 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "idempotencyKey": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Idempotencykey",
+      "type": "string"
+    },
+    "policyRef": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Policyref",
+      "type": "string"
+    }
+  },
+  "required": [
+    "policyRef",
+    "idempotencyKey"
+  ],
+  "title": "ValidationCycleRequest",
+  "type": "object"
+}

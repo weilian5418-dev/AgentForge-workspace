@@ -80,7 +80,16 @@
         "recovery.observed",
         "recovery.blocked",
         "recovery.applied",
-        "run.collaboration_ready"
+        "run.collaboration_ready",
+        "integration.build_requested",
+        "integration.built",
+        "integration.conflicted",
+        "integration.check_completed",
+        "integration.review_completed",
+        "delivery.manifest_published",
+        "delivery.manifest_invalidated",
+        "acceptance.decided",
+        "state.invalidated"
       ],
       "title": "Type",
       "type": "string"

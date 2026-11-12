@@ -1,0 +1,81 @@
+{
+  "additionalProperties": false,
+  "description": "User acceptance of a fixed manifest — never declares technicalPassed.",
+  "properties": {
+    "acceptedMemberIds": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9._:-]+$",
+        "type": "string"
+      },
+      "maxItems": 128,
+      "title": "Acceptedmemberids",
+      "type": "array"
+    },
+    "decision": {
+      "enum": [
+        "accept",
+        "reject",
+        "partial_accept"
+      ],
+      "title": "Decision",
+      "type": "string"
+    },
+    "expectedStatusVersion": {
+      "minimum": 1,
+      "title": "Expectedstatusversion",
+      "type": "integer"
+    },
+    "integrationVersion": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Integrationversion",
+      "type": "string"
+    },
+    "manifestHash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Manifesthash",
+      "type": "string"
+    },
+    "manifestRevision": {
+      "minimum": 1,
+      "title": "Manifestrevision",
+      "type": "integer"
+    },
+    "note": {
+      "anyOf": [
+        {
+          "maxLength": 4096,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Note"
+    },
+    "rejectedMemberIds": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9._:-]+$",
+        "type": "string"
+      },
+      "maxItems": 128,
+      "title": "Rejectedmemberids",
+      "type": "array"
+    }
+  },
+  "required": [
+    "integrationVersion",
+    "manifestHash",
+    "manifestRevision",
+    "expectedStatusVersion",
+    "decision"
+  ],
+  "title": "AcceptanceDecisionRequest",
+  "type": "object"
+}

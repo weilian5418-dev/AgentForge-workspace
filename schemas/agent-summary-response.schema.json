@@ -1,0 +1,141 @@
+{
+  "$defs": {
+    "AgentCounts": {
+      "additionalProperties": false,
+      "description": "Three inventory counts — never collapse products/profiles/instances.",
+      "properties": {
+        "activeInstanceCount": {
+          "minimum": 0,
+          "title": "Activeinstancecount",
+          "type": "integer"
+        },
+        "asOf": {
+          "format": "date-time",
+          "title": "Asof",
+          "type": "string"
+        },
+        "busyInstanceCount": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Busyinstancecount",
+          "type": "integer"
+        },
+        "discoveredProductCount": {
+          "minimum": 0,
+          "title": "Discoveredproductcount",
+          "type": "integer"
+        },
+        "environmentId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Environmentid",
+          "type": "string"
+        },
+        "inventoryRevision": {
+          "minimum": 1,
+          "title": "Inventoryrevision",
+          "type": "integer"
+        },
+        "limitedAutoProfileCount": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Limitedautoprofilecount",
+          "type": "integer"
+        },
+        "manualAssistedProfileCount": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Manualassistedprofilecount",
+          "type": "integer"
+        },
+        "needsReconciliationInstanceCount": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Needsreconciliationinstancecount",
+          "type": "integer"
+        },
+        "schedulableProfileCount": {
+          "minimum": 0,
+          "title": "Schedulableprofilecount",
+          "type": "integer"
+        },
+        "scopeNote": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Scopenote"
+        },
+        "stoppedInstanceCount": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Stoppedinstancecount",
+          "type": "integer"
+        },
+        "unknownInstanceCount": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Unknowninstancecount",
+          "type": "integer"
+        },
+        "unknownProfileCount": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Unknownprofilecount",
+          "type": "integer"
+        },
+        "verifiedButBusyProfileCount": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Verifiedbutbusyprofilecount",
+          "type": "integer"
+        },
+        "waitingApprovalInstanceCount": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Waitingapprovalinstancecount",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "environmentId",
+        "discoveredProductCount",
+        "schedulableProfileCount",
+        "activeInstanceCount",
+        "inventoryRevision",
+        "asOf"
+      ],
+      "title": "AgentCounts",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "counts": {
+      "$ref": "#/$defs/AgentCounts"
+    },
+    "requiredCapabilities": {
+      "items": {
+        "maxLength": 512,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 64,
+      "title": "Requiredcapabilities",
+      "type": "array"
+    }
+  },
+  "required": [
+    "counts"
+  ],
+  "title": "AgentSummaryResponse",
+  "type": "object"
+}

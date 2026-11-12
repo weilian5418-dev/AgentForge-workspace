@@ -1,0 +1,142 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "acceptanceStatus": {
+      "enum": [
+        "none",
+        "awaiting_acceptance",
+        "accepted",
+        "rejected",
+        "partially_accepted",
+        "invalidated"
+      ],
+      "title": "Acceptancestatus",
+      "type": "string"
+    },
+    "acceptedMemberIds": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9._:-]+$",
+        "type": "string"
+      },
+      "maxItems": 128,
+      "title": "Acceptedmemberids",
+      "type": "array"
+    },
+    "createdAt": {
+      "format": "date-time",
+      "title": "Createdat",
+      "type": "string"
+    },
+    "decision": {
+      "enum": [
+        "accept",
+        "reject",
+        "partial_accept"
+      ],
+      "title": "Decision",
+      "type": "string"
+    },
+    "decisionId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Decisionid",
+      "type": "string"
+    },
+    "deliveryRevision": {
+      "minimum": 1,
+      "title": "Deliveryrevision",
+      "type": "integer"
+    },
+    "integrationVersion": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Integrationversion",
+      "type": "string"
+    },
+    "isCurrent": {
+      "title": "Iscurrent",
+      "type": "boolean"
+    },
+    "manifestHash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Manifesthash",
+      "type": "string"
+    },
+    "rejectedMemberIds": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9._:-]+$",
+        "type": "string"
+      },
+      "maxItems": 128,
+      "title": "Rejectedmemberids",
+      "type": "array"
+    },
+    "runId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Runid",
+      "type": "string"
+    },
+    "runStatus": {
+      "anyOf": [
+        {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Runstatus"
+    },
+    "technicalStatus": {
+      "enum": [
+        "not_started",
+        "building",
+        "conflicted",
+        "checking",
+        "waiting_review",
+        "passed",
+        "failed",
+        "blocked",
+        "unknown"
+      ],
+      "title": "Technicalstatus",
+      "type": "string"
+    },
+    "undecidedMemberIds": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9._:-]+$",
+        "type": "string"
+      },
+      "maxItems": 128,
+      "title": "Undecidedmemberids",
+      "type": "array"
+    }
+  },
+  "required": [
+    "decisionId",
+    "runId",
+    "decision",
+    "integrationVersion",
+    "manifestHash",
+    "deliveryRevision",
+    "acceptanceStatus",
+    "technicalStatus",
+    "isCurrent",
+    "createdAt"
+  ],
+  "title": "AcceptanceResult",
+  "type": "object"
+}

@@ -1,0 +1,84 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "blockerCodes": {
+      "items": {
+        "maxLength": 512,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 32,
+      "title": "Blockercodes",
+      "type": "array"
+    },
+    "cycleId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Cycleid",
+      "type": "string"
+    },
+    "note": {
+      "anyOf": [
+        {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Note"
+    },
+    "requiredChecksSatisfied": {
+      "minimum": 0,
+      "title": "Requiredcheckssatisfied",
+      "type": "integer"
+    },
+    "requiredChecksTotal": {
+      "minimum": 0,
+      "title": "Requiredcheckstotal",
+      "type": "integer"
+    },
+    "requiredReviewsSatisfied": {
+      "minimum": 0,
+      "title": "Requiredreviewssatisfied",
+      "type": "integer"
+    },
+    "requiredReviewsTotal": {
+      "minimum": 0,
+      "title": "Requiredreviewstotal",
+      "type": "integer"
+    },
+    "status": {
+      "enum": [
+        "passed",
+        "failed",
+        "blocked",
+        "waiting"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "versionId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Versionid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "cycleId",
+    "versionId",
+    "status",
+    "requiredChecksTotal",
+    "requiredChecksSatisfied",
+    "requiredReviewsTotal",
+    "requiredReviewsSatisfied"
+  ],
+  "title": "IntegrationEvaluation",
+  "type": "object"
+}

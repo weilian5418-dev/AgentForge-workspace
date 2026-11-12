@@ -71,6 +71,16 @@ EventType = Literal[
     "recovery.blocked",
     "recovery.applied",
     "run.collaboration_ready",
+    # D12 integration / delivery / acceptance
+    "integration.build_requested",
+    "integration.built",
+    "integration.conflicted",
+    "integration.check_completed",
+    "integration.review_completed",
+    "delivery.manifest_published",
+    "delivery.manifest_invalidated",
+    "acceptance.decided",
+    "state.invalidated",
 ]
 
 
@@ -227,9 +237,74 @@ class StageReleasedPayload(ContractModel):
 
 
 class IntegrationValidatedPayload(ContractModel):
+    """Emitted only after server-side policy evaluation — not client passed=true."""
+
     integration_version: OpaqueId
     manifest_hash: Sha256Hex
     passed: bool = Field(strict=True)
+    cycle_id: OpaqueId | None = None
+    evaluation_status: ShortText | None = None
+
+
+class IntegrationBuildPayload(ContractModel):
+    build_id: OpaqueId
+    selection_id: OpaqueId
+    selection_hash: Sha256Hex
+    status: ShortText
+    version_id: OpaqueId | None = None
+    error_code: ShortText | None = None
+
+
+class IntegrationCheckCompletedPayload(ContractModel):
+    check_run_id: OpaqueId
+    cycle_id: OpaqueId
+    version_id: OpaqueId
+    check_id: OpaqueId
+    outcome: ShortText
+    report_hash: Sha256Hex | None = None
+    tree_hash: Sha256Hex
+
+
+class IntegrationReviewCompletedPayload(ContractModel):
+    request_id: OpaqueId
+    report_id: OpaqueId
+    cycle_id: OpaqueId
+    version_id: OpaqueId
+    verdict: ShortText
+    tree_hash: Sha256Hex
+
+
+class DeliveryManifestPublishedPayload(ContractModel):
+    manifest_id: OpaqueId
+    manifest_hash: Sha256Hex
+    version_id: OpaqueId
+    cycle_id: OpaqueId
+    revision: int = Field(ge=1, strict=True)
+    technical_status: ShortText
+    delivery_revision: int = Field(ge=1, strict=True)
+
+
+class DeliveryManifestInvalidatedPayload(ContractModel):
+    manifest_id: OpaqueId
+    manifest_hash: Sha256Hex
+    version_id: OpaqueId
+    reason: ShortText
+    delivery_revision: int = Field(ge=1, strict=True)
+
+
+class AcceptanceDecidedPayload(ContractModel):
+    decision_id: OpaqueId
+    decision: ShortText
+    manifest_hash: Sha256Hex
+    version_id: OpaqueId
+    delivery_revision: int = Field(ge=1, strict=True)
+    acceptance_status: ShortText
+    is_current: bool = Field(strict=True)
+
+
+class StateInvalidatedPublicPayload(ContractModel):
+    original_type: ShortText
+    reason: ShortText = "redacted"
 
 
 class DriverWaitRegisteredPayload(ContractModel):
@@ -338,6 +413,15 @@ _PAYLOAD_BY_TYPE: dict[str, type[ContractModel]] = {
     "recovery.blocked": RecoveryLifecyclePayload,
     "recovery.applied": RecoveryLifecyclePayload,
     "run.collaboration_ready": CollaborationReadyPayload,
+    "integration.build_requested": IntegrationBuildPayload,
+    "integration.built": IntegrationBuildPayload,
+    "integration.conflicted": IntegrationBuildPayload,
+    "integration.check_completed": IntegrationCheckCompletedPayload,
+    "integration.review_completed": IntegrationReviewCompletedPayload,
+    "delivery.manifest_published": DeliveryManifestPublishedPayload,
+    "delivery.manifest_invalidated": DeliveryManifestInvalidatedPayload,
+    "acceptance.decided": AcceptanceDecidedPayload,
+    "state.invalidated": StateInvalidatedPublicPayload,
 }
 
 

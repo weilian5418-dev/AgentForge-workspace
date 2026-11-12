@@ -1,0 +1,52 @@
+{
+  "additionalProperties": false,
+  "description": "Trusted reviewer response — ordinary user bearer cannot use this path.",
+  "properties": {
+    "evidenceRefs": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9._:-]+$",
+        "type": "string"
+      },
+      "maxItems": 32,
+      "title": "Evidencerefs",
+      "type": "array"
+    },
+    "note": {
+      "anyOf": [
+        {
+          "maxLength": 4096,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Note"
+    },
+    "responseKey": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Responsekey",
+      "type": "string"
+    },
+    "verdict": {
+      "enum": [
+        "approve",
+        "reject",
+        "needs_rework",
+        "abstain"
+      ],
+      "title": "Verdict",
+      "type": "string"
+    }
+  },
+  "required": [
+    "verdict",
+    "responseKey"
+  ],
+  "title": "FinalReviewResponseRequest",
+  "type": "object"
+}

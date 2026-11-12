@@ -1,0 +1,169 @@
+{
+  "$defs": {
+    "PublicEventEnvelope": {
+      "additionalProperties": false,
+      "description": "Whitelisted public projection of a committed business event.",
+      "properties": {
+        "eventId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Eventid",
+          "type": "string"
+        },
+        "payload": {
+          "additionalProperties": true,
+          "title": "Payload",
+          "type": "object"
+        },
+        "runId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Runid",
+          "type": "string"
+        },
+        "schemaVersion": {
+          "const": "1",
+          "default": "1",
+          "title": "Schemaversion",
+          "type": "string"
+        },
+        "sequence": {
+          "minimum": 1,
+          "title": "Sequence",
+          "type": "integer"
+        },
+        "timestamp": {
+          "format": "date-time",
+          "title": "Timestamp",
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "routing.decided",
+            "plan.proposed",
+            "run.status_changed",
+            "task.started",
+            "task.blocked",
+            "artifact.candidate_created",
+            "validation.completed",
+            "artifact.published",
+            "approval.requested",
+            "usage.updated",
+            "run.delivery_ready",
+            "resync_required",
+            "agent.discovery_completed",
+            "agent.capabilities_validated",
+            "assignment.confirmed",
+            "instance.started",
+            "instance.stop_requested",
+            "instance.stopped",
+            "instance.needs_reconciliation",
+            "message.delivered",
+            "message.delivery_unknown",
+            "protocol.request_matched",
+            "protocol.request_conflict",
+            "native_event.ingested",
+            "native_approval.requested",
+            "native_approval.confirmed",
+            "stage.candidate_frozen",
+            "stage.rework_requested",
+            "stage.released",
+            "integration.validated",
+            "driver.wait_registered",
+            "driver.wake_recorded",
+            "run.pause_requested",
+            "run.paused",
+            "run.resume_requested",
+            "run.cancel_requested",
+            "run.canceled",
+            "recovery.started",
+            "recovery.observed",
+            "recovery.blocked",
+            "recovery.applied",
+            "run.collaboration_ready",
+            "integration.build_requested",
+            "integration.built",
+            "integration.conflicted",
+            "integration.check_completed",
+            "integration.review_completed",
+            "delivery.manifest_published",
+            "delivery.manifest_invalidated",
+            "acceptance.decided",
+            "state.invalidated"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "eventId",
+        "runId",
+        "sequence",
+        "type",
+        "timestamp"
+      ],
+      "title": "PublicEventEnvelope",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "encodedBytes": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Encodedbytes",
+      "type": "integer"
+    },
+    "events": {
+      "items": {
+        "$ref": "#/$defs/PublicEventEnvelope"
+      },
+      "maxItems": 100,
+      "title": "Events",
+      "type": "array"
+    },
+    "nextAfterSequence": {
+      "minimum": 0,
+      "title": "Nextaftersequence",
+      "type": "integer"
+    },
+    "reason": {
+      "anyOf": [
+        {
+          "enum": [
+            "cursor_expired",
+            "gap_detected",
+            "retention_elapsed",
+            "cursor_ahead",
+            "cursor_invalid",
+            "cursor_conflict",
+            "cursor_scope_mismatch",
+            "auth_revoked",
+            "server_draining",
+            "stream_limit_reached",
+            "snapshot_required",
+            "unknown_event_type"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Reason"
+    },
+    "resyncRequired": {
+      "default": false,
+      "title": "Resyncrequired",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "nextAfterSequence"
+  ],
+  "title": "EventBatch",
+  "type": "object"
+}

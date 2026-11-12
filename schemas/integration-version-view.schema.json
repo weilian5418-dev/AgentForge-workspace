@@ -1,0 +1,134 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "baselineHash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Baselinehash",
+      "type": "string"
+    },
+    "buildEnvironmentRef": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Buildenvironmentref",
+      "type": "string"
+    },
+    "contentHash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Contenthash",
+      "type": "string"
+    },
+    "contractHash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Contracthash",
+      "type": "string"
+    },
+    "createdAt": {
+      "format": "date-time",
+      "title": "Createdat",
+      "type": "string"
+    },
+    "gitIntegrationId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Gitintegrationid"
+    },
+    "inputVersionsHash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Inputversionshash",
+      "type": "string"
+    },
+    "parentVersionId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Parentversionid"
+    },
+    "runId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Runid",
+      "type": "string"
+    },
+    "selectionHash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Selectionhash",
+      "type": "string"
+    },
+    "selectionId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Selectionid",
+      "type": "string"
+    },
+    "technicalStatus": {
+      "enum": [
+        "not_started",
+        "building",
+        "conflicted",
+        "checking",
+        "waiting_review",
+        "passed",
+        "failed",
+        "blocked",
+        "unknown"
+      ],
+      "title": "Technicalstatus",
+      "type": "string"
+    },
+    "treeManifestHash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Treemanifesthash",
+      "type": "string"
+    },
+    "versionId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Versionid",
+      "type": "string"
+    },
+    "versionNumber": {
+      "minimum": 1,
+      "title": "Versionnumber",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "versionId",
+    "runId",
+    "versionNumber",
+    "selectionId",
+    "selectionHash",
+    "treeManifestHash",
+    "contentHash",
+    "baselineHash",
+    "contractHash",
+    "inputVersionsHash",
+    "buildEnvironmentRef",
+    "technicalStatus",
+    "createdAt"
+  ],
+  "title": "IntegrationVersionView",
+  "type": "object"
+}

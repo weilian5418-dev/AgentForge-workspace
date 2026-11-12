@@ -2,6 +2,62 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "Per-type event payload schemas; SSE transport is BE-15.",
   "properties": {
+    "acceptance.decided": {
+      "additionalProperties": false,
+      "properties": {
+        "acceptanceStatus": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Acceptancestatus",
+          "type": "string"
+        },
+        "decision": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Decision",
+          "type": "string"
+        },
+        "decisionId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Decisionid",
+          "type": "string"
+        },
+        "deliveryRevision": {
+          "minimum": 1,
+          "title": "Deliveryrevision",
+          "type": "integer"
+        },
+        "isCurrent": {
+          "title": "Iscurrent",
+          "type": "boolean"
+        },
+        "manifestHash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Manifesthash",
+          "type": "string"
+        },
+        "versionId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Versionid",
+          "type": "string"
+        }
+      },
+      "required": [
+        "decisionId",
+        "decision",
+        "manifestHash",
+        "versionId",
+        "deliveryRevision",
+        "acceptanceStatus",
+        "isCurrent"
+      ],
+      "title": "AcceptanceDecidedPayload",
+      "type": "object"
+    },
     "agent.capabilities_validated": {
       "additionalProperties": false,
       "properties": {
@@ -264,6 +320,108 @@
         "roleCount"
       ],
       "title": "AssignmentConfirmedPayload",
+      "type": "object"
+    },
+    "delivery.manifest_invalidated": {
+      "additionalProperties": false,
+      "properties": {
+        "deliveryRevision": {
+          "minimum": 1,
+          "title": "Deliveryrevision",
+          "type": "integer"
+        },
+        "manifestHash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Manifesthash",
+          "type": "string"
+        },
+        "manifestId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Manifestid",
+          "type": "string"
+        },
+        "reason": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        },
+        "versionId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Versionid",
+          "type": "string"
+        }
+      },
+      "required": [
+        "manifestId",
+        "manifestHash",
+        "versionId",
+        "reason",
+        "deliveryRevision"
+      ],
+      "title": "DeliveryManifestInvalidatedPayload",
+      "type": "object"
+    },
+    "delivery.manifest_published": {
+      "additionalProperties": false,
+      "properties": {
+        "cycleId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Cycleid",
+          "type": "string"
+        },
+        "deliveryRevision": {
+          "minimum": 1,
+          "title": "Deliveryrevision",
+          "type": "integer"
+        },
+        "manifestHash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Manifesthash",
+          "type": "string"
+        },
+        "manifestId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Manifestid",
+          "type": "string"
+        },
+        "revision": {
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "technicalStatus": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Technicalstatus",
+          "type": "string"
+        },
+        "versionId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Versionid",
+          "type": "string"
+        }
+      },
+      "required": [
+        "manifestId",
+        "manifestHash",
+        "versionId",
+        "cycleId",
+        "revision",
+        "technicalStatus",
+        "deliveryRevision"
+      ],
+      "title": "DeliveryManifestPublishedPayload",
       "type": "object"
     },
     "driver.wait_registered": {
@@ -584,9 +742,361 @@
       "title": "InstanceLifecyclePayload",
       "type": "object"
     },
-    "integration.validated": {
+    "integration.build_requested": {
       "additionalProperties": false,
       "properties": {
+        "buildId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Buildid",
+          "type": "string"
+        },
+        "errorCode": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Errorcode"
+        },
+        "selectionHash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Selectionhash",
+          "type": "string"
+        },
+        "selectionId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Selectionid",
+          "type": "string"
+        },
+        "status": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Status",
+          "type": "string"
+        },
+        "versionId": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Versionid"
+        }
+      },
+      "required": [
+        "buildId",
+        "selectionId",
+        "selectionHash",
+        "status"
+      ],
+      "title": "IntegrationBuildPayload",
+      "type": "object"
+    },
+    "integration.built": {
+      "additionalProperties": false,
+      "properties": {
+        "buildId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Buildid",
+          "type": "string"
+        },
+        "errorCode": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Errorcode"
+        },
+        "selectionHash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Selectionhash",
+          "type": "string"
+        },
+        "selectionId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Selectionid",
+          "type": "string"
+        },
+        "status": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Status",
+          "type": "string"
+        },
+        "versionId": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Versionid"
+        }
+      },
+      "required": [
+        "buildId",
+        "selectionId",
+        "selectionHash",
+        "status"
+      ],
+      "title": "IntegrationBuildPayload",
+      "type": "object"
+    },
+    "integration.check_completed": {
+      "additionalProperties": false,
+      "properties": {
+        "checkId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Checkid",
+          "type": "string"
+        },
+        "checkRunId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Checkrunid",
+          "type": "string"
+        },
+        "cycleId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Cycleid",
+          "type": "string"
+        },
+        "outcome": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Outcome",
+          "type": "string"
+        },
+        "reportHash": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reporthash"
+        },
+        "treeHash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Treehash",
+          "type": "string"
+        },
+        "versionId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Versionid",
+          "type": "string"
+        }
+      },
+      "required": [
+        "checkRunId",
+        "cycleId",
+        "versionId",
+        "checkId",
+        "outcome",
+        "treeHash"
+      ],
+      "title": "IntegrationCheckCompletedPayload",
+      "type": "object"
+    },
+    "integration.conflicted": {
+      "additionalProperties": false,
+      "properties": {
+        "buildId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Buildid",
+          "type": "string"
+        },
+        "errorCode": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Errorcode"
+        },
+        "selectionHash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Selectionhash",
+          "type": "string"
+        },
+        "selectionId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Selectionid",
+          "type": "string"
+        },
+        "status": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Status",
+          "type": "string"
+        },
+        "versionId": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Versionid"
+        }
+      },
+      "required": [
+        "buildId",
+        "selectionId",
+        "selectionHash",
+        "status"
+      ],
+      "title": "IntegrationBuildPayload",
+      "type": "object"
+    },
+    "integration.review_completed": {
+      "additionalProperties": false,
+      "properties": {
+        "cycleId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Cycleid",
+          "type": "string"
+        },
+        "reportId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Reportid",
+          "type": "string"
+        },
+        "requestId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Requestid",
+          "type": "string"
+        },
+        "treeHash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Treehash",
+          "type": "string"
+        },
+        "verdict": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Verdict",
+          "type": "string"
+        },
+        "versionId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Versionid",
+          "type": "string"
+        }
+      },
+      "required": [
+        "requestId",
+        "reportId",
+        "cycleId",
+        "versionId",
+        "verdict",
+        "treeHash"
+      ],
+      "title": "IntegrationReviewCompletedPayload",
+      "type": "object"
+    },
+    "integration.validated": {
+      "additionalProperties": false,
+      "description": "Emitted only after server-side policy evaluation — not client passed=true.",
+      "properties": {
+        "cycleId": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cycleid"
+        },
+        "evaluationStatus": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Evaluationstatus"
+        },
         "integrationVersion": {
           "maxLength": 128,
           "minLength": 1,
@@ -1740,6 +2250,29 @@
         "reason"
       ],
       "title": "StageReworkRequestedPayload",
+      "type": "object"
+    },
+    "state.invalidated": {
+      "additionalProperties": false,
+      "properties": {
+        "originalType": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Originaltype",
+          "type": "string"
+        },
+        "reason": {
+          "default": "redacted",
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "originalType"
+      ],
+      "title": "StateInvalidatedPublicPayload",
       "type": "object"
     },
     "task.blocked": {
