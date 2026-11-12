@@ -89,6 +89,10 @@ class RunnerService:
         self.session = session
 
     def issue(self, body: RunnerTicketIssueRequest) -> RunnerTicket:
+        from agentforge.runtime.control import admits_new_work, read_admission_db
+
+        if not admits_new_work(read_admission_db(self.session)):
+            raise RunnerError("admission_blocked", "platform admission refuses new runner work")
         try:
             get_profile(body.profile_id)
         except KeyError as exc:

@@ -34,7 +34,7 @@ from agentforge.core.exit_codes import (
 )
 from agentforge.observability.logging import configure_logging
 from agentforge.runtime.components import component_status_snapshot
-from agentforge.runtime.control import admits_new_work, read_admission, write_admission
+from agentforge.runtime.control import admits_new_work, apply_admission, read_admission, write_admission
 from agentforge.runtime.doctor import run_doctor
 from agentforge.runtime.drain import collect_drain_coordination
 from agentforge.runtime.instance import (
@@ -312,7 +312,7 @@ def drain(
     if record is None or not matches_managed_process(record):
         typer.echo("No running managed instance to drain", err=True)
         raise typer.Exit(FAILURE)
-    payload = write_admission(settings, "drain")
+    payload = apply_admission(settings, "drain", reason="cli_drain")
     deadline = time.monotonic() + timeout_seconds
     while time.monotonic() < deadline:
         if read_admission(settings) == "drain":
@@ -320,13 +320,16 @@ def drain(
             emit(
                 {
                     "admission": "drain",
-                    "updatedAt": payload["updatedAt"],
+                    "updatedAt": payload.get("updatedAt")
+                    or (payload.get("file") or {}).get("updatedAt"),
                     "acceptingWork": False,
                     "platformAdmissionSet": True,
+                    "admissionAuthority": payload.get("authority"),
                     "drainComplete": coordination["drainComplete"],
                     "verification": coordination["verification"],
                     "pendingAgentInstances": coordination["pendingAgentInstances"],
                     "unconfirmedSideEffects": coordination["unconfirmedSideEffects"],
+                    "unknownOperations": coordination.get("unknownOperations", []),
                     "message": coordination["message"],
                 },
                 as_json=json_out,

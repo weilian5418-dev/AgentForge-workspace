@@ -39,7 +39,7 @@ from agentforge.core.config import Settings
 from agentforge.core.credentials import CredentialError, CredentialVerifier
 from agentforge.core.service_identity import verify_ticket
 from agentforge.runtime.components import component_status_snapshot
-from agentforge.runtime.control import admits_new_work, read_admission, write_admission
+from agentforge.runtime.control import admits_new_work, apply_admission, read_admission
 from agentforge.runtime.drain import collect_drain_coordination
 from agentforge.runtime.instance import read_runtime_record, write_runtime_record
 from agentforge.storage.database import check_database, create_database_engine
@@ -238,7 +238,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         record = read_runtime_record(config)
         if record is None or record.instance_id != body.instance_id:
             raise HTTPException(409, "Instance identity mismatch")
-        write_admission(config, "drain")
+        apply_admission(config, "drain", reason="shutdown")
         record.stage = "draining"
         write_runtime_record(config, record)
 

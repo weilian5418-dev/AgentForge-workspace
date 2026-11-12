@@ -586,22 +586,39 @@ def node_prepare_rework(
 def node_coordinate_stop(
     state: CollaborationState, runtime: Runtime[DriverContext]
 ) -> dict[str, Any]:
-    """D11.10 owns full stop coordination — park until control evidence arrives."""
+    """Coordinate pause/cancel stops; do not claim paused until executions are quiescent."""
     ctx = runtime.context
-    action = NextAction(
-        kind="register_wait",
-        wait_reason="recovery_evidence",
-        wait_key=f"control:{state.get('action_detail') or 'stop'}",
-        detail="coordinate_stop_deferred",
-    )
+    detail = state.get("action_detail") or ""
+    snap = ctx.latest_snapshot
 
     def _apply(session: Session) -> dict[str, Any]:
-        return register_wait_action(session, ctx.fence, action)
+        from agentforge.driver.control import RunControlService
+
+        ctrl = RunControlService(session)
+        run_status = snap.run_status if snap is not None else ""
+        if "cancel" in detail or run_status == "cancel_requested":
+            coord = ctrl.coordinate_cancel(ctx.fence.run_id)
+        else:
+            coord = ctrl.coordinate_pause(ctx.fence.run_id)
+        wait = register_wait_action(
+            session,
+            ctx.fence,
+            NextAction(
+                kind="register_wait",
+                wait_reason="recovery_evidence",
+                wait_key=f"control:{run_status or detail or 'stop'}",
+                detail=str(coord.get("status")),
+            ),
+        )
+        return {**coord, "waitId": wait.get("waitId")}
 
     result = run_fenced_transaction(ctx.engine, ctx.fence, _apply)
+    terminal = bool(result.get("paused") or result.get("canceled"))
     return {
-        "wait_ref": result.get("waitId"),
-        "fragment_outcome": "blocked",
+        "wait_ref": None if terminal else result.get("waitId"),
+        "operation_ref": (result.get("stopOperationIds") or [None])[0],
+        "fragment_outcome": "yielded" if terminal else "blocked",
+        "action_detail": str(result.get("status")),
     }
 
 

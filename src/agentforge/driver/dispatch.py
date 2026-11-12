@@ -253,12 +253,16 @@ class DispatchService:
             "deliveryId": delivery_id,
         }
 
-    @staticmethod
-    def _assert_run_admits_dispatch(run: Run) -> None:
-        if run.status not in {"preparing", "running"}:
-            raise InstanceError("execution_blocked", f"run status {run.status} refuses dispatch")
-        if run.cancel_requested_at is not None:
-            raise InstanceError("execution_blocked", "cancel_requested")
+    def _assert_run_admits_dispatch(self, run: Run) -> None:
+        from agentforge.driver.control import run_admits_new_development
+        from agentforge.runtime.control import admits_new_work, read_admission_db
+
+        if not run_admits_new_development(run):
+            raise InstanceError(
+                "execution_blocked", f"run status {run.status} refuses dispatch"
+            )
+        if not admits_new_work(read_admission_db(self.session)):
+            raise InstanceError("admission_blocked", "platform admission refuses new dispatch")
 
     def _select_instance(self, run: Run, *, owner_role_id: str) -> AgentInstanceRow:
         instances = list(

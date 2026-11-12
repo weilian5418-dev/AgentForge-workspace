@@ -83,11 +83,17 @@ def _process_instance_operation(
             with_for_update=True,
             populate_existing=True,
         )
-        if op.kind == "create_session" and run.status not in {"preparing", "running"}:
-            raise InstanceError("execution_blocked", "Run does not admit new sessions")
+        stopping = op.kind in {"request_stop", "close"}
+        if op.kind == "create_session":
+            from agentforge.driver.control import run_admits_new_development
+            from agentforge.runtime.control import admits_new_work, read_admission_db
+
+            if not run_admits_new_development(run):
+                raise InstanceError("execution_blocked", "Run does not admit new sessions")
+            if not admits_new_work(read_admission_db(session)):
+                raise InstanceError("admission_blocked", "platform admission refuses new sessions")
         if op.status != "prepared":
             return {"status": op.status, "operationId": op.id}
-        stopping = op.kind in {"request_stop", "close"}
         if stopping and any(
             op.payload_json.get(key) != expected
             for key, expected in {
@@ -394,10 +400,18 @@ def _process_delivery(engine: Any, delivery_id: str, *, adapter_factory: Any = N
                     "execution_blocked",
                     "Task must reference a reserved InstanceAttempt (D11 dispatch)",
                 )
-            if run.status not in {"preparing", "running"}:
+            from agentforge.driver.control import run_admits_new_development
+            from agentforge.runtime.control import admits_new_work, read_admission_db
+
+            if not run_admits_new_development(run):
                 delivery.transmission_status = "failed"
                 delivery.status = "failed"
                 delivery.error_code = "run_control_blocked"
+                return {"status": "failed"}
+            if not admits_new_work(read_admission_db(session)):
+                delivery.transmission_status = "failed"
+                delivery.status = "failed"
+                delivery.error_code = "admission_blocked"
                 return {"status": "failed"}
             EligibilityService(session).assert_may_dispatch(
                 run_id=run.id, stage_id=stage_id, work_package_id=wp_id
