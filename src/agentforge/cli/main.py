@@ -1513,6 +1513,115 @@ def run_get(
     emit(payload, as_json=json_out, human=f"run={view.id} status={view.status}")
 
 
+@run_app.command("events")
+def run_events(
+    run_id: str = typer.Option(..., "--run-id"),
+    follow: bool = typer.Option(False, "--follow"),
+    after_sequence: int | None = typer.Option(None, "--after-sequence"),
+    cursor_file: Path | None = typer.Option(None, "--cursor-file"),
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """Stream run events via SSE. Does not start the Run. Bearer never written to cursor file."""
+    from agentforge.streaming.client import (
+        ClientRunProjection,
+        apply_public_event,
+        load_cursor_file,
+        parse_sse_stream,
+        save_cursor_file,
+    )
+
+    settings = load_settings()
+    try:
+        token = read_token(settings)
+    except CredentialError:
+        typer.echo("Authentication required", err=True)
+        raise typer.Exit(AUTH_FAILURE) from None
+
+    projection = ClientRunProjection(run_id=run_id)
+    if cursor_file is not None and cursor_file.exists():
+        try:
+            projection = load_cursor_file(cursor_file, run_id=run_id)
+        except ValueError as exc:
+            typer.echo(str(exc), err=True)
+            raise typer.Exit(FAILURE) from None
+    elif after_sequence is not None:
+        projection.applied_sequence = after_sequence
+    else:
+        # Bootstrap from snapshot latestSequence when no cursor provided
+        with httpx.Client(base_url=settings.base_url, timeout=30, trust_env=False) as client:
+            snap = client.get(
+                f"/api/v1/runs/{run_id}/snapshot",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+            if snap.status_code >= 400:
+                typer.echo(f"snapshot_failed: {snap.status_code} {snap.text}", err=True)
+                raise typer.Exit(FAILURE)
+            body = snap.json()
+            projection.applied_sequence = int(body.get("latestSequence") or 0)
+
+    headers = {"Authorization": f"Bearer {token}", "Accept": "text/event-stream"}
+    if projection.last_applied_event_id:
+        headers["Last-Event-ID"] = projection.last_applied_event_id
+    params = {"afterSequence": projection.applied_sequence}
+
+    timeout = httpx.Timeout(None if follow else 60.0, connect=10.0)
+    try:
+        with httpx.Client(base_url=settings.base_url, timeout=timeout, trust_env=False) as client:
+            with client.stream(
+                "GET",
+                f"/api/v1/runs/{run_id}/events",
+                headers=headers,
+                params=params,
+            ) as response:
+                if response.status_code >= 400:
+                    text = response.read().decode("utf-8", errors="replace")
+                    typer.echo(f"{response.status_code}: {text}", err=True)
+                    raise typer.Exit(FAILURE if response.status_code != 401 else AUTH_FAILURE)
+                for parsed in parse_sse_stream(response.iter_bytes()):
+                    if parsed.comment:
+                        continue
+                    if parsed.event in {
+                        "resync_required",
+                        "auth_revoked",
+                        "server_draining",
+                        "stream_limit_reached",
+                        "snapshot_required",
+                    }:
+                        emit(
+                            {"control": parsed.event, "data": parsed.data},
+                            as_json=True,
+                        )
+                        if not follow:
+                            break
+                        continue
+                    try:
+                        payload = json.loads(parsed.data) if parsed.data else {}
+                    except json.JSONDecodeError:
+                        continue
+                    try:
+                        applied = apply_public_event(projection, payload)
+                    except ValueError as exc:
+                        typer.echo(str(exc), err=True)
+                        raise typer.Exit(FAILURE) from None
+                    if not applied:
+                        continue
+                    if cursor_file is not None:
+                        save_cursor_file(cursor_file, projection)
+                    if json_out:
+                        emit(payload, as_json=True)
+                    else:
+                        typer.echo(
+                            f"{payload.get('sequence')} {payload.get('type')} {payload.get('eventId')}"
+                        )
+                    if not follow:
+                        # One-shot: drain remaining in first response batch then exit after idle?
+                        # Without follow, still consume until server closes or control frame.
+                        pass
+    except httpx.HTTPError as exc:
+        typer.echo(f"stream_error: {exc}", err=True)
+        raise typer.Exit(FAILURE) from None
+
+
 @run_app.command("propose")
 def run_propose(
     run_id: str = typer.Option(..., "--run-id"),

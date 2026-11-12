@@ -20,6 +20,7 @@ from agentforge.api.approvals import router as approvals_router
 from agentforge.api.artifacts import router as artifacts_router
 from agentforge.api.collaboration import router as collaboration_router
 from agentforge.api.discovery import router as discovery_router
+from agentforge.api.events import router as events_router
 from agentforge.api.git import router as git_router
 from agentforge.api.instances import router as instances_router
 from agentforge.api.projects import router as projects_router
@@ -27,6 +28,8 @@ from agentforge.api.providers import router as providers_router
 from agentforge.api.runner import router as runner_router
 from agentforge.api.runs import router as runs_router
 from agentforge.api.stages import router as stages_router
+from agentforge.queries.authorization import AuthenticatedPrincipal
+from agentforge.streaming.service import StreamSlotRegistry
 from agentforge.contracts.errors import ErrorCode, ErrorResponse, build_error
 from agentforge.contracts.system import (
     CapabilityResponse,
@@ -62,6 +65,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         application.state.settings = config
         application.state.verifier = CredentialVerifier(config)
         application.state.database = create_database_engine(config)
+        application.state.stream_slots = StreamSlotRegistry()
         try:
             yield
         finally:
@@ -113,6 +117,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if ticket and audience:
             try:
                 verify_ticket(config, ticket, audience=audience, request_id=None)
+                request.state.principal = AuthenticatedPrincipal(
+                    credential_id=f"ticket:{audience}",
+                    credential_version=1,
+                    actor_ref=f"service:{audience}",
+                )
+                request.state.bearer_token = None
                 return
             except (ValueError, TypeError, KeyError):
                 raise HTTPException(403, "Invalid internal service ticket") from None
@@ -123,9 +133,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         ):
             raise HTTPException(401, "Authentication required")
         try:
-            app.state.verifier.verify(credentials.credentials)
+            record = app.state.verifier.verify(credentials.credentials)
         except CredentialError:
             raise HTTPException(401, "Authentication required") from None
+        request.state.principal = AuthenticatedPrincipal(
+            credential_id=record.credential_id,
+            credential_version=record.version,
+            actor_ref=f"cred:{record.credential_id}",
+            scopes=frozenset({record.scope}),
+        )
+        # Memory-only for stream re-auth — never write into DTOs / logs / snapshotToken.
+        request.state.bearer_token = credentials.credentials
 
     def database_status() -> DependencyStatus:
         return check_database(
@@ -286,6 +304,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.include_router(projects_router, dependencies=[Depends(authenticate)])
     app.include_router(runs_router, dependencies=[Depends(authenticate)])
+    app.include_router(events_router, dependencies=[Depends(authenticate)])
     app.include_router(collaboration_router, dependencies=[Depends(authenticate)])
     app.include_router(instances_router, dependencies=[Depends(authenticate)])
     app.include_router(stages_router, dependencies=[Depends(authenticate)])
