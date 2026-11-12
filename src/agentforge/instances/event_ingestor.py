@@ -50,6 +50,8 @@ class NativeEventIngestor:
         if instance is None:
             raise InstanceError("instance_not_found", instance_id)
 
+        if authentic and (not native_session_id or native_session_id != instance.native_session_id):
+            raise InstanceError("session_mismatch", "Event must bind current native session")
         existing = self.repo.find_event_receipt(
             instance_id=instance_id, source=source, dedupe_key=dedupe_key
         )
@@ -107,9 +109,9 @@ class NativeEventIngestor:
             instance.status = combine_instance_status_facets("active", "idle")
             instance.updated_at = _now()
         elif event_type == "fact.session_terminated":
-            instance.lifecycle = "stopped"
+            instance.lifecycle = "unknown"
             instance.activity = "idle"
-            instance.status = combine_instance_status_facets("stopped", "idle")
+            instance.status = combine_instance_status_facets("unknown", "idle")
             instance.updated_at = _now()
 
         return {

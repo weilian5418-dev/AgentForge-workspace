@@ -1,0 +1,124 @@
+{
+  "additionalProperties": false,
+  "description": "Unified admission check before any stage task dispatch (D09↔D10 boundary).",
+  "properties": {
+    "allowedStageIds": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9._:-]+$",
+        "type": "string"
+      },
+      "maxItems": 32,
+      "title": "Allowedstageids",
+      "type": "array"
+    },
+    "allowedWorkPackageIds": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9._:-]+$",
+        "type": "string"
+      },
+      "maxItems": 64,
+      "title": "Allowedworkpackageids",
+      "type": "array"
+    },
+    "assignmentVersion": {
+      "minimum": 1,
+      "title": "Assignmentversion",
+      "type": "integer"
+    },
+    "authorizationVersion": {
+      "anyOf": [
+        {
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Authorizationversion"
+    },
+    "blockedReason": {
+      "anyOf": [
+        {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Blockedreason"
+    },
+    "gateDecisionRefs": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9._:-]+$",
+        "type": "string"
+      },
+      "maxItems": 32,
+      "title": "Gatedecisionrefs",
+      "type": "array"
+    },
+    "planVersion": {
+      "minimum": 1,
+      "title": "Planversion",
+      "type": "integer"
+    },
+    "requiredCandidateIds": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9._:-]+$",
+        "type": "string"
+      },
+      "maxItems": 32,
+      "title": "Requiredcandidateids",
+      "type": "array"
+    },
+    "revalidateOn": {
+      "items": {
+        "maxLength": 512,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 16,
+      "title": "Revalidateon",
+      "type": "array"
+    },
+    "runId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Runid",
+      "type": "string"
+    },
+    "validUntil": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Validuntil"
+    }
+  },
+  "required": [
+    "runId",
+    "planVersion",
+    "assignmentVersion"
+  ],
+  "title": "ExecutionEligibility",
+  "type": "object"
+}

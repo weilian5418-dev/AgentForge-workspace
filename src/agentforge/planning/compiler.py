@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
-from typing import Any, Iterable
+from datetime import datetime
+from typing import Any
 
 from agentforge.contracts.plans import (
     AssignmentSet,
@@ -13,7 +14,6 @@ from agentforge.contracts.plans import (
     CompilationStatus,
     PlanSpec,
 )
-
 
 COMPILER_VERSION = "plan-compiler-v1"
 
@@ -63,7 +63,7 @@ def _diag(
 def _topo_has_cycle(nodes: Iterable[str], edges: dict[str, set[str]]) -> list[str]:
     """Return one cycle path if present, else empty list. Kahn's algorithm."""
     indeg: dict[str, int] = {n: 0 for n in nodes}
-    for src, dsts in edges.items():
+    for _src, dsts in edges.items():
         for dst in dsts:
             if dst in indeg:
                 indeg[dst] += 1
@@ -122,9 +122,7 @@ def compile_plan(spec: PlanSpec, facts: CompilerFacts | None = None) -> Compilat
 
     # 1. Structure and identity
     if not spec.goal.strip():
-        needs_input.append(
-            _diag("missing_goal", "Plan goal is required", field_path="goal")
-        )
+        needs_input.append(_diag("missing_goal", "Plan goal is required", field_path="goal"))
 
     role_ids = {r.role_id for r in spec.roles}
     wp_by_id = {w.id: w for w in spec.work_packages}
@@ -199,6 +197,23 @@ def compile_plan(spec: PlanSpec, facts: CompilerFacts | None = None) -> Compilat
             else:
                 # edge: dep → wp (dep must complete before wp)
                 wp_edges[dep].add(wp.id)
+                producer = wp_by_id[dep]
+                owning_stage = stage_by_id.get(wp.stage_id)
+                if (
+                    producer.stage_id == wp.stage_id
+                    and owning_stage
+                    and owning_stage.gate_policy.policy == "stage_atomic"
+                ):
+                    errors.append(
+                        _diag(
+                            "same_stage_gate_deadlock",
+                            "Sequential data dependencies require separate stages or dependency_branch gating",
+                            entity_type="work_package",
+                            entity_id=wp.id,
+                            field_path="dependsOn",
+                            suggested_resolution="Split the stages, or explicitly confirm branch release",
+                        )
+                    )
     cycle = _topo_has_cycle(wp_by_id.keys(), wp_edges)
     if cycle:
         errors.append(
@@ -442,9 +457,7 @@ def compile_plan(spec: PlanSpec, facts: CompilerFacts | None = None) -> Compilat
                     )
                 )
                 continue
-            missing_caps = [
-                cap for cap in role.required_capabilities if cap not in ev.capabilities
-            ]
+            missing_caps = [cap for cap in role.required_capabilities if cap not in ev.capabilities]
             for cap in missing_caps:
                 blocked.append(
                     _diag(

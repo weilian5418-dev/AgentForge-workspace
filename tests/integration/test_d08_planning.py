@@ -41,9 +41,7 @@ def engine():
     # Require D08 migration tables.
     with eng.connect() as conn:
         exists = conn.execute(
-            text(
-                "SELECT to_regclass('app.plan_confirmation_requests') IS NOT NULL"
-            )
+            text("SELECT to_regclass('app.plan_confirmation_requests') IS NOT NULL")
         ).scalar()
         if not exists:
             pytest.skip("D08 migration 20261111_0013 not applied")
@@ -135,9 +133,7 @@ def test_approve_idempotent_and_no_agent_instances(session_factory, monkeypatch)
                 }
             )
         )
-        plan = svc.propose(
-            accepted.run_id, PlanProposalRequest.model_validate({"source": "rules"})
-        )
+        plan = svc.propose(accepted.run_id, PlanProposalRequest.model_validate({"source": "rules"}))
         assert plan.compilation and plan.compilation.status == "valid"
         svc.put_assignments(
             accepted.run_id,
@@ -196,9 +192,7 @@ def test_concurrent_decide_vs_stale_status_version(session_factory, monkeypatch)
                 }
             )
         )
-        plan = svc.propose(
-            accepted.run_id, PlanProposalRequest.model_validate({"source": "rules"})
-        )
+        plan = svc.propose(accepted.run_id, PlanProposalRequest.model_validate({"source": "rules"}))
         svc.put_assignments(
             accepted.run_id,
             plan_version=plan.plan_version,

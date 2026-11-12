@@ -1,0 +1,106 @@
+{
+  "additionalProperties": false,
+  "description": "One audit cycle bound to a fixed candidate set fingerprint.",
+  "properties": {
+    "candidateSetHash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Candidatesethash",
+      "type": "string"
+    },
+    "candidateSetId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Candidatesetid",
+      "type": "string"
+    },
+    "closedAt": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Closedat"
+    },
+    "contractHash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Contracthash",
+      "type": "string"
+    },
+    "environmentFingerprint": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Environmentfingerprint",
+      "type": "string"
+    },
+    "gatePolicyVersion": {
+      "minimum": 1,
+      "title": "Gatepolicyversion",
+      "type": "integer"
+    },
+    "openedAt": {
+      "format": "date-time",
+      "title": "Openedat",
+      "type": "string"
+    },
+    "repairRound": {
+      "default": 0,
+      "maximum": 10,
+      "minimum": 0,
+      "title": "Repairround",
+      "type": "integer"
+    },
+    "reviewCycleId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Reviewcycleid",
+      "type": "string"
+    },
+    "stageId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Stageid",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "open",
+        "awaiting_validation",
+        "awaiting_review",
+        "awaiting_user_decision",
+        "decided",
+        "superseded",
+        "cancelled"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "submissionId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Submissionid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "reviewCycleId",
+    "stageId",
+    "submissionId",
+    "candidateSetId",
+    "candidateSetHash",
+    "contractHash",
+    "gatePolicyVersion",
+    "environmentFingerprint",
+    "status",
+    "openedAt"
+  ],
+  "title": "ReviewCycle",
+  "type": "object"
+}

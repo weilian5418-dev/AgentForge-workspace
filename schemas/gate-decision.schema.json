@@ -1,13 +1,47 @@
 {
   "additionalProperties": false,
-  "description": "Platform StageController decision; not writable by review agents.",
+  "description": "Immutable StageController decision; not writable by review agents or clients.",
   "properties": {
+    "allowedConsumeWorkPackageIds": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9._:-]+$",
+        "type": "string"
+      },
+      "maxItems": 64,
+      "title": "Allowedconsumeworkpackageids",
+      "type": "array"
+    },
     "candidateId": {
-      "maxLength": 128,
-      "minLength": 1,
-      "pattern": "^[A-Za-z0-9._:-]+$",
-      "title": "Candidateid",
-      "type": "string"
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Candidateid"
+    },
+    "candidateSetId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Candidatesetid"
     },
     "contractHash": {
       "pattern": "^[0-9a-f]{64}$",
@@ -50,6 +84,21 @@
       ],
       "title": "Result",
       "type": "string"
+    },
+    "reviewCycleId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Reviewcycleid"
     },
     "reviewRefs": {
       "items": {
@@ -99,7 +148,6 @@
   "required": [
     "decisionId",
     "stageId",
-    "candidateId",
     "manifestHash",
     "contractHash",
     "gatePolicyVersion",

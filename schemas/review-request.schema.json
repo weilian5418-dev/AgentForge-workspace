@@ -1,0 +1,99 @@
+{
+  "additionalProperties": false,
+  "description": "Audit request — reports must bind to this request and cycle, not only candidateId.",
+  "properties": {
+    "candidateSetId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Candidatesetid",
+      "type": "string"
+    },
+    "createdAt": {
+      "format": "date-time",
+      "title": "Createdat",
+      "type": "string"
+    },
+    "deadlineAt": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Deadlineat"
+    },
+    "legalResponderRefs": {
+      "items": {
+        "maxLength": 512,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 16,
+      "minItems": 1,
+      "title": "Legalresponderrefs",
+      "type": "array"
+    },
+    "reviewCycleId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Reviewcycleid",
+      "type": "string"
+    },
+    "reviewRequestId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Reviewrequestid",
+      "type": "string"
+    },
+    "reviewRoleId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Reviewroleid",
+      "type": "string"
+    },
+    "scope": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Scope",
+      "type": "string"
+    },
+    "stageId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Stageid",
+      "type": "string"
+    },
+    "status": {
+      "default": "pending",
+      "enum": [
+        "pending",
+        "answered",
+        "timed_out",
+        "cancelled"
+      ],
+      "title": "Status",
+      "type": "string"
+    }
+  },
+  "required": [
+    "reviewRequestId",
+    "reviewCycleId",
+    "stageId",
+    "candidateSetId",
+    "reviewRoleId",
+    "legalResponderRefs",
+    "scope",
+    "createdAt"
+  ],
+  "title": "ReviewRequest",
+  "type": "object"
+}

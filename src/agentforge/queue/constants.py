@@ -12,3 +12,5 @@ INTENT_APPROVAL_FORWARD = "approval.forward.v1"
 
 QUEUE_SCHEMA = "queue"
 DEFAULT_QUEUE_NAME = "agentforge"
+
+CONTROL_QUEUE_NAME = "agentforge-control"

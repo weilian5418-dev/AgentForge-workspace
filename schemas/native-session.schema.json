@@ -1,0 +1,136 @@
+{
+  "additionalProperties": false,
+  "description": "Native product session — distinct from AgentInstance and from attempts.",
+  "properties": {
+    "bindingStatus": {
+      "enum": [
+        "pending",
+        "active",
+        "needs_reconciliation",
+        "closed",
+        "superseded"
+      ],
+      "title": "Bindingstatus",
+      "type": "string"
+    },
+    "closedAt": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Closedat"
+    },
+    "configVersion": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Configversion",
+      "type": "string"
+    },
+    "createOperationId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Createoperationid",
+      "type": "string"
+    },
+    "createdAt": {
+      "format": "date-time",
+      "title": "Createdat",
+      "type": "string"
+    },
+    "environmentId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Environmentid",
+      "type": "string"
+    },
+    "evidenceRefs": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9._:-]+$",
+        "type": "string"
+      },
+      "maxItems": 32,
+      "title": "Evidencerefs",
+      "type": "array"
+    },
+    "instanceId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Instanceid",
+      "type": "string"
+    },
+    "nativeSessionId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Nativesessionid",
+      "type": "string"
+    },
+    "productId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Productid",
+      "type": "string"
+    },
+    "profileId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Profileid",
+      "type": "string"
+    },
+    "sessionRef": {
+      "anyOf": [
+        {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Sessionref"
+    },
+    "workspaceId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Workspaceid"
+    }
+  },
+  "required": [
+    "nativeSessionId",
+    "instanceId",
+    "productId",
+    "profileId",
+    "configVersion",
+    "environmentId",
+    "createOperationId",
+    "bindingStatus",
+    "createdAt"
+  ],
+  "title": "NativeSession",
+  "type": "object"
+}

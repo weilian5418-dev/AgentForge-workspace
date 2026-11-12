@@ -1,0 +1,147 @@
+{
+  "$defs": {
+    "CompilationDiagnostic": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Code",
+          "type": "string"
+        },
+        "entityId": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Entityid"
+        },
+        "entityType": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Entitytype"
+        },
+        "fieldPath": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fieldpath"
+        },
+        "message": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Message",
+          "type": "string"
+        },
+        "severity": {
+          "enum": [
+            "error",
+            "warning",
+            "info"
+          ],
+          "title": "Severity",
+          "type": "string"
+        },
+        "suggestedResolution": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Suggestedresolution"
+        }
+      },
+      "required": [
+        "code",
+        "severity",
+        "message"
+      ],
+      "title": "CompilationDiagnostic",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Compiler output — not a RunStatus.",
+  "properties": {
+    "capabilityEvidenceRefs": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9._:-]+$",
+        "type": "string"
+      },
+      "maxItems": 64,
+      "title": "Capabilityevidencerefs",
+      "type": "array"
+    },
+    "compilerVersion": {
+      "default": "plan-compiler-v1",
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Compilerversion",
+      "type": "string"
+    },
+    "issues": {
+      "items": {
+        "$ref": "#/$defs/CompilationDiagnostic"
+      },
+      "maxItems": 256,
+      "title": "Issues",
+      "type": "array"
+    },
+    "status": {
+      "enum": [
+        "valid",
+        "needs_input",
+        "blocked",
+        "invalid"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "warnings": {
+      "items": {
+        "$ref": "#/$defs/CompilationDiagnostic"
+      },
+      "maxItems": 256,
+      "title": "Warnings",
+      "type": "array"
+    }
+  },
+  "required": [
+    "status"
+  ],
+  "title": "CompilationReport",
+  "type": "object"
+}

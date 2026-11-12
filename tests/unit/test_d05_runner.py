@@ -36,6 +36,11 @@ class _MemSession:
     def refresh(self, row: Any) -> None:
         return None
 
+    def scalars(self, statement: Any) -> Any:
+        from types import SimpleNamespace
+
+        return SimpleNamespace(all=lambda: [])
+
     def execute(self, *_a: Any, **_k: Any) -> Any:
         assert "pg_advisory_xact_lock" in str(_a[0])
         return None

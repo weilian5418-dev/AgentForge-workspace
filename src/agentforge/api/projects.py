@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import hashlib
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any, cast
 
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from starlette.exceptions import HTTPException
@@ -28,7 +29,7 @@ router = APIRouter(prefix="/api/v1", tags=["projects"])
 
 
 def _settings(request: Request) -> Settings:
-    return request.app.state.settings
+    return cast(Settings, request.app.state.settings)
 
 
 def _map_error(exc: ProjectError | GrantError | InputError) -> HTTPException:
@@ -48,7 +49,7 @@ def _map_error(exc: ProjectError | GrantError | InputError) -> HTTPException:
     return HTTPException(status, f"{exc.code}: {exc.message}")
 
 
-def _require_engine(request: Request, settings: Settings):
+def _require_engine(request: Request, settings: Settings) -> Any:
     if settings.database_url is None or request.app.state.database is None:
         raise HTTPException(503, "Database is not configured")
     return request.app.state.database
@@ -89,7 +90,7 @@ async def upload_input(
     request: Request,
     project_id: str,
     settings: Annotated[Settings, Depends(_settings)],
-    file: UploadFile = File(...),
+    file: Annotated[UploadFile, File()],
     file_name: str | None = Form(default=None),
     client_sha256: str | None = Form(default=None),
 ) -> ProjectInputResponse:
@@ -118,7 +119,7 @@ async def upload_input(
                 digest.update(piece)
                 handle.write(piece)
 
-        def replay():
+        def replay() -> Iterator[bytes]:
             with spool_path.open("rb") as handle:
                 while True:
                     chunk = handle.read(1024 * 1024)

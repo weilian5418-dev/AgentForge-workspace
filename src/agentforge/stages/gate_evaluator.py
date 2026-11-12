@@ -34,14 +34,15 @@ def evaluate_gate(inp: GateEvaluationInput) -> GateEvaluationResult:
             outcome="blocked",
             reason=inp.blocking_facts[0],
         )
-    if not inp.candidate_set.required_work_packages_complete:
-        if policy.policy == "stage_atomic":
-            return GateEvaluationResult(
-                outcome="waiting",
-                reason="required_work_packages_incomplete",
-            )
+    if not inp.candidate_set.required_work_packages_complete and policy.policy == "stage_atomic":
+        return GateEvaluationResult(
+            outcome="waiting",
+            reason="required_work_packages_incomplete",
+        )
 
     if inp.validation_has_required_failure:
+        if inp.repair_round >= policy.max_repair_rounds:
+            return GateEvaluationResult(outcome="blocked", reason="repair_rounds_exhausted")
         # Required failure cannot be overridden by a later optional pass.
         return GateEvaluationResult(
             outcome="rework",
@@ -66,22 +67,10 @@ def evaluate_gate(inp: GateEvaluationInput) -> GateEvaluationResult:
 
     if any(v == "needs_input" for v in inp.review_verdicts):
         return GateEvaluationResult(outcome="waiting", reason="review_needs_input")
-    if any(v == "request_changes" for v in inp.review_verdicts):
-        if inp.repair_round >= policy.max_repair_rounds:
-            return GateEvaluationResult(
-                outcome="blocked",
-                reason="repair_rounds_exhausted",
-            )
-        return GateEvaluationResult(
-            outcome="rework",
-            reason="review_request_changes",
-            rework_problem_digest=_digest_problems(inp.review_verdicts),
-        )
-
     if len(inp.review_verdicts) >= 2:
         unique = set(inp.review_verdicts)
         if len(unique) > 1 and "approve" in unique and "request_changes" in unique:
-            if policy.conflict_resolution == "escalate_user":
+            if policy.conflict_resolution == "escalate_user" and inp.user_decision is None:
                 return GateEvaluationResult(
                     outcome="waiting",
                     reason="review_conflict_escalate_user",
@@ -92,6 +81,34 @@ def evaluate_gate(inp: GateEvaluationInput) -> GateEvaluationResult:
                     reason="review_not_unanimous",
                     rework_problem_digest=_digest_problems(inp.review_verdicts),
                 )
+
+    conflict_approved = (
+        policy.conflict_resolution == "escalate_user"
+        and inp.user_decision is not None
+        and inp.user_decision.decision == "approve"
+        and inp.user_decision.candidate_set_hash == inp.candidate_set.manifest_hash
+        and inp.user_decision.contract_hash == inp.contract_hash
+        and inp.user_decision.gate_policy_version == policy.version
+    )
+    majority_approves = (
+        policy.conflict_resolution == "majority"
+        and inp.review_verdicts.count("approve") > len(inp.review_verdicts) / 2
+    )
+    if (
+        any(v == "request_changes" for v in inp.review_verdicts)
+        and not majority_approves
+        and not conflict_approved
+    ):
+        if inp.repair_round >= policy.max_repair_rounds:
+            return GateEvaluationResult(
+                outcome="blocked",
+                reason="repair_rounds_exhausted",
+            )
+        return GateEvaluationResult(
+            outcome="rework",
+            reason="review_request_changes",
+            rework_problem_digest=_digest_problems(inp.review_verdicts),
+        )
 
     if inp.user_decision_required:
         if inp.user_decision is None:
@@ -134,5 +151,5 @@ def evaluate_gate(inp: GateEvaluationInput) -> GateEvaluationResult:
     return GateEvaluationResult(
         outcome="release",
         reason="all_required_satisfied",
-        allowed_release_work_package_ids=allowed,
+        allowed_release_work_package_ids=sorted(set(allowed)),
     )

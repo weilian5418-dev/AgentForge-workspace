@@ -9,11 +9,11 @@ from typing import Any, Literal
 
 from agentforge.contracts.plans import (
     CompilationDiagnostic,
+    PlanningContext,
     PlanProposal,
     PlanSpec,
     PlanStageDefinition,
     PlanWorkPackageSpec,
-    PlanningContext,
     ProposalSource,
     RoutingDecision,
 )

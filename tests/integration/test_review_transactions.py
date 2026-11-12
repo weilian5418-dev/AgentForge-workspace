@@ -39,6 +39,8 @@ def isolated_engine():
         "agent_instances",
         "task_attempts",
         "runs",
+        "instance_attempts",
+        "stages",
     ]
     try:
         with base.begin() as conn:

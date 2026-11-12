@@ -3,6 +3,16 @@
     "StageGatePolicy": {
       "additionalProperties": false,
       "properties": {
+        "conflictResolution": {
+          "default": "escalate_user",
+          "enum": [
+            "escalate_user",
+            "unanimous",
+            "majority"
+          ],
+          "title": "Conflictresolution",
+          "type": "string"
+        },
         "maxRepairRounds": {
           "default": 3,
           "maximum": 10,
@@ -36,20 +46,38 @@
           "type": "array"
         },
         "version": {
+          "default": 1,
           "minimum": 1,
           "title": "Version",
           "type": "integer"
         }
       },
-      "required": [
-        "version"
-      ],
       "title": "StageGatePolicy",
       "type": "object"
     }
   },
   "additionalProperties": false,
+  "description": "Runtime stage instance. Plan-time definitions live in PlanStageDefinition.",
   "properties": {
+    "assignmentVersion": {
+      "anyOf": [
+        {
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Assignmentversion"
+    },
+    "concurrencyVersion": {
+      "default": 1,
+      "minimum": 1,
+      "title": "Concurrencyversion",
+      "type": "integer"
+    },
     "currentCandidateId": {
       "anyOf": [
         {
@@ -65,6 +93,36 @@
       "default": null,
       "title": "Currentcandidateid"
     },
+    "currentCandidateSetId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Currentcandidatesetid"
+    },
+    "currentReviewCycleId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Currentreviewcycleid"
+    },
     "dependencies": {
       "items": {
         "maxLength": 128,
@@ -78,6 +136,19 @@
     },
     "gatePolicy": {
       "$ref": "#/$defs/StageGatePolicy"
+    },
+    "gatePolicyVersion": {
+      "anyOf": [
+        {
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Gatepolicyversion"
     },
     "planVersion": {
       "minimum": 1,
@@ -102,6 +173,21 @@
       "title": "Requiredworkpackages",
       "type": "array"
     },
+    "runId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Runid"
+    },
     "stageId": {
       "maxLength": 128,
       "minLength": 1,
@@ -123,6 +209,20 @@
         "blocked"
       ],
       "title": "Status",
+      "type": "string"
+    },
+    "waitingReason": {
+      "default": "none",
+      "enum": [
+        "awaiting_stop_verification",
+        "awaiting_validation",
+        "awaiting_review",
+        "awaiting_user_decision",
+        "awaiting_permission",
+        "budget_exhausted",
+        "none"
+      ],
+      "title": "Waitingreason",
       "type": "string"
     }
   },

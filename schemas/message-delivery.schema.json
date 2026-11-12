@@ -1,5 +1,6 @@
 {
   "additionalProperties": false,
+  "description": "Per-recipient delivery progress — transmission and reply are separate.",
   "properties": {
     "attemptId": {
       "maxLength": 128,
@@ -20,7 +21,9 @@
         {
           "enum": [
             "realtime",
-            "next_safe_boundary"
+            "next_safe_boundary",
+            "independent_task",
+            "manual_assisted"
           ],
           "type": "string"
         },
@@ -99,6 +102,24 @@
       "title": "Recipientinstanceid",
       "type": "string"
     },
+    "replyStatus": {
+      "anyOf": [
+        {
+          "enum": [
+            "not_required",
+            "awaiting_reply",
+            "responded",
+            "timed_out"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Replystatus"
+    },
     "respondedAt": {
       "anyOf": [
         {
@@ -119,27 +140,55 @@
       "type": "integer"
     },
     "status": {
-      "enum": [
-        "pending",
-        "dispatching",
-        "sent",
-        "received",
-        "awaiting_reply",
-        "responded",
-        "failed",
-        "expired",
-        "unknown"
+      "anyOf": [
+        {
+          "enum": [
+            "pending",
+            "dispatching",
+            "sent",
+            "received",
+            "awaiting_reply",
+            "responded",
+            "failed",
+            "expired",
+            "unknown"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
       ],
-      "title": "Status",
-      "type": "string"
+      "default": null,
+      "title": "Status"
+    },
+    "transmissionStatus": {
+      "anyOf": [
+        {
+          "enum": [
+            "pending",
+            "claimed",
+            "sent",
+            "received",
+            "unknown",
+            "failed",
+            "expired"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Transmissionstatus"
     }
   },
   "required": [
     "deliveryId",
     "messageId",
     "recipientInstanceId",
-    "attemptId",
-    "status"
+    "attemptId"
   ],
   "title": "MessageDelivery",
   "type": "object"

@@ -123,7 +123,9 @@ class ProjectService:
         project.current_baseline_id = baseline_row.id
         self.session.flush()
 
-        return self._to_response(project, summary=summary, baseline=self._baseline_contract(baseline_row))
+        return self._to_response(
+            project, summary=summary, baseline=self._baseline_contract(baseline_row)
+        )
 
     def get(self, project_id: str, *, include_precheck: bool = False) -> ProjectResponse:
         project = self.session.get(Project, project_id)

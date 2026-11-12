@@ -16,6 +16,16 @@ from starlette.exceptions import HTTPException
 from starlette.middleware.base import RequestResponseEndpoint
 
 from agentforge import __version__
+from agentforge.api.approvals import router as approvals_router
+from agentforge.api.artifacts import router as artifacts_router
+from agentforge.api.discovery import router as discovery_router
+from agentforge.api.git import router as git_router
+from agentforge.api.instances import router as instances_router
+from agentforge.api.projects import router as projects_router
+from agentforge.api.providers import router as providers_router
+from agentforge.api.runner import router as runner_router
+from agentforge.api.runs import router as runs_router
+from agentforge.api.stages import router as stages_router
 from agentforge.contracts.errors import ErrorCode, ErrorResponse, build_error
 from agentforge.contracts.system import (
     CapabilityResponse,
@@ -25,18 +35,9 @@ from agentforge.contracts.system import (
     ShutdownRequest,
     ShutdownResponse,
 )
-from agentforge.api.approvals import router as approvals_router
-from agentforge.api.artifacts import router as artifacts_router
-from agentforge.api.discovery import router as discovery_router
-from agentforge.api.git import router as git_router
-from agentforge.api.projects import router as projects_router
-from agentforge.api.providers import router as providers_router
-from agentforge.api.runner import router as runner_router
-from agentforge.api.instances import router as instances_router
-from agentforge.api.runs import router as runs_router
-from agentforge.api.stages import router as stages_router
 from agentforge.core.config import Settings
 from agentforge.core.credentials import CredentialError, CredentialVerifier
+from agentforge.core.service_identity import verify_ticket
 from agentforge.runtime.components import component_status_snapshot
 from agentforge.runtime.control import admits_new_work, read_admission, write_admission
 from agentforge.runtime.drain import collect_drain_coordination
@@ -95,8 +96,25 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return response
 
     def authenticate(
+        request: Request,
         credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)],
     ) -> None:
+        ticket = request.headers.get("X-Agent-Ticket") or request.headers.get("X-Internal-Service")
+        audience = (
+            "stage-review"
+            if request.url.path.endswith("/reviews")
+            else "agent-message"
+            if request.url.path == "/api/v1/internal/agent-messages"
+            else "native-event"
+            if request.url.path == "/api/v1/internal/native-events"
+            else None
+        )
+        if ticket and audience:
+            try:
+                verify_ticket(config, ticket, audience=audience, request_id=None)
+                return
+            except (ValueError, TypeError, KeyError):
+                raise HTTPException(403, "Invalid internal service ticket") from None
         if (
             credentials is None
             or len(credentials.credentials) > 512

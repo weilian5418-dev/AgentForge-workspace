@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, cast
 
 from sqlalchemy.orm import Session
 
@@ -81,6 +81,63 @@ def accept_model_probe(
 def get_operation(session: Session, operation_id: str) -> OperationStatusResponse:
     row = session.get(AsyncOperationRow, operation_id)
     if row is None:
+        from sqlalchemy import select
+
+        from agentforge.storage.models import (
+            ExecutionRequestRow,
+            InstanceOperationRow,
+            StageRow,
+            StageSubmissionRow,
+        )
+
+        native = session.get(InstanceOperationRow, operation_id)
+        if native:
+            status = {
+                "prepared": "accepted",
+                "claimed": "running",
+                "unknown": "needs_reconciliation",
+            }.get(native.status, native.status)
+            return OperationStatusResponse(
+                operation_id=native.id,
+                operation_type="instance." + native.kind,
+                status=cast(Any, status),
+                result_ref=native.native_ref,
+                uncertain_side_effects=native.status in {"unknown", "needs_reconciliation"},
+                message=native.error_code,
+                created_at=native.prepared_at,
+                updated_at=native.completed_at or native.prepared_at,
+            )
+        request = session.get(ExecutionRequestRow, operation_id)
+        if request:
+            return OperationStatusResponse(
+                operation_id=request.id,
+                operation_type="execution.prepare",
+                run_id=request.run_id,
+                status=cast(Any, "accepted" if request.status == "prepared" else request.status),
+                uncertain_side_effects=False,
+                created_at=request.created_at,
+                updated_at=request.created_at,
+            )
+        submission = session.scalar(
+            select(StageSubmissionRow).where(StageSubmissionRow.operation_id == operation_id)
+        )
+        if submission:
+            stage = session.get(StageRow, submission.stage_id)
+            return OperationStatusResponse(
+                operation_id=operation_id,
+                operation_type="stage.submission",
+                run_id=stage.run_id if stage else None,
+                status="blocked"
+                if stage and stage.status == "blocked"
+                else "succeeded"
+                if submission.manifest_hash
+                else "running",
+                result_ref=submission.id,
+                uncertain_side_effects=stage is None
+                or stage.waiting_reason == "awaiting_stop_verification",
+                created_at=submission.created_at,
+                updated_at=stage.updated_at if stage else submission.created_at,
+            )
         raise OperationError("operation_not_found", "Operation not found")
     return OperationStatusResponse(
         operation_id=row.id,

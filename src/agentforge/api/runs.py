@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Any, cast
 
 from fastapi import APIRouter, Depends, Request
 from starlette.exceptions import HTTPException
@@ -16,6 +16,7 @@ from agentforge.contracts.plans import (
 )
 from agentforge.contracts.runs import RunAcceptedResponse, RunCreateRequest, RunSnapshotResponse
 from agentforge.core.config import Settings
+from agentforge.planning.executor import propose_plan as execute_proposal
 from agentforge.planning.service import PlanningError, PlanningService
 from agentforge.runtime.control import admits_new_work, read_admission
 from agentforge.storage.database import create_database_engine
@@ -25,10 +26,10 @@ router = APIRouter(prefix="/api/v1", tags=["runs"])
 
 
 def _settings(request: Request) -> Settings:
-    return request.app.state.settings
+    return cast(Settings, request.app.state.settings)
 
 
-def _require_engine(request: Request, settings: Settings):
+def _require_engine(request: Request, settings: Settings) -> Any:
     engine = getattr(request.app.state, "database", None) or create_database_engine(settings)
     if engine is None:
         raise HTTPException(503, "database_unavailable: Database is not configured")
@@ -94,8 +95,7 @@ def propose_plan(
 ) -> PlanResponse:
     engine = _require_engine(request, settings)
     try:
-        with unit_of_work_connection(engine) as uow:
-            return PlanningService(uow.session).propose(run_id, body)
+        return PlanResponse.model_validate(execute_proposal(engine, settings, run_id, body))
     except PlanningError as exc:
         raise _map_error(exc) from exc
 

@@ -150,7 +150,9 @@ class OpenAICompatibleAdapter:
         except AdapterError:
             raise
         except httpx.TimeoutException as exc:
-            raise AdapterError("PROVIDER_UNAVAILABLE", "Provider timed out", retryable=True) from exc
+            raise AdapterError(
+                "PROVIDER_UNAVAILABLE", "Provider timed out", retryable=True
+            ) from exc
         except httpx.HTTPError as exc:
             raise AdapterError(
                 "PROVIDER_UNAVAILABLE", f"Provider HTTP error: {exc}", retryable=True
@@ -280,7 +282,7 @@ def _int_or_none(value: object) -> int | None:
     if value is None:
         return None
     try:
-        return int(value)  # type: ignore[arg-type]
+        return int(value) if isinstance(value, str | int | float) else None
     except (TypeError, ValueError):
         return None
 

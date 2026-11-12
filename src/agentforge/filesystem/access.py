@@ -111,7 +111,9 @@ class ProjectFilesystem:
                 "Access to platform secret directories is forbidden",
             )
 
-    def resolve_under_root(self, relative: str | PurePath, *, for_write_staging: bool = False) -> Path:
+    def resolve_under_root(
+        self, relative: str | PurePath, *, for_write_staging: bool = False
+    ) -> Path:
         """Compose path under root — never prefix-match strings alone."""
         if for_write_staging:
             raise ProjectFilesystemError(
@@ -128,7 +130,9 @@ class ProjectFilesystem:
                 candidate = self.root
             else:
                 if ".." in parts:
-                    raise ProjectFilesystemError("traversal_denied", "Path traversal is not allowed")
+                    raise ProjectFilesystemError(
+                        "traversal_denied", "Path traversal is not allowed"
+                    )
                 candidate = self.root.joinpath(*parts)
         else:
             candidate = self.root.joinpath(*parts)
@@ -196,7 +200,9 @@ class ProjectFilesystem:
         with os.scandir(target) as it:
             for entry in it:
                 if len(entries) >= self.limits.max_files:
-                    raise ProjectFilesystemError("too_many_files", "Directory listing exceeds limit")
+                    raise ProjectFilesystemError(
+                        "too_many_files", "Directory listing exceeds limit"
+                    )
                 try:
                     is_dir = entry.is_dir(follow_symlinks=False)
                     is_link = entry.is_symlink()
@@ -258,9 +264,7 @@ class ProjectFilesystem:
                 dirnames.clear()
                 continue
             # Do not follow link dirs.
-            dirnames[:] = [
-                d for d in dirnames if not (Path(dirpath) / d).is_symlink()
-            ]
+            dirnames[:] = [d for d in dirnames if not (Path(dirpath) / d).is_symlink()]
             for name in filenames:
                 path = Path(dirpath) / name
                 if path.is_symlink() or _is_special_file(path):

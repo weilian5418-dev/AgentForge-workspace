@@ -1,0 +1,169 @@
+{
+  "$defs": {
+    "WorkPackageCandidateRef": {
+      "additionalProperties": false,
+      "description": "One work package → candidate → artifact version binding inside a CandidateSet.",
+      "properties": {
+        "artifactVersion": {
+          "minimum": 1,
+          "title": "Artifactversion",
+          "type": "integer"
+        },
+        "candidateId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Candidateid",
+          "type": "string"
+        },
+        "contentHash": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Contenthash"
+        },
+        "required": {
+          "default": true,
+          "title": "Required",
+          "type": "boolean"
+        },
+        "workPackageId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Workpackageid",
+          "type": "string"
+        }
+      },
+      "required": [
+        "workPackageId",
+        "candidateId",
+        "artifactVersion"
+      ],
+      "title": "WorkPackageCandidateRef",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Fixed candidate collection for one review cycle — not a single current_candidate_id.",
+  "properties": {
+    "baselineOrIntegrationRef": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Baselineorintegrationref"
+    },
+    "candidateSetId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Candidatesetid",
+      "type": "string"
+    },
+    "contractHash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Contracthash",
+      "type": "string"
+    },
+    "createdAt": {
+      "format": "date-time",
+      "title": "Createdat",
+      "type": "string"
+    },
+    "environmentFingerprint": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Environmentfingerprint",
+      "type": "string"
+    },
+    "manifestHash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Manifesthash",
+      "type": "string"
+    },
+    "members": {
+      "items": {
+        "$ref": "#/$defs/WorkPackageCandidateRef"
+      },
+      "maxItems": 64,
+      "minItems": 1,
+      "title": "Members",
+      "type": "array"
+    },
+    "requiredWorkPackagesComplete": {
+      "title": "Requiredworkpackagescomplete",
+      "type": "boolean"
+    },
+    "stageId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Stageid",
+      "type": "string"
+    },
+    "stopEvidenceRefs": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9._:-]+$",
+        "type": "string"
+      },
+      "maxItems": 32,
+      "title": "Stopevidencerefs",
+      "type": "array"
+    },
+    "submissionId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Submissionid"
+    },
+    "upstreamInputVersions": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9._:-]+$",
+        "type": "string"
+      },
+      "maxItems": 64,
+      "title": "Upstreaminputversions",
+      "type": "array"
+    }
+  },
+  "required": [
+    "candidateSetId",
+    "stageId",
+    "members",
+    "requiredWorkPackagesComplete",
+    "contractHash",
+    "environmentFingerprint",
+    "manifestHash",
+    "createdAt"
+  ],
+  "title": "CandidateSet",
+  "type": "object"
+}

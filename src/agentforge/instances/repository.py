@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-import secrets
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import or_, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from agentforge.instances.errors import InstanceError
 from agentforge.storage.models import (
     AgentInstanceRow,
     ExecutionRequestRow,
@@ -54,9 +54,7 @@ class InstanceRepository:
             )
         )
         if row is not None and (
-            row.run_id != run_id
-            or row.assignment_id != assignment_id
-            or row.role_id != role_id
+            row.run_id != run_id or row.assignment_id != assignment_id or row.role_id != role_id
         ):
             row = None
         if row is not None:
@@ -75,9 +73,7 @@ class InstanceRepository:
         self.session.add(row)
         return row
 
-    def list_assignments(
-        self, *, run_id: str, assignment_version: int
-    ) -> list[RoleAssignmentRow]:
+    def list_assignments(self, *, run_id: str, assignment_version: int) -> list[RoleAssignmentRow]:
         rows = list(
             self.session.scalars(
                 select(RoleAssignmentRow).where(
@@ -87,9 +83,7 @@ class InstanceRepository:
             ).all()
         )
         filtered = [
-            r
-            for r in rows
-            if r.run_id == run_id and r.assignment_version == assignment_version
+            r for r in rows if r.run_id == run_id and r.assignment_version == assignment_version
         ]
         if filtered:
             return filtered
@@ -133,54 +127,11 @@ class InstanceRepository:
             )
         )
 
-    def claim_operations(
-        self,
-        *,
-        kinds: tuple[str, ...],
-        owner: str,
-        limit: int = 10,
-        claim_ttl_seconds: int = 30,
-    ) -> list[InstanceOperationRow]:
-        now = _now()
-        expires = now + timedelta(seconds=claim_ttl_seconds)
-        try:
-            candidates = list(
-                self.session.scalars(
-                    select(InstanceOperationRow)
-                    .where(InstanceOperationRow.kind.in_(kinds))
-                    .where(
-                        or_(
-                            InstanceOperationRow.status == "prepared",
-                            (InstanceOperationRow.status == "claimed")
-                            & (InstanceOperationRow.claim_expires_at <= now),
-                        )
-                    )
-                    .order_by(InstanceOperationRow.prepared_at.asc())
-                    .with_for_update(skip_locked=True)
-                    .limit(limit)
-                ).all()
-            )
-        except Exception:
-            candidates = []
-        if not candidates:
-            # MemSession / dialects without SKIP LOCKED: scan prepared rows.
-            added = getattr(self.session, "added", [])
-            candidates = [
-                row
-                for row in added
-                if isinstance(row, InstanceOperationRow)
-                and row.kind in kinds
-                and row.status in ("prepared", "claimed")
-            ][:limit]
-        claimed: list[InstanceOperationRow] = []
-        for row in candidates:
-            row.status = "claimed"
-            row.claim_owner = owner
-            row.claim_token = secrets.token_urlsafe(16)
-            row.claim_expires_at = expires
-            claimed.append(row)
-        self.session.flush()
-        return claimed
+    def claim_operations(self, **kwargs: Any) -> Any:
+        raise InstanceError(
+            "engine_coordinator_required",
+            "Use durable instances.worker, not transaction-bound claim helpers",
+        )
 
     def add_native_session(self, row: NativeSessionRow) -> NativeSessionRow:
         self.session.add(row)
@@ -199,9 +150,7 @@ class InstanceRepository:
 
     def session_by_operation(self, operation_id: str) -> NativeSessionRow | None:
         row = self.session.scalar(
-            select(NativeSessionRow).where(
-                NativeSessionRow.create_operation_id == operation_id
-            )
+            select(NativeSessionRow).where(NativeSessionRow.create_operation_id == operation_id)
         )
         if row is not None and row.create_operation_id != operation_id:
             row = None
@@ -224,7 +173,9 @@ class InstanceRepository:
         return row
 
     def get_protocol_request(self, request_id: str) -> ProtocolRequestRow | None:
-        return self.session.get(ProtocolRequestRow, request_id)
+        return self.session.get(
+            ProtocolRequestRow, request_id, with_for_update=True, populate_existing=True
+        )
 
     def pending_protocol_request(self, request_id: str) -> ProtocolRequestRow | None:
         row = self.get_protocol_request(request_id)
@@ -247,9 +198,7 @@ class InstanceRepository:
             )
         )
         if row is not None and (
-            row.instance_id != instance_id
-            or row.source != source
-            or row.dedupe_key != dedupe_key
+            row.instance_id != instance_id or row.source != source or row.dedupe_key != dedupe_key
         ):
             row = None
         if row is not None:

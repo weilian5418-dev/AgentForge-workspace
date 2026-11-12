@@ -1,6 +1,292 @@
 {
   "components": {
     "schemas": {
+      "AgentInstance": {
+        "additionalProperties": false,
+        "description": "Platform-managed role execution instance (not the API process instance).\n\nOne instance may have many historical native sessions; only one active binding\nis valid at a time. Do not overwrite old sessionRef and lose history.",
+        "properties": {
+          "activity": {
+            "anyOf": [
+              {
+                "enum": [
+                  "idle",
+                  "busy",
+                  "waiting_input",
+                  "waiting_approval"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Activity"
+          },
+          "agentProfileId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Agentprofileid",
+            "type": "string"
+          },
+          "assignmentId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Assignmentid",
+            "type": "string"
+          },
+          "assignmentVersion": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assignmentversion"
+          },
+          "budgetRef": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budgetref"
+          },
+          "currentAttemptId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currentattemptid"
+          },
+          "currentExecution": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CurrentExecutionRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "executionEnvironment": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Executionenvironment",
+            "type": "string"
+          },
+          "instanceId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Instanceid",
+            "type": "string"
+          },
+          "lifecycle": {
+            "anyOf": [
+              {
+                "enum": [
+                  "created",
+                  "starting",
+                  "active",
+                  "stop_requested",
+                  "stopped",
+                  "unknown",
+                  "failed",
+                  "closed",
+                  "needs_reconciliation"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lifecycle"
+          },
+          "nativeSessionId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nativesessionid"
+          },
+          "permissionScopeRef": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Permissionscoperef"
+          },
+          "roleId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Roleid",
+            "type": "string"
+          },
+          "runId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Runid",
+            "type": "string"
+          },
+          "sessionRef": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sessionref"
+          },
+          "stageId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stageid"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "created",
+                  "starting",
+                  "running",
+                  "waiting_input",
+                  "waiting_approval",
+                  "stop_requested",
+                  "stopped",
+                  "unknown",
+                  "reconciling",
+                  "blocked",
+                  "failed",
+                  "closed"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "workspaceId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workspaceid"
+          }
+        },
+        "required": [
+          "instanceId",
+          "assignmentId",
+          "runId",
+          "roleId",
+          "agentProfileId",
+          "executionEnvironment"
+        ],
+        "title": "AgentInstance",
+        "type": "object"
+      },
+      "AgentInstanceActionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "enum": [
+              "request_stop",
+              "resume",
+              "close"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "maxLength": 1024,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "title": "AgentInstanceActionRequest",
+        "type": "object"
+      },
+      "AgentInstanceListResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AgentInstance"
+            },
+            "maxItems": 100,
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "title": "AgentInstanceListResponse",
+        "type": "object"
+      },
       "AgentProfile": {
         "additionalProperties": false,
         "properties": {
@@ -380,6 +666,97 @@
         "title": "ApprovalSummary",
         "type": "object"
       },
+      "ArtifactContract": {
+        "additionalProperties": false,
+        "properties": {
+          "criteria": {
+            "items": {
+              "$ref": "#/components/schemas/Criterion"
+            },
+            "maxItems": 64,
+            "minItems": 1,
+            "title": "Criteria",
+            "type": "array"
+          },
+          "id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Id",
+            "type": "string"
+          },
+          "independentReview": {
+            "title": "Independentreview",
+            "type": "boolean"
+          },
+          "kind": {
+            "enum": [
+              "code",
+              "markdown",
+              "pptx"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "relativePath": {
+            "title": "Relativepath",
+            "type": "string"
+          },
+          "required": {
+            "title": "Required",
+            "type": "boolean"
+          },
+          "validators": {
+            "items": {
+              "$ref": "#/components/schemas/ValidatorSpec"
+            },
+            "maxItems": 32,
+            "minItems": 1,
+            "title": "Validators",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "relativePath",
+          "required",
+          "criteria",
+          "validators",
+          "independentReview"
+        ],
+        "title": "ArtifactContract",
+        "type": "object"
+      },
+      "ArtifactRef": {
+        "additionalProperties": false,
+        "properties": {
+          "artifactId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Artifactid",
+            "type": "string"
+          },
+          "sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Sha256",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "artifactId",
+          "version",
+          "sha256"
+        ],
+        "title": "ArtifactRef",
+        "type": "object"
+      },
       "Body_upload_input_api_v1_projects__project_id__inputs_post": {
         "properties": {
           "client_sha256": {
@@ -636,6 +1013,119 @@
           "currency"
         ],
         "title": "BudgetAccountCreateRequest",
+        "type": "object"
+      },
+      "BudgetLimits": {
+        "additionalProperties": false,
+        "properties": {
+          "currency": {
+            "anyOf": [
+              {
+                "maxLength": 8,
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
+          },
+          "maxCost": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Maxcost"
+          },
+          "maxTokens": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Maxtokens"
+          },
+          "maxWallTimeSeconds": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Maxwalltimeseconds"
+          }
+        },
+        "title": "BudgetLimits",
+        "type": "object"
+      },
+      "BudgetLimitsInput": {
+        "additionalProperties": false,
+        "description": "External nested budget input: camelCase aliases only (matches exported schema).",
+        "properties": {
+          "currency": {
+            "anyOf": [
+              {
+                "maxLength": 8,
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
+          },
+          "maxCost": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Maxcost"
+          },
+          "maxTokens": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Maxtokens"
+          },
+          "maxWallTimeSeconds": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Maxwalltimeseconds"
+          }
+        },
+        "title": "BudgetLimitsInput",
         "type": "object"
       },
       "CandidateSnapshotRef": {
@@ -1012,6 +1502,39 @@
         "title": "CaptureDirtySnapshotRequest",
         "type": "object"
       },
+      "ClarificationRequestPayload": {
+        "additionalProperties": false,
+        "properties": {
+          "contextRefs": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            "maxItems": 32,
+            "title": "Contextrefs",
+            "type": "array"
+          },
+          "question": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Question",
+            "type": "string"
+          },
+          "type": {
+            "const": "clarification.request",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "question"
+        ],
+        "title": "ClarificationRequestPayload",
+        "type": "object"
+      },
       "CleanupWorktreeRequest": {
         "additionalProperties": false,
         "properties": {
@@ -1033,6 +1556,511 @@
           "workspaceId"
         ],
         "title": "CleanupWorktreeRequest",
+        "type": "object"
+      },
+      "CollaborationMessage": {
+        "additionalProperties": false,
+        "description": "Immutable message content and version refs — not delivery progress.",
+        "properties": {
+          "artifactRefs": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            "maxItems": 32,
+            "title": "Artifactrefs",
+            "type": "array"
+          },
+          "assignmentVersion": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assignmentversion"
+          },
+          "correlationId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Correlationid"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "derivedFromGateDecisionId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Derivedfromgatedecisionid"
+          },
+          "expiresAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expiresat"
+          },
+          "messageId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Messageid",
+            "type": "string"
+          },
+          "payload": {
+            "discriminator": {
+              "mapping": {
+                "clarification.request": "#/components/schemas/ClarificationRequestPayload",
+                "contract.change_request": "#/components/schemas/ContractChangeRequestPayload",
+                "review.feedback": "#/components/schemas/ReviewFeedbackPayload",
+                "stage.release": "#/components/schemas/StageReleasePayload",
+                "stage.submission": "#/components/schemas/StageSubmissionPayload",
+                "task.assignment": "#/components/schemas/TaskAssignmentPayload",
+                "task.rework": "#/components/schemas/TaskReworkPayload"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TaskAssignmentPayload"
+              },
+              {
+                "$ref": "#/components/schemas/ClarificationRequestPayload"
+              },
+              {
+                "$ref": "#/components/schemas/ContractChangeRequestPayload"
+              },
+              {
+                "$ref": "#/components/schemas/StageSubmissionPayload"
+              },
+              {
+                "$ref": "#/components/schemas/ReviewFeedbackPayload"
+              },
+              {
+                "$ref": "#/components/schemas/TaskReworkPayload"
+              },
+              {
+                "$ref": "#/components/schemas/StageReleasePayload"
+              }
+            ],
+            "title": "Payload"
+          },
+          "planVersion": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Planversion"
+          },
+          "projectId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Projectid",
+            "type": "string"
+          },
+          "recipientRefs": {
+            "items": {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 32,
+            "minItems": 1,
+            "title": "Recipientrefs",
+            "type": "array"
+          },
+          "replyRequired": {
+            "default": false,
+            "title": "Replyrequired",
+            "type": "boolean"
+          },
+          "replyTo": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replyto"
+          },
+          "requestId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requestid"
+          },
+          "runId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Runid",
+            "type": "string"
+          },
+          "schemaVersion": {
+            "const": "1",
+            "default": "1",
+            "title": "Schemaversion",
+            "type": "string"
+          },
+          "senderRef": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Senderref",
+            "type": "string"
+          },
+          "stageId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stageid"
+          },
+          "workPackageId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workpackageid"
+          }
+        },
+        "required": [
+          "messageId",
+          "projectId",
+          "runId",
+          "senderRef",
+          "recipientRefs",
+          "payload",
+          "createdAt"
+        ],
+        "title": "CollaborationMessage",
+        "type": "object"
+      },
+      "CompilationDiagnostic": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Code",
+            "type": "string"
+          },
+          "entityId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entityid"
+          },
+          "entityType": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entitytype"
+          },
+          "fieldPath": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fieldpath"
+          },
+          "message": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Message",
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "error",
+              "warning",
+              "info"
+            ],
+            "title": "Severity",
+            "type": "string"
+          },
+          "suggestedResolution": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggestedresolution"
+          }
+        },
+        "required": [
+          "code",
+          "severity",
+          "message"
+        ],
+        "title": "CompilationDiagnostic",
+        "type": "object"
+      },
+      "CompilationReport": {
+        "additionalProperties": false,
+        "description": "Compiler output — not a RunStatus.",
+        "properties": {
+          "capabilityEvidenceRefs": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            "maxItems": 64,
+            "title": "Capabilityevidencerefs",
+            "type": "array"
+          },
+          "compilerVersion": {
+            "default": "plan-compiler-v1",
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Compilerversion",
+            "type": "string"
+          },
+          "issues": {
+            "items": {
+              "$ref": "#/components/schemas/CompilationDiagnostic"
+            },
+            "maxItems": 256,
+            "title": "Issues",
+            "type": "array"
+          },
+          "status": {
+            "enum": [
+              "valid",
+              "needs_input",
+              "blocked",
+              "invalid"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/CompilationDiagnostic"
+            },
+            "maxItems": 256,
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "CompilationReport",
+        "type": "object"
+      },
+      "ConfirmationRequest": {
+        "additionalProperties": false,
+        "description": "Exact confirmation scope awaiting a user decision.",
+        "properties": {
+          "assignmentVersion": {
+            "minimum": 1.0,
+            "title": "Assignmentversion",
+            "type": "integer"
+          },
+          "capabilityCheckRefs": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            "maxItems": 64,
+            "title": "Capabilitycheckrefs",
+            "type": "array"
+          },
+          "compilationReportRef": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Compilationreportref"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "expiresAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expiresat"
+          },
+          "failureReason": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failurereason"
+          },
+          "gatePolicyVersion": {
+            "minimum": 1.0,
+            "title": "Gatepolicyversion",
+            "type": "integer"
+          },
+          "planHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Planhash",
+            "type": "string"
+          },
+          "planVersion": {
+            "minimum": 1.0,
+            "title": "Planversion",
+            "type": "integer"
+          },
+          "requestId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Requestid",
+            "type": "string"
+          },
+          "runId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Runid",
+            "type": "string"
+          },
+          "status": {
+            "default": "pending",
+            "enum": [
+              "pending",
+              "approved",
+              "rejected",
+              "superseded",
+              "expired"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "statusVersion": {
+            "minimum": 1.0,
+            "title": "Statusversion",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "requestId",
+          "runId",
+          "planVersion",
+          "planHash",
+          "assignmentVersion",
+          "gatePolicyVersion",
+          "statusVersion",
+          "createdAt"
+        ],
+        "title": "ConfirmationRequest",
         "type": "object"
       },
       "ConsumeCheckResponse": {
@@ -1068,6 +2096,131 @@
           "reason"
         ],
         "title": "ConsumeCheckResponse",
+        "type": "object"
+      },
+      "ContractChangeRequestPayload": {
+        "additionalProperties": false,
+        "properties": {
+          "proposedContractHash": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Proposedcontracthash"
+          },
+          "summary": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Summary",
+            "type": "string"
+          },
+          "type": {
+            "const": "contract.change_request",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "summary"
+        ],
+        "title": "ContractChangeRequestPayload",
+        "type": "object"
+      },
+      "Criterion": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Description",
+            "type": "string"
+          },
+          "id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Id",
+            "type": "string"
+          },
+          "required": {
+            "title": "Required",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "description",
+          "required"
+        ],
+        "title": "Criterion",
+        "type": "object"
+      },
+      "CurrentExecutionRef": {
+        "additionalProperties": false,
+        "description": "What the instance is bound to right now — not lifecycle and not idle/busy.",
+        "properties": {
+          "attemptId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attemptid"
+          },
+          "generation": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generation"
+          },
+          "stageId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stageid"
+          },
+          "workPackageId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workpackageid"
+          }
+        },
+        "title": "CurrentExecutionRef",
         "type": "object"
       },
       "DependencyStatus": {
@@ -1398,6 +2551,40 @@
         "title": "ErrorResponse",
         "type": "object"
       },
+      "ExecutionRequest": {
+        "additionalProperties": false,
+        "description": "Idempotent request to prepare confirmed role instances. Does not approve a plan.\n\nBinding must include planHash + planVersion + assignmentVersion + gatePolicyVersion.\nDoes not start arbitrary stage tasks; D10 release still required for later stages.",
+        "properties": {
+          "assignmentVersion": {
+            "minimum": 1.0,
+            "title": "Assignmentversion",
+            "type": "integer"
+          },
+          "gatePolicyVersion": {
+            "minimum": 1.0,
+            "title": "Gatepolicyversion",
+            "type": "integer"
+          },
+          "planHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Planhash",
+            "type": "string"
+          },
+          "planVersion": {
+            "minimum": 1.0,
+            "title": "Planversion",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "planHash",
+          "planVersion",
+          "assignmentVersion",
+          "gatePolicyVersion"
+        ],
+        "title": "ExecutionRequest",
+        "type": "object"
+      },
       "FreezeCandidateRequest": {
         "additionalProperties": false,
         "properties": {
@@ -1485,6 +2672,177 @@
           "stopEvidence"
         ],
         "title": "FreezeWorkspaceSnapshotRequest",
+        "type": "object"
+      },
+      "GateDecision": {
+        "additionalProperties": false,
+        "description": "Immutable StageController decision; not writable by review agents or clients.",
+        "properties": {
+          "allowedConsumeWorkPackageIds": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            "maxItems": 64,
+            "title": "Allowedconsumeworkpackageids",
+            "type": "array"
+          },
+          "candidateId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Candidateid"
+          },
+          "candidateSetId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Candidatesetid"
+          },
+          "contractHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Contracthash",
+            "type": "string"
+          },
+          "decidedAt": {
+            "format": "date-time",
+            "title": "Decidedat",
+            "type": "string"
+          },
+          "decisionId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Decisionid",
+            "type": "string"
+          },
+          "gatePolicyVersion": {
+            "minimum": 1.0,
+            "title": "Gatepolicyversion",
+            "type": "integer"
+          },
+          "manifestHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Manifesthash",
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "result": {
+            "enum": [
+              "released",
+              "rework",
+              "blocked"
+            ],
+            "title": "Result",
+            "type": "string"
+          },
+          "reviewCycleId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewcycleid"
+          },
+          "reviewRefs": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            "maxItems": 64,
+            "title": "Reviewrefs",
+            "type": "array"
+          },
+          "stageId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Stageid",
+            "type": "string"
+          },
+          "userDecisionRef": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Userdecisionref"
+          },
+          "validationRefs": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            "maxItems": 64,
+            "title": "Validationrefs",
+            "type": "array"
+          }
+        },
+        "required": [
+          "decisionId",
+          "stageId",
+          "manifestHash",
+          "contractHash",
+          "gatePolicyVersion",
+          "result",
+          "reason",
+          "decidedAt"
+        ],
+        "title": "GateDecision",
+        "type": "object"
+      },
+      "GateDecisionListResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/GateDecision"
+            },
+            "maxItems": 64,
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "title": "GateDecisionListResponse",
         "type": "object"
       },
       "GcRequest": {
@@ -1588,8 +2946,11 @@
             "type": "string"
           },
           "source": {
-            "const": "runner",
             "default": "runner",
+            "enum": [
+              "runner",
+              "adapter_host"
+            ],
             "title": "Source",
             "type": "string"
           },
@@ -1910,6 +3271,353 @@
           "adapterId"
         ],
         "title": "ManualInstallationRegisterRequest",
+        "type": "object"
+      },
+      "MessageCreateRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "idempotencyKey": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Idempotencykey"
+          },
+          "payload": {
+            "discriminator": {
+              "mapping": {
+                "clarification.request": "#/components/schemas/ClarificationRequestPayload",
+                "contract.change_request": "#/components/schemas/ContractChangeRequestPayload",
+                "review.feedback": "#/components/schemas/ReviewFeedbackPayload",
+                "stage.submission": "#/components/schemas/StageSubmissionPayload",
+                "task.assignment": "#/components/schemas/TaskAssignmentPayload",
+                "task.rework": "#/components/schemas/TaskReworkPayload"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TaskAssignmentPayload"
+              },
+              {
+                "$ref": "#/components/schemas/ClarificationRequestPayload"
+              },
+              {
+                "$ref": "#/components/schemas/ContractChangeRequestPayload"
+              },
+              {
+                "$ref": "#/components/schemas/StageSubmissionPayload"
+              },
+              {
+                "$ref": "#/components/schemas/ReviewFeedbackPayload"
+              },
+              {
+                "$ref": "#/components/schemas/TaskReworkPayload"
+              }
+            ],
+            "title": "Payload"
+          },
+          "recipientRefs": {
+            "items": {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 32,
+            "minItems": 1,
+            "title": "Recipientrefs",
+            "type": "array"
+          },
+          "replyRequired": {
+            "default": false,
+            "title": "Replyrequired",
+            "type": "boolean"
+          },
+          "replyTo": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replyto"
+          },
+          "requestId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requestid"
+          },
+          "stageId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stageid"
+          },
+          "workPackageId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workpackageid"
+          }
+        },
+        "required": [
+          "recipientRefs",
+          "payload"
+        ],
+        "title": "MessageCreateRequest",
+        "type": "object"
+      },
+      "MessageDelivery": {
+        "additionalProperties": false,
+        "description": "Per-recipient delivery progress — transmission and reply are separate.",
+        "properties": {
+          "attemptId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Attemptid",
+            "type": "string"
+          },
+          "deliveryId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Deliveryid",
+            "type": "string"
+          },
+          "deliveryMode": {
+            "anyOf": [
+              {
+                "enum": [
+                  "realtime",
+                  "next_safe_boundary",
+                  "independent_task",
+                  "manual_assisted"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deliverymode"
+          },
+          "errorCode": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Errorcode"
+          },
+          "messageId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Messageid",
+            "type": "string"
+          },
+          "nativeReceiptRef": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nativereceiptref"
+          },
+          "nextAttemptAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextattemptat"
+          },
+          "receivedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Receivedat"
+          },
+          "recipientInstanceId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Recipientinstanceid",
+            "type": "string"
+          },
+          "replyStatus": {
+            "anyOf": [
+              {
+                "enum": [
+                  "not_required",
+                  "awaiting_reply",
+                  "responded",
+                  "timed_out"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replystatus"
+          },
+          "respondedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Respondedat"
+          },
+          "retryCount": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Retrycount",
+            "type": "integer"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "pending",
+                  "dispatching",
+                  "sent",
+                  "received",
+                  "awaiting_reply",
+                  "responded",
+                  "failed",
+                  "expired",
+                  "unknown"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "transmissionStatus": {
+            "anyOf": [
+              {
+                "enum": [
+                  "pending",
+                  "claimed",
+                  "sent",
+                  "received",
+                  "unknown",
+                  "failed",
+                  "expired"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transmissionstatus"
+          }
+        },
+        "required": [
+          "deliveryId",
+          "messageId",
+          "recipientInstanceId",
+          "attemptId"
+        ],
+        "title": "MessageDelivery",
+        "type": "object"
+      },
+      "MessageDeliveryListResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MessageDelivery"
+            },
+            "maxItems": 200,
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "title": "MessageDeliveryListResponse",
+        "type": "object"
+      },
+      "MessageListResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CollaborationMessage"
+            },
+            "maxItems": 200,
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "title": "MessageListResponse",
         "type": "object"
       },
       "ModelAttempt": {
@@ -3077,6 +4785,726 @@
           "updatedAt"
         ],
         "title": "OperationStatusResponse",
+        "type": "object"
+      },
+      "PlanDecisionRequest": {
+        "additionalProperties": false,
+        "description": "Confirm or reject a concrete confirmation request binding.",
+        "properties": {
+          "assignmentVersion": {
+            "minimum": 1.0,
+            "title": "Assignmentversion",
+            "type": "integer"
+          },
+          "confirmationRequestId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Confirmationrequestid",
+            "type": "string"
+          },
+          "decision": {
+            "enum": [
+              "approve",
+              "reject"
+            ],
+            "title": "Decision",
+            "type": "string"
+          },
+          "gatePolicyVersion": {
+            "minimum": 1.0,
+            "title": "Gatepolicyversion",
+            "type": "integer"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 2048,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "planHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Planhash",
+            "type": "string"
+          },
+          "planVersion": {
+            "minimum": 1.0,
+            "title": "Planversion",
+            "type": "integer"
+          },
+          "statusVersion": {
+            "minimum": 1.0,
+            "title": "Statusversion",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "decision",
+          "confirmationRequestId",
+          "planVersion",
+          "planHash",
+          "assignmentVersion",
+          "gatePolicyVersion",
+          "statusVersion"
+        ],
+        "title": "PlanDecisionRequest",
+        "type": "object"
+      },
+      "PlanProposalRequest": {
+        "additionalProperties": false,
+        "description": "Request a read-only plan proposal. Does not start development.",
+        "properties": {
+          "grantId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grantid"
+          },
+          "idempotencyKey": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Idempotencykey"
+          },
+          "includeInputContent": {
+            "default": false,
+            "title": "Includeinputcontent",
+            "type": "boolean"
+          },
+          "maxInputBytes": {
+            "default": 65536,
+            "maximum": 131072.0,
+            "minimum": 1.0,
+            "title": "Maxinputbytes",
+            "type": "integer"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 2048,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "source": {
+            "default": "auto",
+            "enum": [
+              "rules",
+              "model",
+              "auto"
+            ],
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "title": "PlanProposalRequest",
+        "type": "object"
+      },
+      "PlanResourceEstimate": {
+        "additionalProperties": false,
+        "description": "Estimate only — does not reserve execution budget.",
+        "properties": {
+          "basis": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Basis",
+            "type": "string"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "maxLength": 8,
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
+          },
+          "estimatedCost": {
+            "anyOf": [
+              {
+                "maxLength": 32,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimatedcost"
+          },
+          "maxTokens": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Maxtokens"
+          },
+          "maxWallTimeSeconds": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Maxwalltimeseconds"
+          },
+          "uncertainties": {
+            "items": {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 16,
+            "title": "Uncertainties",
+            "type": "array"
+          }
+        },
+        "required": [
+          "basis"
+        ],
+        "title": "PlanResourceEstimate",
+        "type": "object"
+      },
+      "PlanResponse": {
+        "additionalProperties": false,
+        "description": "Current plan view for a run (definition + compile + assignment + confirm).",
+        "properties": {
+          "assignmentVersion": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assignmentversion"
+          },
+          "assignments": {
+            "items": {
+              "$ref": "#/components/schemas/RoleAssignment"
+            },
+            "maxItems": 32,
+            "title": "Assignments",
+            "type": "array"
+          },
+          "baselineId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Baselineid",
+            "type": "string"
+          },
+          "compilation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CompilationReport"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "confirmation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ConfirmationRequest"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "confirmationState": {
+            "default": "none",
+            "enum": [
+              "none",
+              "awaiting_confirmation",
+              "approved",
+              "rejected"
+            ],
+            "title": "Confirmationstate",
+            "type": "string"
+          },
+          "contextId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contextid"
+          },
+          "contractHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Contracthash",
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "gatePolicy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StageGatePolicy"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "gatePolicyVersion": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gatepolicyversion"
+          },
+          "inputIds": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            "maxItems": 64,
+            "title": "Inputids",
+            "type": "array"
+          },
+          "legacyWorkPackages": {
+            "items": {
+              "$ref": "#/components/schemas/WorkPackage"
+            },
+            "maxItems": 64,
+            "title": "Legacyworkpackages",
+            "type": "array"
+          },
+          "planHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Planhash",
+            "type": "string"
+          },
+          "planVersion": {
+            "minimum": 1.0,
+            "title": "Planversion",
+            "type": "integer"
+          },
+          "roles": {
+            "items": {
+              "$ref": "#/components/schemas/RoleSpec"
+            },
+            "maxItems": 32,
+            "title": "Roles",
+            "type": "array"
+          },
+          "routing": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RoutingDecision"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "runId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Runid",
+            "type": "string"
+          },
+          "stages": {
+            "items": {
+              "$ref": "#/components/schemas/PlanStageDefinition"
+            },
+            "maxItems": 32,
+            "title": "Stages",
+            "type": "array"
+          },
+          "status": {
+            "enum": [
+              "proposed",
+              "approved",
+              "rejected",
+              "superseded"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "summary": {
+            "default": "",
+            "maxLength": 4096,
+            "title": "Summary",
+            "type": "string"
+          },
+          "workPackages": {
+            "items": {
+              "$ref": "#/components/schemas/PlanWorkPackageSpec"
+            },
+            "maxItems": 64,
+            "title": "Workpackages",
+            "type": "array"
+          }
+        },
+        "required": [
+          "runId",
+          "planVersion",
+          "planHash",
+          "contractHash",
+          "status",
+          "baselineId",
+          "createdAt"
+        ],
+        "title": "PlanResponse",
+        "type": "object"
+      },
+      "PlanRevisionRequest": {
+        "additionalProperties": false,
+        "description": "Full-replacement revision of the current plan → new planVersion.",
+        "properties": {
+          "expectedPlanVersion": {
+            "minimum": 1.0,
+            "title": "Expectedplanversion",
+            "type": "integer"
+          },
+          "expectedStatusVersion": {
+            "minimum": 1.0,
+            "title": "Expectedstatusversion",
+            "type": "integer"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 2048,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "spec": {
+            "$ref": "#/components/schemas/PlanSpec"
+          }
+        },
+        "required": [
+          "expectedPlanVersion",
+          "expectedStatusVersion",
+          "spec"
+        ],
+        "title": "PlanRevisionRequest",
+        "type": "object"
+      },
+      "PlanSpec": {
+        "additionalProperties": false,
+        "description": "Immutable complete plan definition for one planVersion.",
+        "properties": {
+          "baselineId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Baselineid",
+            "type": "string"
+          },
+          "constraints": {
+            "items": {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 32,
+            "title": "Constraints",
+            "type": "array"
+          },
+          "gatePolicyVersion": {
+            "minimum": 1.0,
+            "title": "Gatepolicyversion",
+            "type": "integer"
+          },
+          "goal": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Goal",
+            "type": "string"
+          },
+          "hashAlgoVersion": {
+            "default": "plan-hash-v1",
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Hashalgoversion",
+            "type": "string"
+          },
+          "inputIds": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            "maxItems": 64,
+            "title": "Inputids",
+            "type": "array"
+          },
+          "resourceEstimate": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlanResourceEstimate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "roles": {
+            "items": {
+              "$ref": "#/components/schemas/RoleSpec"
+            },
+            "maxItems": 32,
+            "minItems": 1,
+            "title": "Roles",
+            "type": "array"
+          },
+          "routing": {
+            "$ref": "#/components/schemas/RoutingDecision"
+          },
+          "stages": {
+            "items": {
+              "$ref": "#/components/schemas/PlanStageDefinition"
+            },
+            "maxItems": 32,
+            "minItems": 1,
+            "title": "Stages",
+            "type": "array"
+          },
+          "workPackages": {
+            "items": {
+              "$ref": "#/components/schemas/PlanWorkPackageSpec"
+            },
+            "maxItems": 64,
+            "minItems": 1,
+            "title": "Workpackages",
+            "type": "array"
+          }
+        },
+        "required": [
+          "goal",
+          "baselineId",
+          "routing",
+          "roles",
+          "workPackages",
+          "stages",
+          "gatePolicyVersion"
+        ],
+        "title": "PlanSpec",
+        "type": "object"
+      },
+      "PlanStageDefinition": {
+        "additionalProperties": false,
+        "description": "Stage definition inside a plan — distinct from execution Stage instances (D09+).",
+        "properties": {
+          "dependencies": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            "maxItems": 32,
+            "title": "Dependencies",
+            "type": "array"
+          },
+          "gatePolicy": {
+            "$ref": "#/components/schemas/StageGatePolicy"
+          },
+          "requiredWorkPackages": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            "maxItems": 64,
+            "title": "Requiredworkpackages",
+            "type": "array"
+          },
+          "stageId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Stageid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "stageId",
+          "gatePolicy"
+        ],
+        "title": "PlanStageDefinition",
+        "type": "object"
+      },
+      "PlanWorkPackageSpec": {
+        "additionalProperties": false,
+        "description": "Plan-time work package definition (no runtime repair/status fields).",
+        "properties": {
+          "deliverables": {
+            "items": {
+              "$ref": "#/components/schemas/ArtifactContract"
+            },
+            "maxItems": 32,
+            "title": "Deliverables",
+            "type": "array"
+          },
+          "dependsOn": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            "maxItems": 64,
+            "title": "Dependson",
+            "type": "array"
+          },
+          "id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Id",
+            "type": "string"
+          },
+          "inputs": {
+            "items": {
+              "$ref": "#/components/schemas/ArtifactRef"
+            },
+            "maxItems": 64,
+            "title": "Inputs",
+            "type": "array"
+          },
+          "maxRepairRounds": {
+            "default": 3,
+            "maximum": 10.0,
+            "minimum": 0.0,
+            "title": "Maxrepairrounds",
+            "type": "integer"
+          },
+          "objective": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Objective",
+            "type": "string"
+          },
+          "ownerRoleId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Ownerroleid",
+            "type": "string"
+          },
+          "readScopes": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 64,
+            "title": "Readscopes",
+            "type": "array"
+          },
+          "sharedWriteCoordination": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Required when write scopes overlap with another package.",
+            "title": "Sharedwritecoordination"
+          },
+          "stageId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Stageid",
+            "type": "string"
+          },
+          "toolPolicyId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Toolpolicyid",
+            "type": "string"
+          },
+          "writeScopes": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 64,
+            "title": "Writescopes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "stageId",
+          "objective",
+          "ownerRoleId",
+          "toolPolicyId"
+        ],
+        "title": "PlanWorkPackageSpec",
         "type": "object"
       },
       "PrepareWorktreeRequest": {
@@ -4406,6 +6834,1161 @@
         "title": "ReadinessResponse",
         "type": "object"
       },
+      "ReviewCycle": {
+        "additionalProperties": false,
+        "description": "One audit cycle bound to a fixed candidate set fingerprint.",
+        "properties": {
+          "candidateSetHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Candidatesethash",
+            "type": "string"
+          },
+          "candidateSetId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Candidatesetid",
+            "type": "string"
+          },
+          "closedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Closedat"
+          },
+          "contractHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Contracthash",
+            "type": "string"
+          },
+          "environmentFingerprint": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Environmentfingerprint",
+            "type": "string"
+          },
+          "gatePolicyVersion": {
+            "minimum": 1.0,
+            "title": "Gatepolicyversion",
+            "type": "integer"
+          },
+          "openedAt": {
+            "format": "date-time",
+            "title": "Openedat",
+            "type": "string"
+          },
+          "repairRound": {
+            "default": 0,
+            "maximum": 10.0,
+            "minimum": 0.0,
+            "title": "Repairround",
+            "type": "integer"
+          },
+          "reviewCycleId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Reviewcycleid",
+            "type": "string"
+          },
+          "stageId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Stageid",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "open",
+              "awaiting_validation",
+              "awaiting_review",
+              "awaiting_user_decision",
+              "decided",
+              "superseded",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "submissionId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Submissionid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reviewCycleId",
+          "stageId",
+          "submissionId",
+          "candidateSetId",
+          "candidateSetHash",
+          "contractHash",
+          "gatePolicyVersion",
+          "environmentFingerprint",
+          "status",
+          "openedAt"
+        ],
+        "title": "ReviewCycle",
+        "type": "object"
+      },
+      "ReviewCycleListResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ReviewCycle"
+            },
+            "maxItems": 64,
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "title": "ReviewCycleListResponse",
+        "type": "object"
+      },
+      "ReviewFeedbackPayload": {
+        "additionalProperties": false,
+        "properties": {
+          "candidateId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Candidateid",
+            "type": "string"
+          },
+          "stageId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Stageid",
+            "type": "string"
+          },
+          "summary": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Summary",
+            "type": "string"
+          },
+          "type": {
+            "const": "review.feedback",
+            "title": "Type",
+            "type": "string"
+          },
+          "verdict": {
+            "enum": [
+              "approve",
+              "request_changes",
+              "needs_input"
+            ],
+            "title": "Verdict",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "stageId",
+          "candidateId",
+          "verdict",
+          "summary"
+        ],
+        "title": "ReviewFeedbackPayload",
+        "type": "object"
+      },
+      "ReviewFinding": {
+        "additionalProperties": false,
+        "properties": {
+          "evidence": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          },
+          "path": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Path"
+          },
+          "reason": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "suggestion": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggestion"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "ReviewFinding",
+        "type": "object"
+      },
+      "ReviewReportRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "candidateId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Candidateid"
+          },
+          "candidateSetId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Candidatesetid"
+          },
+          "contractHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Contracthash",
+            "type": "string"
+          },
+          "findings": {
+            "items": {
+              "$ref": "#/components/schemas/ReviewFinding"
+            },
+            "maxItems": 128,
+            "title": "Findings",
+            "type": "array"
+          },
+          "manifestHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Manifesthash",
+            "type": "string"
+          },
+          "reviewCycleId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Reviewcycleid",
+            "type": "string"
+          },
+          "reviewRequestId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Reviewrequestid",
+            "type": "string"
+          },
+          "verdict": {
+            "enum": [
+              "approve",
+              "request_changes",
+              "needs_input"
+            ],
+            "title": "Verdict",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reviewRequestId",
+          "reviewCycleId",
+          "manifestHash",
+          "contractHash",
+          "verdict"
+        ],
+        "title": "ReviewReportRequest",
+        "type": "object"
+      },
+      "ReworkOrder": {
+        "additionalProperties": false,
+        "description": "Targeted rework ticket — one valid order per problem set in a cycle.",
+        "properties": {
+          "allowedModifyScopes": {
+            "items": {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 64,
+            "title": "Allowedmodifyscopes",
+            "type": "array"
+          },
+          "checksToRerun": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            "maxItems": 64,
+            "title": "Checkstorerun",
+            "type": "array"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "involvesPlanOrInterfaceChange": {
+            "default": false,
+            "title": "Involvesplanorinterfacechange",
+            "type": "boolean"
+          },
+          "problemDigest": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Problemdigest",
+            "type": "string"
+          },
+          "problems": {
+            "items": {
+              "$ref": "#/components/schemas/ReviewFinding"
+            },
+            "maxItems": 128,
+            "minItems": 1,
+            "title": "Problems",
+            "type": "array"
+          },
+          "remainingRounds": {
+            "maximum": 10.0,
+            "minimum": 0.0,
+            "title": "Remainingrounds",
+            "type": "integer"
+          },
+          "reworkOrderId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Reworkorderid",
+            "type": "string"
+          },
+          "sourceCandidateSetId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Sourcecandidatesetid",
+            "type": "string"
+          },
+          "sourceReviewCycleId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Sourcereviewcycleid",
+            "type": "string"
+          },
+          "stageId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Stageid",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "open",
+              "accepted",
+              "in_progress",
+              "completed",
+              "cancelled",
+              "blocked"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "targetRoleId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Targetroleid",
+            "type": "string"
+          },
+          "targetWorkPackageId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Targetworkpackageid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reworkOrderId",
+          "stageId",
+          "sourceReviewCycleId",
+          "sourceCandidateSetId",
+          "targetWorkPackageId",
+          "targetRoleId",
+          "problemDigest",
+          "problems",
+          "remainingRounds",
+          "status",
+          "createdAt"
+        ],
+        "title": "ReworkOrder",
+        "type": "object"
+      },
+      "ReworkOrderListResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ReworkOrder"
+            },
+            "maxItems": 64,
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "title": "ReworkOrderListResponse",
+        "type": "object"
+      },
+      "RoleAssignment": {
+        "additionalProperties": false,
+        "properties": {
+          "agentProfileId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Agentprofileid",
+            "type": "string"
+          },
+          "assignmentId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Assignmentid",
+            "type": "string"
+          },
+          "assignmentVersion": {
+            "minimum": 1.0,
+            "title": "Assignmentversion",
+            "type": "integer"
+          },
+          "confirmedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirmedat"
+          },
+          "confirmedBy": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirmedby"
+          },
+          "planVersion": {
+            "minimum": 1.0,
+            "title": "Planversion",
+            "type": "integer"
+          },
+          "roleId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Roleid",
+            "type": "string"
+          },
+          "runId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Runid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "assignmentId",
+          "runId",
+          "planVersion",
+          "assignmentVersion",
+          "roleId",
+          "agentProfileId"
+        ],
+        "title": "RoleAssignment",
+        "type": "object"
+      },
+      "RoleAssignmentPutItem": {
+        "additionalProperties": false,
+        "properties": {
+          "agentProfileId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Agentprofileid",
+            "type": "string"
+          },
+          "roleId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Roleid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "roleId",
+          "agentProfileId"
+        ],
+        "title": "RoleAssignmentPutItem",
+        "type": "object"
+      },
+      "RoleAssignmentsPutRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "assignments": {
+            "items": {
+              "$ref": "#/components/schemas/RoleAssignmentPutItem"
+            },
+            "maxItems": 32,
+            "minItems": 1,
+            "title": "Assignments",
+            "type": "array"
+          },
+          "planVersion": {
+            "minimum": 1.0,
+            "title": "Planversion",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "planVersion",
+          "assignments"
+        ],
+        "title": "RoleAssignmentsPutRequest",
+        "type": "object"
+      },
+      "RoleAssignmentsResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "assignmentVersion": {
+            "minimum": 1.0,
+            "title": "Assignmentversion",
+            "type": "integer"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/RoleAssignment"
+            },
+            "maxItems": 32,
+            "title": "Items",
+            "type": "array"
+          },
+          "planVersion": {
+            "minimum": 1.0,
+            "title": "Planversion",
+            "type": "integer"
+          },
+          "runId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Runid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "runId",
+          "planVersion",
+          "assignmentVersion"
+        ],
+        "title": "RoleAssignmentsResponse",
+        "type": "object"
+      },
+      "RoleSpec": {
+        "additionalProperties": false,
+        "properties": {
+          "budget": {
+            "additionalProperties": true,
+            "title": "Budget",
+            "type": "object"
+          },
+          "independentReview": {
+            "title": "Independentreview",
+            "type": "boolean"
+          },
+          "readScopes": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 64,
+            "title": "Readscopes",
+            "type": "array"
+          },
+          "requireUserDecisionOnGate": {
+            "default": false,
+            "title": "Requireuserdecisionongate",
+            "type": "boolean"
+          },
+          "requiredCapabilities": {
+            "items": {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 32,
+            "minItems": 1,
+            "title": "Requiredcapabilities",
+            "type": "array"
+          },
+          "responsibilities": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Responsibilities",
+            "type": "string"
+          },
+          "roleId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Roleid",
+            "type": "string"
+          },
+          "writeScopes": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 64,
+            "title": "Writescopes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "roleId",
+          "responsibilities",
+          "requiredCapabilities",
+          "independentReview"
+        ],
+        "title": "RoleSpec",
+        "type": "object"
+      },
+      "RoutingDecision": {
+        "additionalProperties": false,
+        "description": "Suggestion only. Never authorizes execution by itself.",
+        "properties": {
+          "confidence": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "mode": {
+            "enum": [
+              "single",
+              "team",
+              "needs_input",
+              "undecided"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "modelReviewCount": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Modelreviewcount",
+            "type": "integer"
+          },
+          "reason": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "ruleVersion": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Ruleversion",
+            "type": "string"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "maximum": 10.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          }
+        },
+        "required": [
+          "mode",
+          "reason",
+          "ruleVersion",
+          "modelReviewCount"
+        ],
+        "title": "RoutingDecision",
+        "type": "object"
+      },
+      "RunAcceptedResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "eventsUrl": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Eventsurl",
+            "type": "string"
+          },
+          "runId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Runid",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "preflight",
+              "routing",
+              "planning",
+              "awaiting_approval",
+              "awaiting_confirmation",
+              "preparing",
+              "running",
+              "awaiting_acceptance",
+              "completed",
+              "pause_requested",
+              "paused",
+              "blocked",
+              "cancel_requested",
+              "canceled",
+              "failed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "statusVersion": {
+            "minimum": 1.0,
+            "title": "Statusversion",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "runId",
+          "status",
+          "statusVersion",
+          "eventsUrl"
+        ],
+        "title": "RunAcceptedResponse",
+        "type": "object"
+      },
+      "RunCreateRequest": {
+        "additionalProperties": false,
+        "description": "Create a goal and enter preflight/planning. Does not dispatch development.\n\n``mode=auto`` means the platform may auto-propose a plan; it does **not** mean\nthe platform may confirm assignments or start executors without user decisions.\n``planningProviderProfileId`` configures the platform planning model only;\nomit it for rules-only planning (do not invent a fake profile).",
+        "properties": {
+          "baselineId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional pin of the authorized baseline used for this run.",
+            "title": "Baselineid"
+          },
+          "budget": {
+            "$ref": "#/components/schemas/BudgetLimitsInput"
+          },
+          "executionProfile": {
+            "default": "container",
+            "enum": [
+              "container",
+              "host_authorized"
+            ],
+            "title": "Executionprofile",
+            "type": "string"
+          },
+          "failurePolicy": {
+            "default": "dependency-aware",
+            "enum": [
+              "dependency-aware",
+              "layer-atomic"
+            ],
+            "title": "Failurepolicy",
+            "type": "string"
+          },
+          "goal": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Goal",
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Client idempotency key for create; same key returns the same run.",
+            "title": "Idempotencykey"
+          },
+          "inputRefs": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            "maxItems": 64,
+            "title": "Inputrefs",
+            "type": "array"
+          },
+          "mode": {
+            "default": "auto",
+            "enum": [
+              "auto",
+              "single",
+              "team"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "outputs": {
+            "items": {
+              "enum": [
+                "code",
+                "markdown",
+                "pptx"
+              ],
+              "type": "string"
+            },
+            "maxItems": 8,
+            "minItems": 1,
+            "title": "Outputs",
+            "type": "array"
+          },
+          "planningProviderProfileId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Planningproviderprofileid"
+          },
+          "projectId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Projectid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "projectId",
+          "goal",
+          "outputs",
+          "budget"
+        ],
+        "title": "RunCreateRequest",
+        "type": "object"
+      },
+      "RunSnapshotResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "activeGeneration": {
+            "minimum": 1.0,
+            "title": "Activegeneration",
+            "type": "integer"
+          },
+          "assignmentVersion": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assignmentversion"
+          },
+          "baselineId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Baselineid"
+          },
+          "budget": {
+            "$ref": "#/components/schemas/BudgetLimits"
+          },
+          "cancelRequestedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelrequestedat"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "executionProfile": {
+            "enum": [
+              "container",
+              "host_authorized"
+            ],
+            "title": "Executionprofile",
+            "type": "string"
+          },
+          "failurePolicy": {
+            "enum": [
+              "dependency-aware",
+              "layer-atomic"
+            ],
+            "title": "Failurepolicy",
+            "type": "string"
+          },
+          "gatePolicyVersion": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gatepolicyversion"
+          },
+          "goal": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Goal",
+            "type": "string"
+          },
+          "id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Id",
+            "type": "string"
+          },
+          "inputRefs": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            "title": "Inputrefs",
+            "type": "array"
+          },
+          "latestSequence": {
+            "minimum": 0.0,
+            "title": "Latestsequence",
+            "type": "integer"
+          },
+          "mode": {
+            "enum": [
+              "auto",
+              "single",
+              "team"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "outputs": {
+            "items": {
+              "enum": [
+                "code",
+                "markdown",
+                "pptx"
+              ],
+              "type": "string"
+            },
+            "title": "Outputs",
+            "type": "array"
+          },
+          "planVersion": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Planversion"
+          },
+          "planningProviderProfileId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Planningproviderprofileid"
+          },
+          "projectId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Projectid",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "preflight",
+              "routing",
+              "planning",
+              "awaiting_approval",
+              "awaiting_confirmation",
+              "preparing",
+              "running",
+              "awaiting_acceptance",
+              "completed",
+              "pause_requested",
+              "paused",
+              "blocked",
+              "cancel_requested",
+              "canceled",
+              "failed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "statusVersion": {
+            "minimum": 1.0,
+            "title": "Statusversion",
+            "type": "integer"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "title": "Updatedat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "goal",
+          "mode",
+          "status",
+          "statusVersion",
+          "activeGeneration",
+          "latestSequence",
+          "executionProfile",
+          "failurePolicy",
+          "budget",
+          "outputs",
+          "createdAt",
+          "updatedAt"
+        ],
+        "title": "RunSnapshotResponse",
+        "type": "object"
+      },
       "RunnerExecuteRequest": {
         "additionalProperties": false,
         "properties": {
@@ -4899,6 +8482,491 @@
         "title": "ShutdownResponse",
         "type": "object"
       },
+      "Stage": {
+        "additionalProperties": false,
+        "description": "Runtime stage instance. Plan-time definitions live in PlanStageDefinition.",
+        "properties": {
+          "assignmentVersion": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assignmentversion"
+          },
+          "concurrencyVersion": {
+            "default": 1,
+            "minimum": 1.0,
+            "title": "Concurrencyversion",
+            "type": "integer"
+          },
+          "currentCandidateId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currentcandidateid"
+          },
+          "currentCandidateSetId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currentcandidatesetid"
+          },
+          "currentReviewCycleId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currentreviewcycleid"
+          },
+          "dependencies": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            "maxItems": 32,
+            "title": "Dependencies",
+            "type": "array"
+          },
+          "gatePolicy": {
+            "$ref": "#/components/schemas/StageGatePolicy"
+          },
+          "gatePolicyVersion": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gatepolicyversion"
+          },
+          "planVersion": {
+            "minimum": 1.0,
+            "title": "Planversion",
+            "type": "integer"
+          },
+          "repairRound": {
+            "default": 0,
+            "maximum": 10.0,
+            "minimum": 0.0,
+            "title": "Repairround",
+            "type": "integer"
+          },
+          "requiredWorkPackages": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            "maxItems": 64,
+            "title": "Requiredworkpackages",
+            "type": "array"
+          },
+          "runId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Runid"
+          },
+          "stageId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Stageid",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "ready",
+              "executing",
+              "submission_requested",
+              "stopping",
+              "frozen",
+              "reviewing",
+              "released",
+              "rework",
+              "blocked"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "waitingReason": {
+            "default": "none",
+            "enum": [
+              "awaiting_stop_verification",
+              "awaiting_validation",
+              "awaiting_review",
+              "awaiting_user_decision",
+              "awaiting_permission",
+              "budget_exhausted",
+              "none"
+            ],
+            "title": "Waitingreason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "stageId",
+          "planVersion",
+          "gatePolicy",
+          "status"
+        ],
+        "title": "Stage",
+        "type": "object"
+      },
+      "StageGatePolicy": {
+        "additionalProperties": false,
+        "properties": {
+          "conflictResolution": {
+            "default": "escalate_user",
+            "enum": [
+              "escalate_user",
+              "unanimous",
+              "majority"
+            ],
+            "title": "Conflictresolution",
+            "type": "string"
+          },
+          "maxRepairRounds": {
+            "default": 3,
+            "maximum": 10.0,
+            "minimum": 0.0,
+            "title": "Maxrepairrounds",
+            "type": "integer"
+          },
+          "policy": {
+            "default": "stage_atomic",
+            "enum": [
+              "stage_atomic",
+              "dependency_branch"
+            ],
+            "title": "Policy",
+            "type": "string"
+          },
+          "requireUserDecision": {
+            "default": false,
+            "title": "Requireuserdecision",
+            "type": "boolean"
+          },
+          "requiredReviewRoles": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            "maxItems": 16,
+            "title": "Requiredreviewroles",
+            "type": "array"
+          },
+          "version": {
+            "default": 1,
+            "minimum": 1.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "title": "StageGatePolicy",
+        "type": "object"
+      },
+      "StageListResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Stage"
+            },
+            "maxItems": 64,
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "title": "StageListResponse",
+        "type": "object"
+      },
+      "StageReleasePayload": {
+        "additionalProperties": false,
+        "description": "Platform-derived only — not accepted on MessageCreateRequest.",
+        "properties": {
+          "candidateId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Candidateid",
+            "type": "string"
+          },
+          "gateDecisionId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Gatedecisionid",
+            "type": "string"
+          },
+          "manifestHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Manifesthash",
+            "type": "string"
+          },
+          "stageId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Stageid",
+            "type": "string"
+          },
+          "type": {
+            "const": "stage.release",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "stageId",
+          "gateDecisionId",
+          "candidateId",
+          "manifestHash"
+        ],
+        "title": "StageReleasePayload",
+        "type": "object"
+      },
+      "StageSubmissionPayload": {
+        "additionalProperties": false,
+        "properties": {
+          "attemptRefs": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            "maxItems": 32,
+            "minItems": 1,
+            "title": "Attemptrefs",
+            "type": "array"
+          },
+          "candidateRef": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Candidateref",
+            "type": "string"
+          },
+          "stageId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Stageid",
+            "type": "string"
+          },
+          "type": {
+            "const": "stage.submission",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "stageId",
+          "candidateRef",
+          "attemptRefs"
+        ],
+        "title": "StageSubmissionPayload",
+        "type": "object"
+      },
+      "StageSubmissionRequest": {
+        "additionalProperties": false,
+        "description": "Client submission intent. Cannot declare stopped/verified/released.",
+        "properties": {
+          "attemptRefs": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            "maxItems": 32,
+            "minItems": 1,
+            "title": "Attemptrefs",
+            "type": "array"
+          },
+          "candidateRef": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Candidateref"
+          },
+          "idempotencyKey": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Idempotencykey"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 2048,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "outputLocationRefs": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            "maxItems": 32,
+            "title": "Outputlocationrefs",
+            "type": "array"
+          },
+          "workPackageIds": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            "maxItems": 64,
+            "minItems": 1,
+            "title": "Workpackageids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "workPackageIds",
+          "attemptRefs"
+        ],
+        "title": "StageSubmissionRequest",
+        "type": "object"
+      },
+      "StageUserDecisionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "candidateSetHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Candidatesethash",
+            "type": "string"
+          },
+          "contractHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Contracthash",
+            "type": "string"
+          },
+          "decision": {
+            "enum": [
+              "approve",
+              "reject",
+              "needs_revision"
+            ],
+            "title": "Decision",
+            "type": "string"
+          },
+          "gatePolicyVersion": {
+            "minimum": 1.0,
+            "title": "Gatepolicyversion",
+            "type": "integer"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 2048,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "requestId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Requestid",
+            "type": "string"
+          },
+          "reviewCycleId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Reviewcycleid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "requestId",
+          "reviewCycleId",
+          "candidateSetHash",
+          "contractHash",
+          "gatePolicyVersion",
+          "decision"
+        ],
+        "title": "StageUserDecisionRequest",
+        "type": "object"
+      },
       "StopEvidenceClaim": {
         "additionalProperties": false,
         "description": "The same ledger-backed stop proof is required for D06 and D07.",
@@ -4940,8 +9008,11 @@
             "type": "string"
           },
           "source": {
-            "const": "runner",
             "default": "runner",
+            "enum": [
+              "runner",
+              "adapter_host"
+            ],
             "title": "Source",
             "type": "string"
           },
@@ -4975,6 +9046,96 @@
           "checkedAt"
         ],
         "title": "StopEvidenceClaim",
+        "type": "object"
+      },
+      "TaskAssignmentPayload": {
+        "additionalProperties": false,
+        "properties": {
+          "objective": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Objective",
+            "type": "string"
+          },
+          "stageId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stageid"
+          },
+          "type": {
+            "const": "task.assignment",
+            "title": "Type",
+            "type": "string"
+          },
+          "workPackageId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Workpackageid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "workPackageId",
+          "objective"
+        ],
+        "title": "TaskAssignmentPayload",
+        "type": "object"
+      },
+      "TaskReworkPayload": {
+        "additionalProperties": false,
+        "properties": {
+          "paths": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 64,
+            "title": "Paths",
+            "type": "array"
+          },
+          "reason": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "stageId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Stageid",
+            "type": "string"
+          },
+          "targetRoleId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Targetroleid",
+            "type": "string"
+          },
+          "type": {
+            "const": "task.rework",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "stageId",
+          "targetRoleId",
+          "reason"
+        ],
+        "title": "TaskReworkPayload",
         "type": "object"
       },
       "TrustPolicy": {
@@ -5115,6 +9276,53 @@
         "title": "ValidationReportView",
         "type": "object"
       },
+      "ValidatorSpec": {
+        "additionalProperties": false,
+        "properties": {
+          "config": {
+            "additionalProperties": true,
+            "title": "Config",
+            "type": "object"
+          },
+          "criterionIds": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            "maxItems": 64,
+            "minItems": 1,
+            "title": "Criterionids",
+            "type": "array"
+          },
+          "id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Id",
+            "type": "string"
+          },
+          "required": {
+            "title": "Required",
+            "type": "boolean"
+          },
+          "version": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "criterionIds",
+          "required"
+        ],
+        "title": "ValidatorSpec",
+        "type": "object"
+      },
       "VerifyCandidateRequest": {
         "additionalProperties": false,
         "properties": {
@@ -5138,6 +9346,110 @@
           "validatorId"
         ],
         "title": "VerifyCandidateRequest",
+        "type": "object"
+      },
+      "WorkPackage": {
+        "additionalProperties": false,
+        "properties": {
+          "deliverables": {
+            "items": {
+              "$ref": "#/components/schemas/ArtifactContract"
+            },
+            "maxItems": 32,
+            "title": "Deliverables",
+            "type": "array"
+          },
+          "dependsOn": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            "maxItems": 64,
+            "title": "Dependson",
+            "type": "array"
+          },
+          "id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Id",
+            "type": "string"
+          },
+          "inputs": {
+            "items": {
+              "$ref": "#/components/schemas/ArtifactRef"
+            },
+            "maxItems": 64,
+            "title": "Inputs",
+            "type": "array"
+          },
+          "maxRepairRounds": {
+            "default": 3,
+            "maximum": 10.0,
+            "minimum": 0.0,
+            "title": "Maxrepairrounds",
+            "type": "integer"
+          },
+          "objective": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Objective",
+            "type": "string"
+          },
+          "ownerRoleId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Ownerroleid",
+            "type": "string"
+          },
+          "planVersion": {
+            "minimum": 1.0,
+            "title": "Planversion",
+            "type": "integer"
+          },
+          "readScopes": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 64,
+            "title": "Readscopes",
+            "type": "array"
+          },
+          "stageId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Stageid",
+            "type": "string"
+          },
+          "toolPolicyId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Toolpolicyid",
+            "type": "string"
+          },
+          "writeScopes": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 64,
+            "title": "Writescopes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "planVersion",
+          "stageId",
+          "objective",
+          "ownerRoleId",
+          "toolPolicyId"
+        ],
+        "title": "WorkPackage",
         "type": "object"
       },
       "WorkspaceSnapshotView": {
@@ -5420,6 +9732,212 @@
         "summary": "Register Manual Installation",
         "tags": [
           "discovery"
+        ]
+      }
+    },
+    "/api/v1/agent-instances/{instance_id}": {
+      "get": {
+        "operationId": "get_instance_api_v1_agent_instances__instance_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "instance_id",
+            "required": true,
+            "schema": {
+              "title": "Instance Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Instance Api V1 Agent Instances  Instance Id  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Instance",
+        "tags": [
+          "instances"
+        ]
+      }
+    },
+    "/api/v1/agent-instances/{instance_id}/actions": {
+      "post": {
+        "operationId": "instance_action_api_v1_agent_instances__instance_id__actions_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "instance_id",
+            "required": true,
+            "schema": {
+              "title": "Instance Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentInstanceActionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationAccepted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Instance Action",
+        "tags": [
+          "instances"
         ]
       }
     },
@@ -7751,6 +12269,320 @@
         "summary": "Health"
       }
     },
+    "/api/v1/internal/agent-messages": {
+      "post": {
+        "operationId": "agent_message_api_v1_internal_agent_messages_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MessageCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Agent Message Api V1 Internal Agent Messages Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Agent Message",
+        "tags": [
+          "instances"
+        ]
+      }
+    },
+    "/api/v1/internal/native-events": {
+      "post": {
+        "description": "Separate internal auth entry — users cannot self-set authentic/stopped.",
+        "operationId": "ingest_native_event_api_v1_internal_native_events_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Internal-Service",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Internal-Service"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "title": "Body",
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Ingest Native Event Api V1 Internal Native Events Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Ingest Native Event",
+        "tags": [
+          "instances"
+        ]
+      }
+    },
+    "/api/v1/messages/{message_id}/deliveries": {
+      "get": {
+        "operationId": "list_deliveries_api_v1_messages__message_id__deliveries_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "message_id",
+            "required": true,
+            "schema": {
+              "title": "Message Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageDeliveryListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Deliveries",
+        "tags": [
+          "instances"
+        ]
+      }
+    },
     "/api/v1/model-calls": {
       "post": {
         "operationId": "create_model_call_api_v1_model_calls_post",
@@ -9418,6 +14250,117 @@
         "summary": "Ready"
       }
     },
+    "/api/v1/rework-orders/{order_id}/accept": {
+      "post": {
+        "operationId": "accept_rework_api_v1_rework_orders__order_id__accept_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_id",
+            "required": true,
+            "schema": {
+              "title": "Order Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "title": "Body",
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Accept Rework Api V1 Rework Orders  Order Id  Accept Post"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Accept Rework",
+        "tags": [
+          "stages"
+        ]
+      }
+    },
     "/api/v1/runner/execute": {
       "post": {
         "operationId": "execute_api_v1_runner_execute_post",
@@ -9897,6 +14840,2059 @@
         "summary": "Issue Ticket",
         "tags": [
           "runner"
+        ]
+      }
+    },
+    "/api/v1/runs": {
+      "post": {
+        "operationId": "create_run_api_v1_runs_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunAcceptedResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Run",
+        "tags": [
+          "runs"
+        ]
+      }
+    },
+    "/api/v1/runs/{run_id}": {
+      "get": {
+        "operationId": "get_run_api_v1_runs__run_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunSnapshotResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Run",
+        "tags": [
+          "runs"
+        ]
+      }
+    },
+    "/api/v1/runs/{run_id}/assignments": {
+      "put": {
+        "operationId": "put_assignments_api_v1_runs__run_id__assignments_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoleAssignmentsPutRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoleAssignmentsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Put Assignments",
+        "tags": [
+          "runs"
+        ]
+      }
+    },
+    "/api/v1/runs/{run_id}/execution-requests": {
+      "post": {
+        "operationId": "create_execution_request_api_v1_runs__run_id__execution_requests_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExecutionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationAccepted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Execution Request",
+        "tags": [
+          "instances"
+        ]
+      }
+    },
+    "/api/v1/runs/{run_id}/instances": {
+      "get": {
+        "operationId": "list_instances_api_v1_runs__run_id__instances_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentInstanceListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Instances",
+        "tags": [
+          "instances"
+        ]
+      }
+    },
+    "/api/v1/runs/{run_id}/messages": {
+      "get": {
+        "operationId": "list_messages_api_v1_runs__run_id__messages_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Messages",
+        "tags": [
+          "instances"
+        ]
+      },
+      "post": {
+        "operationId": "create_message_api_v1_runs__run_id__messages_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MessageCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Create Message Api V1 Runs  Run Id  Messages Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Message",
+        "tags": [
+          "instances"
+        ]
+      }
+    },
+    "/api/v1/runs/{run_id}/plan": {
+      "get": {
+        "operationId": "get_plan_api_v1_runs__run_id__plan_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Plan",
+        "tags": [
+          "runs"
+        ]
+      }
+    },
+    "/api/v1/runs/{run_id}/plan-decisions": {
+      "post": {
+        "operationId": "decide_plan_api_v1_runs__run_id__plan_decisions_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanDecisionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Decide Plan",
+        "tags": [
+          "runs"
+        ]
+      }
+    },
+    "/api/v1/runs/{run_id}/plan-proposals": {
+      "post": {
+        "operationId": "propose_plan_api_v1_runs__run_id__plan_proposals_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanProposalRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Propose Plan",
+        "tags": [
+          "runs"
+        ]
+      }
+    },
+    "/api/v1/runs/{run_id}/plan-revisions": {
+      "post": {
+        "operationId": "revise_plan_api_v1_runs__run_id__plan_revisions_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanRevisionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Revise Plan",
+        "tags": [
+          "runs"
+        ]
+      }
+    },
+    "/api/v1/runs/{run_id}/stages": {
+      "get": {
+        "operationId": "list_stages_api_v1_runs__run_id__stages_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StageListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Stages",
+        "tags": [
+          "stages"
+        ]
+      }
+    },
+    "/api/v1/stages/{stage_id}": {
+      "get": {
+        "operationId": "get_stage_api_v1_stages__stage_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "stage_id",
+            "required": true,
+            "schema": {
+              "title": "Stage Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Stage Api V1 Stages  Stage Id  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Stage",
+        "tags": [
+          "stages"
+        ]
+      }
+    },
+    "/api/v1/stages/{stage_id}/gate-decisions": {
+      "get": {
+        "operationId": "list_gates_api_v1_stages__stage_id__gate_decisions_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "stage_id",
+            "required": true,
+            "schema": {
+              "title": "Stage Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GateDecisionListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Gates",
+        "tags": [
+          "stages"
+        ]
+      }
+    },
+    "/api/v1/stages/{stage_id}/review-cycles": {
+      "get": {
+        "operationId": "list_cycles_api_v1_stages__stage_id__review_cycles_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "stage_id",
+            "required": true,
+            "schema": {
+              "title": "Stage Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewCycleListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Cycles",
+        "tags": [
+          "stages"
+        ]
+      }
+    },
+    "/api/v1/stages/{stage_id}/reviews": {
+      "post": {
+        "operationId": "submit_review_api_v1_stages__stage_id__reviews_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "stage_id",
+            "required": true,
+            "schema": {
+              "title": "Stage Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewReportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Submit Review Api V1 Stages  Stage Id  Reviews Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Submit Review",
+        "tags": [
+          "stages"
+        ]
+      }
+    },
+    "/api/v1/stages/{stage_id}/rework-orders": {
+      "get": {
+        "operationId": "list_rework_api_v1_stages__stage_id__rework_orders_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "stage_id",
+            "required": true,
+            "schema": {
+              "title": "Stage Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReworkOrderListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Rework",
+        "tags": [
+          "stages"
+        ]
+      }
+    },
+    "/api/v1/stages/{stage_id}/submissions": {
+      "get": {
+        "operationId": "list_submissions_api_v1_stages__stage_id__submissions_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "stage_id",
+            "required": true,
+            "schema": {
+              "title": "Stage Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response List Submissions Api V1 Stages  Stage Id  Submissions Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Submissions",
+        "tags": [
+          "stages"
+        ]
+      },
+      "post": {
+        "operationId": "create_submission_api_v1_stages__stage_id__submissions_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "stage_id",
+            "required": true,
+            "schema": {
+              "title": "Stage Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StageSubmissionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Create Submission Api V1 Stages  Stage Id  Submissions Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Submission",
+        "tags": [
+          "stages"
+        ]
+      }
+    },
+    "/api/v1/stages/{stage_id}/user-decisions": {
+      "post": {
+        "operationId": "user_decision_api_v1_stages__stage_id__user_decisions_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "stage_id",
+            "required": true,
+            "schema": {
+              "title": "Stage Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StageUserDecisionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response User Decision Api V1 Stages  Stage Id  User Decisions Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "User Decision",
+        "tags": [
+          "stages"
         ]
       }
     }

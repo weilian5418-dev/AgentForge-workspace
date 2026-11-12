@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Annotated, Any
+from typing import Annotated, Any, cast
 
 from fastapi import APIRouter, Depends, Request
 from starlette.exceptions import HTTPException
 
+from agentforge.artifacts.store import ArtifactStore
 from agentforge.contracts.stages import (
     GateDecisionListResponse,
     ReviewCycleListResponse,
@@ -17,6 +18,7 @@ from agentforge.contracts.stages import (
     StageUserDecisionRequest,
 )
 from agentforge.core.config import Settings
+from agentforge.core.service_identity import verify_ticket
 from agentforge.stages.errors import StageError
 from agentforge.stages.service import StageService
 from agentforge.storage.database import create_database_engine
@@ -26,10 +28,10 @@ router = APIRouter(prefix="/api/v1", tags=["stages"])
 
 
 def _settings(request: Request) -> Settings:
-    return request.app.state.settings
+    return cast(Settings, request.app.state.settings)
 
 
-def _require_engine(request: Request, settings: Settings):
+def _require_engine(request: Request, settings: Settings) -> Any:
     engine = getattr(request.app.state, "database", None) or create_database_engine(settings)
     if engine is None:
         raise HTTPException(503, "database_unavailable: Database is not configured")
@@ -64,7 +66,11 @@ def list_stages(
 ) -> StageListResponse:
     engine = _require_engine(request, settings)
     with unit_of_work_connection(engine) as uow:
-        return StageListResponse(items=StageService(uow.session).list_stages(run_id))
+        return StageListResponse(
+            items=StageService(
+                uow.session, store=ArtifactStore(settings.state_dir / "artifact_store")
+            ).list_stages(run_id)
+        )
 
 
 @router.get("/stages/{stage_id}")
@@ -76,7 +82,9 @@ def get_stage(
     engine = _require_engine(request, settings)
     try:
         with unit_of_work_connection(engine) as uow:
-            view = StageService(uow.session).get_stage(stage_id)
+            view = StageService(
+                uow.session, store=ArtifactStore(settings.state_dir / "artifact_store")
+            ).get_stage(stage_id)
             return {
                 "stage": view["stage"].model_dump(mode="json", by_alias=True),
                 "reviewCycle": None
@@ -101,9 +109,9 @@ def create_submission(
     engine = _require_engine(request, settings)
     try:
         with unit_of_work_connection(engine) as uow:
-            accepted = StageService(uow.session).submit(
-                stage_id, body, submitter_ref="user:api"
-            )
+            accepted = StageService(
+                uow.session, store=ArtifactStore(settings.state_dir / "artifact_store")
+            ).submit(stage_id, body, submitter_ref="user:api")
             return accepted.model_dump(mode="json", by_alias=True)
     except StageError as exc:
         raise _map_error(exc) from exc
@@ -117,7 +125,9 @@ def list_submissions(
 ) -> dict[str, Any]:
     engine = _require_engine(request, settings)
     with unit_of_work_connection(engine) as uow:
-        items = StageService(uow.session).list_submissions(stage_id)
+        items = StageService(
+            uow.session, store=ArtifactStore(settings.state_dir / "artifact_store")
+        ).list_submissions(stage_id)
         return {"items": [i.model_dump(mode="json", by_alias=True) for i in items]}
 
 
@@ -130,7 +140,9 @@ def list_cycles(
     engine = _require_engine(request, settings)
     with unit_of_work_connection(engine) as uow:
         return ReviewCycleListResponse(
-            items=StageService(uow.session).list_review_cycles(stage_id)
+            items=StageService(
+                uow.session, store=ArtifactStore(settings.state_dir / "artifact_store")
+            ).list_review_cycles(stage_id)
         )
 
 
@@ -141,15 +153,23 @@ def submit_review(
     body: ReviewReportRequest,
     settings: Annotated[Settings, Depends(_settings)],
 ) -> dict[str, Any]:
+    try:
+        reviewer = verify_ticket(
+            settings,
+            request.headers.get("X-Agent-Ticket", ""),
+            audience="stage-review",
+            request_id=body.review_request_id,
+        )
+    except (ValueError, TypeError, KeyError):
+        raise HTTPException(
+            403, "trusted_reviewer_required: Signed instance ticket required"
+        ) from None
     engine = _require_engine(request, settings)
-    reviewer = request.headers.get("X-Reviewer-Instance-Id", "")
-    if not reviewer:
-        raise HTTPException(400, "missing_reviewer: X-Reviewer-Instance-Id required")
     try:
         with unit_of_work_connection(engine) as uow:
-            report_id = StageService(uow.session).submit_review(
-                stage_id, body, reviewer_instance_id=reviewer
-            )
+            report_id = StageService(
+                uow.session, store=ArtifactStore(settings.state_dir / "artifact_store")
+            ).submit_review(stage_id, body, reviewer_instance_id=reviewer, trusted=True)
             return {"reportId": report_id}
     except StageError as exc:
         raise _map_error(exc) from exc
@@ -165,10 +185,10 @@ def user_decision(
     engine = _require_engine(request, settings)
     try:
         with unit_of_work_connection(engine) as uow:
-            decision = StageService(uow.session).submit_user_decision(
-                stage_id, body, decided_by="user:api"
-            )
-            return decision.model_dump(mode="json", by_alias=True)
+            decision = StageService(
+                uow.session, store=ArtifactStore(settings.state_dir / "artifact_store")
+            ).submit_user_decision(stage_id, body, decided_by="user:api")
+            return dict(decision.model_dump(mode="json", by_alias=True))
     except StageError as exc:
         raise _map_error(exc) from exc
 
@@ -182,7 +202,9 @@ def list_gates(
     engine = _require_engine(request, settings)
     with unit_of_work_connection(engine) as uow:
         return GateDecisionListResponse(
-            items=StageService(uow.session).list_gate_decisions(stage_id)
+            items=StageService(
+                uow.session, store=ArtifactStore(settings.state_dir / "artifact_store")
+            ).list_gate_decisions(stage_id)
         )
 
 
@@ -195,5 +217,25 @@ def list_rework(
     engine = _require_engine(request, settings)
     with unit_of_work_connection(engine) as uow:
         return ReworkOrderListResponse(
-            items=StageService(uow.session).list_rework_orders(stage_id)
+            items=StageService(
+                uow.session, store=ArtifactStore(settings.state_dir / "artifact_store")
+            ).list_rework_orders(stage_id)
         )
+
+
+@router.post("/rework-orders/{order_id}/accept")
+def accept_rework(
+    order_id: str,
+    request: Request,
+    body: dict[str, str],
+    settings: Annotated[Settings, Depends(_settings)],
+) -> Any:
+    engine = _require_engine(request, settings)
+    try:
+        with unit_of_work_connection(engine) as uow:
+            StageService(
+                uow.session, store=ArtifactStore(settings.state_dir / "artifact_store")
+            ).accept_rework(order_id, workspace_id=body.get("workspaceId", ""))
+        return {"status": "accepted"}
+    except StageError as exc:
+        raise _map_error(exc) from exc

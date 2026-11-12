@@ -1,6 +1,6 @@
 {
   "additionalProperties": false,
-  "description": "Idempotent request to create/start confirmed role instances. Does not approve a plan.",
+  "description": "Idempotent request to prepare confirmed role instances. Does not approve a plan.\n\nBinding must include planHash + planVersion + assignmentVersion + gatePolicyVersion.\nDoes not start arbitrary stage tasks; D10 release still required for later stages.",
   "properties": {
     "assignmentVersion": {
       "minimum": 1,

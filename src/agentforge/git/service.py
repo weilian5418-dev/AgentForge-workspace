@@ -35,6 +35,8 @@ from agentforge.git.snapshot import (
 )
 from agentforge.runner.quiescence import (
     StopProofError,
+    WorkspaceBusyError,
+    assert_workspace_quiescent,
     lock_workspace,
     validate_stop_proof,
 )
@@ -388,9 +390,13 @@ class GitWorkspaceService:
         return self._integration_view(row)
 
     def cleanup(self, body: CleanupWorktreeRequest) -> WorktreeView:
-        row = self.session.get(GitWorkspaceRow, body.workspace_id)
+        row = lock_workspace(self.session, body.workspace_id)
         if row is None:
             raise GitWorkspaceError("workspace_not_found", "Worktree not found")
+        try:
+            assert_workspace_quiescent(self.session, row.id, except_operation="")
+        except WorkspaceBusyError as exc:
+            raise GitWorkspaceError("workspace_active", str(exc)) from exc
         source = Path(row.source_root)
         path = Path(row.worktree_path)
         if path.resolve() == source.resolve():

@@ -1,0 +1,464 @@
+{
+  "$defs": {
+    "CandidateSet": {
+      "additionalProperties": false,
+      "description": "Fixed candidate collection for one review cycle — not a single current_candidate_id.",
+      "properties": {
+        "baselineOrIntegrationRef": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Baselineorintegrationref"
+        },
+        "candidateSetId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Candidatesetid",
+          "type": "string"
+        },
+        "contractHash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Contracthash",
+          "type": "string"
+        },
+        "createdAt": {
+          "format": "date-time",
+          "title": "Createdat",
+          "type": "string"
+        },
+        "environmentFingerprint": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Environmentfingerprint",
+          "type": "string"
+        },
+        "manifestHash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Manifesthash",
+          "type": "string"
+        },
+        "members": {
+          "items": {
+            "$ref": "#/$defs/WorkPackageCandidateRef"
+          },
+          "maxItems": 64,
+          "minItems": 1,
+          "title": "Members",
+          "type": "array"
+        },
+        "requiredWorkPackagesComplete": {
+          "title": "Requiredworkpackagescomplete",
+          "type": "boolean"
+        },
+        "stageId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Stageid",
+          "type": "string"
+        },
+        "stopEvidenceRefs": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "type": "string"
+          },
+          "maxItems": 32,
+          "title": "Stopevidencerefs",
+          "type": "array"
+        },
+        "submissionId": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Submissionid"
+        },
+        "upstreamInputVersions": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "type": "string"
+          },
+          "maxItems": 64,
+          "title": "Upstreaminputversions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "candidateSetId",
+        "stageId",
+        "members",
+        "requiredWorkPackagesComplete",
+        "contractHash",
+        "environmentFingerprint",
+        "manifestHash",
+        "createdAt"
+      ],
+      "title": "CandidateSet",
+      "type": "object"
+    },
+    "StageGatePolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "conflictResolution": {
+          "default": "escalate_user",
+          "enum": [
+            "escalate_user",
+            "unanimous",
+            "majority"
+          ],
+          "title": "Conflictresolution",
+          "type": "string"
+        },
+        "maxRepairRounds": {
+          "default": 3,
+          "maximum": 10,
+          "minimum": 0,
+          "title": "Maxrepairrounds",
+          "type": "integer"
+        },
+        "policy": {
+          "default": "stage_atomic",
+          "enum": [
+            "stage_atomic",
+            "dependency_branch"
+          ],
+          "title": "Policy",
+          "type": "string"
+        },
+        "requireUserDecision": {
+          "default": false,
+          "title": "Requireuserdecision",
+          "type": "boolean"
+        },
+        "requiredReviewRoles": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "type": "string"
+          },
+          "maxItems": 16,
+          "title": "Requiredreviewroles",
+          "type": "array"
+        },
+        "version": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "title": "StageGatePolicy",
+      "type": "object"
+    },
+    "StageUserDecision": {
+      "additionalProperties": false,
+      "description": "User stage decision — distinct from D08 plan confirmation.",
+      "properties": {
+        "candidateSetHash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Candidatesethash",
+          "type": "string"
+        },
+        "contractHash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Contracthash",
+          "type": "string"
+        },
+        "decidedAt": {
+          "format": "date-time",
+          "title": "Decidedat",
+          "type": "string"
+        },
+        "decidedBy": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Decidedby",
+          "type": "string"
+        },
+        "decision": {
+          "enum": [
+            "approve",
+            "reject",
+            "needs_revision"
+          ],
+          "title": "Decision",
+          "type": "string"
+        },
+        "decisionId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Decisionid",
+          "type": "string"
+        },
+        "gatePolicyVersion": {
+          "minimum": 1,
+          "title": "Gatepolicyversion",
+          "type": "integer"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Note"
+        },
+        "requestId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Requestid",
+          "type": "string"
+        },
+        "reviewCycleId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Reviewcycleid",
+          "type": "string"
+        },
+        "stageId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Stageid",
+          "type": "string"
+        }
+      },
+      "required": [
+        "decisionId",
+        "requestId",
+        "stageId",
+        "reviewCycleId",
+        "candidateSetHash",
+        "contractHash",
+        "gatePolicyVersion",
+        "decision",
+        "decidedBy",
+        "decidedAt"
+      ],
+      "title": "StageUserDecision",
+      "type": "object"
+    },
+    "WorkPackageCandidateRef": {
+      "additionalProperties": false,
+      "description": "One work package → candidate → artifact version binding inside a CandidateSet.",
+      "properties": {
+        "artifactVersion": {
+          "minimum": 1,
+          "title": "Artifactversion",
+          "type": "integer"
+        },
+        "candidateId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Candidateid",
+          "type": "string"
+        },
+        "contentHash": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Contenthash"
+        },
+        "required": {
+          "default": true,
+          "title": "Required",
+          "type": "boolean"
+        },
+        "workPackageId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Workpackageid",
+          "type": "string"
+        }
+      },
+      "required": [
+        "workPackageId",
+        "candidateId",
+        "artifactVersion"
+      ],
+      "title": "WorkPackageCandidateRef",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Fixed facts for pure GateEvaluator — no I/O.",
+  "properties": {
+    "answeredReviewRequestIds": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9._:-]+$",
+        "type": "string"
+      },
+      "maxItems": 32,
+      "title": "Answeredreviewrequestids",
+      "type": "array"
+    },
+    "assignmentVersion": {
+      "minimum": 1,
+      "title": "Assignmentversion",
+      "type": "integer"
+    },
+    "blockingFacts": {
+      "items": {
+        "maxLength": 512,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 32,
+      "title": "Blockingfacts",
+      "type": "array"
+    },
+    "budgetExhausted": {
+      "default": false,
+      "title": "Budgetexhausted",
+      "type": "boolean"
+    },
+    "candidateSet": {
+      "$ref": "#/$defs/CandidateSet"
+    },
+    "contractHash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Contracthash",
+      "type": "string"
+    },
+    "gatePolicy": {
+      "$ref": "#/$defs/StageGatePolicy"
+    },
+    "planVersion": {
+      "minimum": 1,
+      "title": "Planversion",
+      "type": "integer"
+    },
+    "repairRound": {
+      "default": 0,
+      "maximum": 10,
+      "minimum": 0,
+      "title": "Repairround",
+      "type": "integer"
+    },
+    "reviewRequestIds": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9._:-]+$",
+        "type": "string"
+      },
+      "maxItems": 32,
+      "title": "Reviewrequestids",
+      "type": "array"
+    },
+    "reviewVerdicts": {
+      "items": {
+        "enum": [
+          "approve",
+          "request_changes",
+          "needs_input"
+        ],
+        "type": "string"
+      },
+      "maxItems": 32,
+      "title": "Reviewverdicts",
+      "type": "array"
+    },
+    "stageId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Stageid",
+      "type": "string"
+    },
+    "stopVerified": {
+      "default": false,
+      "title": "Stopverified",
+      "type": "boolean"
+    },
+    "userDecision": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/StageUserDecision"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "userDecisionRequired": {
+      "default": false,
+      "title": "Userdecisionrequired",
+      "type": "boolean"
+    },
+    "validationHasRequiredFailure": {
+      "default": false,
+      "title": "Validationhasrequiredfailure",
+      "type": "boolean"
+    },
+    "validationPassedRequired": {
+      "title": "Validationpassedrequired",
+      "type": "boolean"
+    },
+    "validationReportRefs": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9._:-]+$",
+        "type": "string"
+      },
+      "maxItems": 64,
+      "title": "Validationreportrefs",
+      "type": "array"
+    }
+  },
+  "required": [
+    "stageId",
+    "planVersion",
+    "assignmentVersion",
+    "gatePolicy",
+    "candidateSet",
+    "contractHash",
+    "validationPassedRequired"
+  ],
+  "title": "GateEvaluationInput",
+  "type": "object"
+}

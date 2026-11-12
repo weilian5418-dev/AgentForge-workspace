@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import hashlib
 import uuid
 from datetime import UTC, datetime
 from typing import Any
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from agentforge.contracts.messages import (
@@ -13,6 +15,7 @@ from agentforge.contracts.messages import (
     MessageCreateRequest,
     MessageDelivery,
 )
+from agentforge.contracts.plans import PlanSpec
 from agentforge.contracts.runs import OperationAccepted
 from agentforge.instances.eligibility import EligibilityService
 from agentforge.instances.errors import InstanceError
@@ -23,6 +26,7 @@ from agentforge.storage.models import (
     CollaborationMessageRow,
     MessageDeliveryRow,
     Outbox,
+    Plan,
     Run,
 )
 
@@ -53,20 +57,55 @@ class MessageService:
         plan_version: int | None = None,
         assignment_version: int | None = None,
     ) -> CollaborationMessage:
-        run = self.session.get(Run, run_id)
+        run = self.session.get(Run, run_id, with_for_update=True, populate_existing=True)
         if run is None:
             raise InstanceError("run_not_found", run_id)
 
+        correlation = (
+            hashlib.sha256((sender_ref + ":" + body.idempotency_key).encode()).hexdigest()
+            if body.idempotency_key
+            else None
+        )
+        if correlation:
+            prior = self.session.scalar(
+                select(CollaborationMessageRow).where(
+                    CollaborationMessageRow.run_id == run.id,
+                    CollaborationMessageRow.correlation_id == correlation,
+                )
+            )
+            if prior:
+                if (
+                    prior.payload != body.payload.model_dump(mode="json", by_alias=True)
+                    or sorted(prior.recipient_refs) != sorted(body.recipient_refs)
+                    or prior.stage_id != body.stage_id
+                    or prior.work_package_id != body.work_package_id
+                    or prior.reply_to != body.reply_to
+                    or prior.reply_required != body.reply_required
+                ):
+                    raise InstanceError("idempotency_conflict", "Message content changed")
+                return self._to_message(prior)
         route = self.protocol.route_inbound(body.type, body.payload.model_dump(by_alias=True))
         if body.type == "task.assignment":
             # Must go through eligibility — assignment approval ≠ stage dispatch.
             payload_obj = body.payload
             stage_id = body.stage_id or getattr(payload_obj, "stage_id", None)
             wp = body.work_package_id or getattr(payload_obj, "work_package_id", None)
+            if not stage_id or not wp:
+                raise InstanceError("execution_blocked", "Task must specify stage and package")
             if stage_id and wp:
                 self.eligibility.assert_may_dispatch(
                     run_id=run_id, stage_id=stage_id, work_package_id=wp
                 )
+                plan = self.session.get(Plan, (run.id, run.plan_version))
+                definition = next(
+                    w
+                    for w in PlanSpec.model_validate(plan.spec_json if plan else {}).work_packages
+                    if w.id == wp
+                )
+                if getattr(payload_obj, "objective", None) != definition.objective:
+                    raise InstanceError(
+                        "task_scope_changed", "Task objective must match the confirmed plan"
+                    )
 
         # Recipients must be concrete instances (or deterministically resolved roles).
         recipient_instance_ids: list[str] = []
@@ -75,9 +114,7 @@ class MessageService:
             if inst is None:
                 # Role id → unique instance on this run
                 matches = [
-                    i
-                    for i in self.instances.list_instances_for_run(run_id)
-                    if i.role_id == ref
+                    i for i in self.instances.list_instances_for_run(run_id) if i.role_id == ref
                 ]
                 if len(matches) != 1:
                     raise InstanceError(
@@ -102,14 +139,33 @@ class MessageService:
             sender_ref=sender_ref,
             recipient_refs=list(body.recipient_refs),
             payload=payload,
+            correlation_id=correlation,
             artifact_refs=[],
             plan_version=plan_version or run.plan_version,
-            assignment_version=assignment_version,
+            assignment_version=assignment_version or run.assignment_version,
             reply_required=body.reply_required,
             reply_to=body.reply_to,
             request_id=body.request_id,
             created_at=_now(),
         )
+        if body.reply_to:
+            original = self.messages.get_message(body.reply_to)
+            if original is None or original.run_id != run.id:
+                raise InstanceError("reply_scope_mismatch", "Original message unavailable")
+            if not sender_ref.startswith("user:") and not sender_ref.startswith("platform:"):
+                delivery = next(
+                    (
+                        d
+                        for d in self.messages.list_deliveries(original.id)
+                        if d.recipient_instance_id == sender_ref
+                    ),
+                    None,
+                )
+                if delivery is None:
+                    raise InstanceError("illegal_sender", "Only an actual recipient can reply")
+                delivery.reply_status = "responded"
+                delivery.responded_at = _now()
+                delivery.status = delivery.transmission_status
         self.messages.add_message(row)
 
         for recipient_id in recipient_instance_ids:
@@ -152,7 +208,11 @@ class MessageService:
                     event_id=None,
                     intent_type="message.deliver",
                     target="delivery_coordinator",
-                    payload={"deliveryId": delivery_id, "messageId": msg_id},
+                    payload={
+                        "operationId": delivery_id,
+                        "deliveryId": delivery_id,
+                        "messageId": msg_id,
+                    },
                     idempotency_key=f"deliver:{delivery_id}",
                     delivery_status="pending",
                     attempt_count=0,

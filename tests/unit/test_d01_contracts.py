@@ -14,15 +14,11 @@ from agentforge.contracts.providers import (
 
 
 def test_decimal_money_is_string_not_float() -> None:
-    money = DecimalMoney.model_validate(
-        {"amount": "1.25", "currency": "usd", "estimated": True}
-    )
+    money = DecimalMoney.model_validate({"amount": "1.25", "currency": "usd", "estimated": True})
     assert money.currency == "USD"
     assert isinstance(money.amount, str)
     with pytest.raises(ValidationError):
-        DecimalMoney.model_validate(
-            {"amount": 1.25, "currency": "USD", "estimated": True}
-        )
+        DecimalMoney.model_validate({"amount": 1.25, "currency": "USD", "estimated": True})
 
 
 def test_provider_create_requires_adapter_and_model_id() -> None:

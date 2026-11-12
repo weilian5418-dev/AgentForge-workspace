@@ -1,0 +1,95 @@
+{
+  "additionalProperties": false,
+  "description": "One native send attempt and its possibly-unknown result.",
+  "properties": {
+    "deliveryAttemptId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Deliveryattemptid",
+      "type": "string"
+    },
+    "deliveryId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Deliveryid",
+      "type": "string"
+    },
+    "errorCode": {
+      "anyOf": [
+        {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Errorcode"
+    },
+    "finishedAt": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Finishedat"
+    },
+    "nativeReceiptRef": {
+      "anyOf": [
+        {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Nativereceiptref"
+    },
+    "operationId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Operationid",
+      "type": "string"
+    },
+    "startedAt": {
+      "format": "date-time",
+      "title": "Startedat",
+      "type": "string"
+    },
+    "transmissionStatus": {
+      "enum": [
+        "pending",
+        "claimed",
+        "sent",
+        "received",
+        "unknown",
+        "failed",
+        "expired"
+      ],
+      "title": "Transmissionstatus",
+      "type": "string"
+    }
+  },
+  "required": [
+    "deliveryAttemptId",
+    "deliveryId",
+    "operationId",
+    "transmissionStatus",
+    "startedAt"
+  ],
+  "title": "DeliveryAttempt",
+  "type": "object"
+}

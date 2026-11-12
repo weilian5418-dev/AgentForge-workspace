@@ -74,14 +74,37 @@
     }
   },
   "additionalProperties": false,
-  "description": "Structured review opinion. Not a gate decision.",
+  "description": "Structured review opinion. Not a gate decision. Must bind request + cycle.",
   "properties": {
     "candidateId": {
-      "maxLength": 128,
-      "minLength": 1,
-      "pattern": "^[A-Za-z0-9._:-]+$",
-      "title": "Candidateid",
-      "type": "string"
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Candidateid"
+    },
+    "candidateSetId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Candidatesetid"
     },
     "contractHash": {
       "pattern": "^[0-9a-f]{64}$",
@@ -113,6 +136,20 @@
       "title": "Manifesthash",
       "type": "string"
     },
+    "reviewCycleId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Reviewcycleid",
+      "type": "string"
+    },
+    "reviewRequestId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Reviewrequestid",
+      "type": "string"
+    },
     "reviewerInstanceId": {
       "maxLength": 128,
       "minLength": 1,
@@ -139,9 +176,10 @@
   },
   "required": [
     "id",
+    "reviewRequestId",
+    "reviewCycleId",
     "reviewerInstanceId",
     "stageId",
-    "candidateId",
     "manifestHash",
     "contractHash",
     "verdict",

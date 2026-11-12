@@ -141,7 +141,7 @@ def create_profile(
     results = [
         CapabilityResult(
             capability=name,
-            support=support,  # type: ignore[arg-type]
+            support=support,
             limits={},
             evidence_refs=[],
         )
@@ -157,7 +157,7 @@ def create_profile(
         checked_at=datetime.now(UTC),
         valid_until=None,
         results=[r.model_dump(mode="json") for r in results],
-        evidence_refs=list(matrix.evidence_refs),
+        evidence_refs=[*matrix.evidence_refs, f"config:{profile.config_hash}"],
         created_at=datetime.now(UTC),
     )
     session.add(check)

@@ -815,12 +815,13 @@ def queue_dispatch(
 
 @queue_app.command("work")
 def queue_work(
+    control: bool = typer.Option(False, "--control", help="Trusted collaboration driver queue"),
     once: bool = typer.Option(False, "--once", help="Process available jobs then exit"),
     json_out: bool = typer.Option(False, "--json"),
 ) -> None:
     """Run the model-operation worker (uses API/driver DB credentials)."""
     from agentforge.queue.app import open_app
-    from agentforge.queue.constants import DEFAULT_QUEUE_NAME
+    from agentforge.queue.constants import CONTROL_QUEUE_NAME, DEFAULT_QUEUE_NAME
 
     settings = load_settings()
     try:
@@ -829,6 +830,26 @@ def queue_work(
         typer.echo(str(exc), err=True)
         raise typer.Exit(CONFIG_ERROR) from None
     try:
+        if control:
+            from agentforge.queue.control_identity import require_control_role
+            from agentforge.storage.database import check_database, create_database_engine
+
+            engine = create_database_engine(settings)
+            if engine is None:
+                raise ValueError("Control database URL is required")
+            try:
+                require_control_role(engine)
+                if (
+                    check_database(
+                        engine, expected_revision=settings.expected_alembic_revision
+                    ).status
+                    != "available"
+                ):
+                    raise ValueError(
+                        "Apply and verify migrations before running the control driver"
+                    )
+            finally:
+                engine.dispose()
         app_q = open_app(settings)
     except Exception as exc:  # noqa: BLE001
         typer.echo(str(exc), err=True)
@@ -836,9 +857,13 @@ def queue_work(
     try:
         if once:
             # Single fetch cycle — suitable for supervised ticks / tests.
-            app_q.run_worker(queues=[DEFAULT_QUEUE_NAME], wait=False, install_signal_handlers=False)
+            app_q.run_worker(
+                queues=[CONTROL_QUEUE_NAME if control else DEFAULT_QUEUE_NAME],
+                wait=False,
+                install_signal_handlers=False,
+            )
         else:
-            app_q.run_worker(queues=[DEFAULT_QUEUE_NAME])
+            app_q.run_worker(queues=[CONTROL_QUEUE_NAME if control else DEFAULT_QUEUE_NAME])
     finally:
         app_q.close()
     emit({"status": "stopped"}, as_json=json_out, human="queue worker stopped")
@@ -1173,7 +1198,7 @@ def artifact_consume_check(
     )
 
 
-def _git_service():
+def _git_service() -> tuple[Any, Any, Any, Any, Any]:
     from pathlib import Path
 
     from agentforge.artifacts.store import ArtifactStore
@@ -1377,7 +1402,7 @@ def git_cleanup(
     )
 
 
-def _run_service():
+def _run_service() -> tuple[Any, Any, Any]:
     from agentforge.storage.database import create_database_engine
     from agentforge.storage.uow import unit_of_work_connection
 
@@ -1445,20 +1470,35 @@ def run_get(
 def run_propose(
     run_id: str = typer.Option(..., "--run-id"),
     source: str = typer.Option("rules", "--source", help="rules|model|auto"),
+    include_input_content: bool = typer.Option(False, "--include-input-content"),
+    max_input_bytes: int = typer.Option(65536, "--max-input-bytes", min=1, max=131072),
+    grant_id: str | None = typer.Option(None, "--grant-id"),
+    idempotency_key: str | None = typer.Option(None, "--idempotency-key"),
     json_out: bool = typer.Option(False, "--json"),
 ) -> None:
     """Generate a plan proposal and compile it. Does not approve."""
     from agentforge.contracts.plans import PlanProposalRequest
-    from agentforge.planning.service import PlanningError, PlanningService
+    from agentforge.planning.service import PlanningError
 
     _settings, engine, uow_fn = _run_service()
     try:
-        with uow_fn(engine) as uow:
-            view = PlanningService(uow.session).propose(
-                run_id,
-                PlanProposalRequest.model_validate({"source": source}),
-            )
-            payload = view.model_dump(mode="json", by_alias=True)
+        from agentforge.planning.executor import propose_plan
+
+        view = propose_plan(
+            engine,
+            _settings,
+            run_id,
+            PlanProposalRequest.model_validate(
+                {
+                    "source": source,
+                    "grantId": grant_id,
+                    "idempotencyKey": idempotency_key,
+                    "includeInputContent": include_input_content,
+                    "maxInputBytes": max_input_bytes,
+                }
+            ),
+        )
+        payload = view.model_dump(mode="json", by_alias=True)
     except PlanningError as exc:
         typer.echo(f"{exc.code}: {exc.message}", err=True)
         raise typer.Exit(FAILURE) from None
@@ -1525,7 +1565,9 @@ def run_assign(
         typer.echo(f"{exc.code}: {exc.message}", err=True)
         raise typer.Exit(FAILURE) from None
     creq = plan.confirmation.request_id if plan.confirmation else "-"
-    emit(payload, as_json=json_out, human=f"assignmentVersion={plan.assignment_version} creq={creq}")
+    emit(
+        payload, as_json=json_out, human=f"assignmentVersion={plan.assignment_version} creq={creq}"
+    )
 
 
 @run_app.command("decide")
@@ -1566,7 +1608,12 @@ def run_decide(
     except PlanningError as exc:
         typer.echo(f"{exc.code}: {exc.message}", err=True)
         raise typer.Exit(FAILURE) from None
-    emit(payload, as_json=json_out, human=f"plan status={view.status} runConfirm={view.confirmation_state}")
+    emit(
+        payload,
+        as_json=json_out,
+        human=f"plan status={view.status} runConfirm={view.confirmation_state}",
+    )
+
 
 instance_app = typer.Typer(help="Agent instances / sessions / messages (D09)")
 app.add_typer(instance_app, name="instance")
@@ -1613,7 +1660,11 @@ def instance_get(
     except InstanceError as exc:
         typer.echo(f"{exc.code}: {exc.message}", err=True)
         raise typer.Exit(FAILURE) from None
-    emit(payload, as_json=json_out, human=f"instance={instance_id} lifecycle={payload['instance'].get('lifecycle')}")
+    emit(
+        payload,
+        as_json=json_out,
+        human=f"instance={instance_id} lifecycle={payload['instance'].get('lifecycle')}",
+    )
 
 
 @instance_app.command("stop")
@@ -1730,6 +1781,7 @@ def run_prepare(
         human=f"accepted operation={accepted.operation_id} (instances preparing)",
     )
 
+
 stage_app = typer.Typer(help="Stage gates / submissions / reviews (D10)")
 app.add_typer(stage_app, name="stage")
 
@@ -1775,7 +1827,9 @@ def stage_get(
     except StageError as exc:
         typer.echo(f"{exc.code}: {exc.message}", err=True)
         raise typer.Exit(FAILURE) from None
-    emit(payload, as_json=json_out, human=f"stage={stage_id} status={payload['stage'].get('status')}")
+    emit(
+        payload, as_json=json_out, human=f"stage={stage_id} status={payload['stage'].get('status')}"
+    )
 
 
 @stage_app.command("submit")

@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime
-from typing import Any, Literal
+from typing import Literal
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from agentforge.contracts.agents import RoleAssignment, RoleAssignmentPutItem
@@ -13,20 +14,24 @@ from agentforge.contracts.plans import (
     CompilationReport,
     ConfirmationRequest,
     PlanDecisionRequest,
-    PlanProposal,
     PlanProposalRequest,
     PlanResponse,
     PlanRevisionRequest,
     PlanSpec,
 )
 from agentforge.contracts.runs import RunAcceptedResponse, RunCreateRequest, RunSnapshotResponse
+from agentforge.instances.bindings import require_profile
+from agentforge.instances.errors import InstanceError
 from agentforge.planning.compiler import CompilerFacts, compile_plan
 from agentforge.planning.context import PlanningContextBuilder, PlanningContextError
 from agentforge.planning.hashing import compute_contract_hash, compute_plan_hash
 from agentforge.planning.proposals import ProposalError, ProposalGenerator
 from agentforge.planning.repository import PlanRepository, plan_row_from_spec
 from agentforge.projects.grants import GrantError, require_active_grant
+from agentforge.storage.event_log import append_fact
+from agentforge.storage.hashing import request_content_hash
 from agentforge.storage.models import (
+    IdempotencyRequest,
     Plan,
     PlanConfirmationRequestRow,
     PlanDecisionRow,
@@ -34,6 +39,7 @@ from agentforge.storage.models import (
     Project,
     RoleAssignmentRow,
     Run,
+    StageRow,
 )
 
 
@@ -62,12 +68,18 @@ class PlanningService:
         self.repo = PlanRepository(session)
         self.context_builder = PlanningContextBuilder(session)
         self.proposals = proposal_generator or ProposalGenerator()
-        self.known_validator_ids = known_validator_ids or frozenset(
-            {"markdown", "syntax", "pptx_structure", "generic"}
+        from agentforge.artifacts.validators import default_registry
+
+        self.known_validator_ids = (
+            known_validator_ids
+            if known_validator_ids is not None
+            else frozenset(default_registry().list_ids())
         )
 
     def create_run(self, body: RunCreateRequest) -> RunAcceptedResponse:
-        project = self.session.get(Project, body.project_id)
+        project = self.session.get(
+            Project, body.project_id, with_for_update=True, populate_existing=True
+        )
         if project is None:
             raise PlanningError("project_not_found", "Project not found")
         if project.grant_status != "active":
@@ -80,6 +92,41 @@ class PlanningService:
         if body.idempotency_key:
             existing = self.repo.get_run_by_idempotency(body.project_id, body.idempotency_key)
             if existing is not None:
+                baseline = body.baseline_id or project.current_baseline_id
+                prior = {
+                    "goal": existing.goal,
+                    "mode": existing.mode,
+                    "outputs": existing.outputs,
+                    "inputRefs": existing.input_refs,
+                    "baselineId": existing.baseline_id,
+                    "budget": existing.budget,
+                    "executionProfile": existing.execution_profile,
+                    "failurePolicy": existing.failure_policy,
+                    "planningProviderProfileId": existing.planning_provider_profile_id,
+                }
+                current = {
+                    "goal": body.goal,
+                    "mode": body.mode,
+                    "outputs": body.outputs,
+                    "inputRefs": body.input_refs,
+                    "baselineId": baseline,
+                    "budget": body.budget.model_dump(mode="json", by_alias=True),
+                    "executionProfile": body.execution_profile,
+                    "failurePolicy": body.failure_policy,
+                    "planningProviderProfileId": body.planning_provider_profile_id,
+                }
+                if request_content_hash(
+                    operation_type="run.create",
+                    target_refs={"projectId": body.project_id},
+                    body=prior,
+                ) != request_content_hash(
+                    operation_type="run.create",
+                    target_refs={"projectId": body.project_id},
+                    body=current,
+                ):
+                    raise PlanningError(
+                        "idempotency_conflict", "Same key has different request content"
+                    )
                 return RunAcceptedResponse(
                     run_id=existing.id,
                     status=existing.status,  # type: ignore[arg-type]
@@ -127,13 +174,30 @@ class PlanningService:
         run = self._require_run(run_id)
         return self._run_snapshot(run)
 
-    def propose(
-        self, run_id: str, body: PlanProposalRequest | None = None
-    ) -> PlanResponse:
-        run = self._require_run(run_id)
+    def propose(self, run_id: str, body: PlanProposalRequest | None = None) -> PlanResponse:
+        run = self._lock_run(run_id)
         if run.status not in {"planning", "awaiting_confirmation", "blocked"}:
             raise PlanningError("invalid_state", f"Cannot propose in status={run.status}")
         req = body or PlanProposalRequest.model_validate({"source": "auto"})
+        request_hash = request_content_hash(
+            operation_type="planning.rules",
+            target_refs={"runId": run.id},
+            body=req.model_dump(mode="json"),
+        )
+        record = None
+        if req.idempotency_key:
+            record = self.session.scalar(
+                select(IdempotencyRequest).where(
+                    IdempotencyRequest.identity_scope == run.id,
+                    IdempotencyRequest.operation_type == "planning.rules",
+                    IdempotencyRequest.request_key == req.idempotency_key,
+                )
+            )
+            if record:
+                if record.request_hash != request_hash:
+                    raise PlanningError("idempotency_conflict", "Proposal request changed")
+                return PlanResponse.model_validate(record.response_json)
+
         try:
             context = self.context_builder.build_for_run(run, persist=True)
             proposal = self.proposals.generate(run=run, context=context, source=req.source)
@@ -155,12 +219,26 @@ class PlanningService:
                 created_at=proposal.created_at,
             )
         )
-        return self._persist_compiled_revision(
+        result = self._persist_compiled_revision(
             run,
             proposal.draft,
             context_id=context.context_id,
             summary=req.note or proposal.draft.goal,
         )
+        if req.idempotency_key:
+            self.session.add(
+                IdempotencyRequest(
+                    id="idem_" + uuid.uuid4().hex,
+                    identity_scope=run.id,
+                    operation_type="planning.rules",
+                    request_key=req.idempotency_key,
+                    request_hash=request_hash,
+                    state="completed",
+                    response_status_code=200,
+                    response_json=result.model_dump(mode="json", by_alias=True),
+                )
+            )
+        return result
 
     def revise(self, run_id: str, body: PlanRevisionRequest) -> PlanResponse:
         run = self._lock_run(run_id)
@@ -168,11 +246,16 @@ class PlanningService:
             raise PlanningError("status_version_conflict", "Run statusVersion mismatch")
         if run.plan_version != body.expected_plan_version:
             raise PlanningError("plan_version_conflict", "expectedPlanVersion mismatch")
+        if body.spec.baseline_id != run.baseline_id or set(body.spec.input_ids) != set(
+            run.input_refs
+        ):
+            raise PlanningError("context_changed", "Revision must use pinned authorized inputs")
         self._supersede_pending_confirmations(run)
+        current = self.repo.latest_plan(run.id)
         return self._persist_compiled_revision(
             run,
             body.spec,
-            context_id=self.repo.latest_plan(run.id).context_id if self.repo.latest_plan(run.id) else None,
+            context_id=current.context_id if current else None,
             summary=body.note or body.spec.goal,
             expected_current=body.expected_plan_version,
         )
@@ -190,10 +273,16 @@ class PlanningService:
         if plan is None or plan.spec_json is None:
             raise PlanningError("plan_not_found", "Plan version not found")
         if plan.status == "approved":
-            raise PlanningError("plan_already_approved", "Cannot reassign an approved plan in place")
+            raise PlanningError(
+                "plan_already_approved", "Cannot reassign an approved plan in place"
+            )
         spec = PlanSpec.model_validate(plan.spec_json)
         role_ids = {r.role_id for r in spec.roles}
         assigned = {i.role_id for i in items}
+        if len(assigned) != len(items):
+            raise PlanningError("assignment_incomplete", "Duplicate role assignments")
+        if run.plan_version != plan_version:
+            raise PlanningError("plan_version_conflict", "Cannot assign a non-current plan")
         if assigned != role_ids:
             raise PlanningError(
                 "assignment_incomplete",
@@ -202,8 +291,16 @@ class PlanningService:
         next_version = (run.assignment_version or 0) + 1
         now = _now()
         out: list[RoleAssignment] = []
-        refs = list(capability_check_refs or [])
+        refs = []
         for item in items:
+            role = next(r for r in spec.roles if r.role_id == item.role_id)
+            try:
+                profile, _, check = require_profile(
+                    self.session, item.agent_profile_id, set(role.required_capabilities)
+                )
+            except InstanceError as exc:
+                raise PlanningError(exc.code, exc.message) from exc
+            refs.append(check.id)
             row = RoleAssignmentRow(
                 id=f"asg_{uuid.uuid4().hex[:16]}",
                 run_id=run_id,
@@ -211,8 +308,8 @@ class PlanningService:
                 assignment_version=next_version,
                 role_id=item.role_id,
                 agent_profile_id=item.agent_profile_id,
-                capability_check_refs=refs,
-                profile_config_version=None,
+                capability_check_refs=[check.id],
+                profile_config_version=profile.config_version,
                 confirmed_at=None,
                 created_at=now,
             )
@@ -236,12 +333,23 @@ class PlanningService:
         self.session.flush()
         return out
 
-    def decide(self, run_id: str, body: PlanDecisionRequest, *, actor: str = "local") -> PlanResponse:
+    def decide(
+        self, run_id: str, body: PlanDecisionRequest, *, actor: str = "local"
+    ) -> PlanResponse:
         run = self._lock_run(run_id)
         req = self.repo.get_confirmation_request(body.confirmation_request_id)
         if req is None or req.run_id != run_id:
             raise PlanningError("confirmation_not_found", "Confirmation request not found")
 
+        if (
+            req.plan_version != body.plan_version
+            or req.plan_hash != body.plan_hash
+            or req.assignment_version != body.assignment_version
+            or req.gate_policy_version != body.gate_policy_version
+        ):
+            raise PlanningError(
+                "confirmation_scope_mismatch", "Decision does not match original request"
+            )
         existing = self.repo.get_decision_for_request(req.id)
         if existing is not None:
             if existing.decision == body.decision:
@@ -251,6 +359,13 @@ class PlanningService:
 
         if run.status_version != body.status_version:
             raise PlanningError("status_version_conflict", "Run statusVersion mismatch")
+        if (
+            run.current_confirmation_request_id != req.id
+            or run.plan_version != req.plan_version
+            or run.assignment_version != req.assignment_version
+            or run.gate_policy_version != req.gate_policy_version
+        ):
+            raise PlanningError("confirmation_scope_mismatch", "Confirmation is not current")
         if req.status != "pending":
             raise PlanningError("confirmation_not_pending", f"Request status={req.status}")
 
@@ -280,6 +395,27 @@ class PlanningService:
             assignments = self.repo.list_assignments(run_id, req.assignment_version)
             if not assignments:
                 raise PlanningError("assignment_required", "No assignments for this version")
+            spec = PlanSpec.model_validate(plan.spec_json)
+            if {a.role_id for a in assignments} != {r.role_id for r in spec.roles} or any(
+                a.plan_version != plan.version for a in assignments
+            ):
+                raise PlanningError("assignment_required", "Assignments do not cover this plan")
+            for assignment in assignments:
+                role = next(r for r in spec.roles if r.role_id == assignment.role_id)
+                try:
+                    _, _, check = require_profile(
+                        self.session,
+                        assignment.agent_profile_id,
+                        set(role.required_capabilities),
+                        expected_version=assignment.profile_config_version,
+                    )
+                except InstanceError as exc:
+                    raise PlanningError(exc.code, exc.message) from exc
+                if check.id not in (assignment.capability_check_refs or []):
+                    raise PlanningError(
+                        "capability_unverified", "Capability evidence changed; reassign first"
+                    )
+            self.context_builder.build_for_run(run, persist=False)
 
         self.repo.add_decision(
             PlanDecisionRow(
@@ -298,6 +434,9 @@ class PlanningService:
             run.status = "preparing"
             run.plan_version = plan.version
             run.gate_policy_version = req.gate_policy_version
+            for assignment in assignments:
+                assignment.confirmed_at = _now()
+            self._prepare_stage_definitions(run, spec)
             # Mark prior proposed plans superseded except current.
             for older in self.repo.list_plans(run_id):
                 if older.version != plan.version and older.status == "proposed":
@@ -309,6 +448,23 @@ class PlanningService:
                 run.status = "planning"
         run.status_version += 1
         run.updated_at = _now()
+        if body.decision == "approve":
+            append_fact(
+                self.session,
+                run.id,
+                "assignment.confirmed",
+                {
+                    "planVersion": plan.version,
+                    "assignmentVersion": run.assignment_version,
+                    "roleCount": len(assignments),
+                },
+            )
+        append_fact(
+            self.session,
+            run.id,
+            "run.status_changed",
+            {"status": run.status, "statusVersion": run.status_version, "reason": "plan decision"},
+        )
         self.session.flush()
         return self.get_plan(run_id)
 
@@ -360,6 +516,12 @@ class PlanningService:
             supersedes_version=current if current >= 1 else None,
         )
         self.repo.add_plan(row)
+        append_fact(
+            self.session,
+            run.id,
+            "plan.proposed",
+            {"planVersion": row.version, "contractHash": row.contract_hash, "summary": row.summary},
+        )
         run.plan_version = next_version
         run.gate_policy_version = spec.gate_policy_version
         run.assignment_version = None  # force re-assign after plan change
@@ -392,7 +554,11 @@ class PlanningService:
             gate_policy_version=plan.gate_policy_version or 1,
             status_version=run.status_version,
             compilation_report_ref=None,
-            capability_check_refs=[],
+            capability_check_refs=[
+                ref
+                for assignment in self.repo.list_assignments(run.id, run.assignment_version)
+                for ref in (assignment.capability_check_refs or [])
+            ],
             status="pending",
             failure_reason=None,
             created_at=_now(),
@@ -408,6 +574,31 @@ class PlanningService:
             pending.status = "superseded"
             if run.current_confirmation_request_id == pending.id:
                 run.current_confirmation_request_id = None
+
+    def _prepare_stage_definitions(self, run: Run, spec: PlanSpec) -> None:
+        # Logical stage ids are local to a plan. Physical ids are namespaced by run/version.
+        for definition in spec.stages:
+            stage_id = f"{run.id}:p{run.plan_version}:{definition.stage_id}"
+            if self.session.get(StageRow, stage_id) is None:
+                self.session.add(
+                    StageRow(
+                        id=stage_id,
+                        run_id=run.id,
+                        plan_version=run.plan_version,
+                        assignment_version=run.assignment_version,
+                        gate_policy_version=run.gate_policy_version,
+                        gate_policy=definition.gate_policy.model_dump(mode="json", by_alias=True),
+                        required_work_packages=definition.required_work_packages,
+                        dependencies=[
+                            f"{run.id}:p{run.plan_version}:{dep}" for dep in definition.dependencies
+                        ],
+                        status="pending",
+                        waiting_reason="none",
+                        concurrency_version=1,
+                        repair_round=0,
+                        write_access_closed=False,
+                    )
+                )
 
     def _require_run(self, run_id: str) -> Run:
         run = self.repo.get_run(run_id)
@@ -456,7 +647,9 @@ class PlanningService:
             else None
         )
         confirmation = None
-        confirmation_state: Literal["none", "awaiting_confirmation", "approved", "rejected"] = "none"
+        confirmation_state: Literal["none", "awaiting_confirmation", "approved", "rejected"] = (
+            "none"
+        )
         if run.current_confirmation_request_id:
             row = self.repo.get_confirmation_request(run.current_confirmation_request_id)
             if row is not None:
@@ -488,16 +681,16 @@ class PlanningService:
 
         assignments: list[RoleAssignment] = []
         if run.assignment_version:
-            for row in self.repo.list_assignments(run.id, run.assignment_version):
+            for assignment_row in self.repo.list_assignments(run.id, run.assignment_version):
                 assignments.append(
                     RoleAssignment(
-                        assignment_id=row.id,
-                        run_id=row.run_id,
-                        plan_version=row.plan_version,
-                        assignment_version=row.assignment_version,
-                        role_id=row.role_id,
-                        agent_profile_id=row.agent_profile_id,
-                        confirmed_at=row.confirmed_at,
+                        assignment_id=assignment_row.id,
+                        run_id=assignment_row.run_id,
+                        plan_version=assignment_row.plan_version,
+                        assignment_version=assignment_row.assignment_version,
+                        role_id=assignment_row.role_id,
+                        agent_profile_id=assignment_row.agent_profile_id,
+                        confirmed_at=assignment_row.confirmed_at,
                     )
                 )
 

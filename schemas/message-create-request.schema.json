@@ -253,8 +253,22 @@
     }
   },
   "additionalProperties": false,
-  "description": "Public message input — excludes platform-derived stage.release.",
   "properties": {
+    "idempotencyKey": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Idempotencykey"
+    },
     "payload": {
       "discriminator": {
         "mapping": {
@@ -319,6 +333,21 @@
       ],
       "default": null,
       "title": "Replyto"
+    },
+    "requestId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Requestid"
     },
     "stageId": {
       "anyOf": [

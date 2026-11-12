@@ -288,6 +288,10 @@ class PlanResponse(ContractModel):
 class PlanProposalRequest(ApiInputModel):
     """Request a read-only plan proposal. Does not start development."""
 
+    include_input_content: bool = Field(default=False, strict=True)
+    max_input_bytes: int = Field(default=65536, ge=1, le=131072, strict=True)
+    grant_id: OpaqueId | None = None
+    idempotency_key: OpaqueId | None = None
     source: ProposalSource = "auto"
     note: str | None = Field(default=None, max_length=2048)
 

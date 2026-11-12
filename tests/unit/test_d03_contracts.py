@@ -5,15 +5,15 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 from agentforge.contracts.agents import (
+    AgentProfile,
     CapabilityCheck,
     CapabilityResult,
+    DiscoveredInstallationView,
     DiscoveryRunRequest,
     DiscoveryRunResponse,
-    DiscoveredInstallationView,
     ManualInstallationRegisterRequest,
     ProfileCreateRequest,
     ProfileValidateResponse,
-    AgentProfile,
 )
 
 
@@ -42,9 +42,7 @@ def test_manual_register_and_profile_roundtrip() -> None:
             "adapterId": "cursor_agent",
         }
     )
-    ProfileCreateRequest.model_validate(
-        {"installationId": "inst_abc", "adapterId": "cursor_agent"}
-    )
+    ProfileCreateRequest.model_validate({"installationId": "inst_abc", "adapterId": "cursor_agent"})
     now = datetime.now(UTC)
     profile = AgentProfile(
         profile_id="aprof_1",

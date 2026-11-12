@@ -27,9 +27,7 @@ class StageRepository:
         return self.session.get(StageRow, stage_id)
 
     def list_stages(self, run_id: str) -> list[StageRow]:
-        rows = list(
-            self.session.scalars(select(StageRow).where(StageRow.run_id == run_id)).all()
-        )
+        rows = list(self.session.scalars(select(StageRow).where(StageRow.run_id == run_id)).all())
         if rows:
             return [r for r in rows if r.run_id == run_id]
         return [
@@ -167,14 +165,11 @@ class StageRepository:
             select(StageUserDecisionRow).where(StageUserDecisionRow.request_id == request_id)
         )
 
-    def latest_user_decision_for_cycle(
-        self, review_cycle_id: str
-    ) -> StageUserDecisionRow | None:
+    def latest_user_decision_for_cycle(self, review_cycle_id: str) -> StageUserDecisionRow | None:
         matches = [
             obj
             for obj in getattr(self.session, "added", [])
-            if isinstance(obj, StageUserDecisionRow)
-            and obj.review_cycle_id == review_cycle_id
+            if isinstance(obj, StageUserDecisionRow) and obj.review_cycle_id == review_cycle_id
         ]
         if matches:
             return matches[-1]

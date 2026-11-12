@@ -1,0 +1,244 @@
+{
+  "additionalProperties": false,
+  "description": "Correlated control request — matched before model text is delivered.",
+  "properties": {
+    "allowedResponseTypes": {
+      "items": {
+        "anyOf": [
+          {
+            "enum": [
+              "control.stop_request",
+              "control.stop_response",
+              "control.shutdown_approved",
+              "control.permission_response",
+              "control.contract_change_response"
+            ],
+            "type": "string"
+          },
+          {
+            "enum": [
+              "fact.idle",
+              "fact.turn_finished",
+              "fact.submission_received",
+              "fact.native_execution",
+              "fact.session_terminated"
+            ],
+            "type": "string"
+          }
+        ]
+      },
+      "maxItems": 16,
+      "minItems": 1,
+      "title": "Allowedresponsetypes",
+      "type": "array"
+    },
+    "assignmentVersion": {
+      "anyOf": [
+        {
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Assignmentversion"
+    },
+    "attemptId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Attemptid"
+    },
+    "conflictRefs": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9._:-]+$",
+        "type": "string"
+      },
+      "maxItems": 16,
+      "title": "Conflictrefs",
+      "type": "array"
+    },
+    "createdAt": {
+      "format": "date-time",
+      "title": "Createdat",
+      "type": "string"
+    },
+    "deadlineAt": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Deadlineat"
+    },
+    "generation": {
+      "anyOf": [
+        {
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Generation"
+    },
+    "initiatedBy": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Initiatedby",
+      "type": "string"
+    },
+    "instanceId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Instanceid",
+      "type": "string"
+    },
+    "legalResponderRefs": {
+      "items": {
+        "maxLength": 512,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 16,
+      "minItems": 1,
+      "title": "Legalresponderrefs",
+      "type": "array"
+    },
+    "matchedResponseRef": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Matchedresponseref"
+    },
+    "nativeSessionId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Nativesessionid"
+    },
+    "planVersion": {
+      "anyOf": [
+        {
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Planversion"
+    },
+    "requestId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Requestid",
+      "type": "string"
+    },
+    "requestType": {
+      "anyOf": [
+        {
+          "enum": [
+            "control.stop_request",
+            "control.stop_response",
+            "control.shutdown_approved",
+            "control.permission_response",
+            "control.contract_change_response"
+          ],
+          "type": "string"
+        },
+        {
+          "enum": [
+            "fact.idle",
+            "fact.turn_finished",
+            "fact.submission_received",
+            "fact.native_execution",
+            "fact.session_terminated"
+          ],
+          "type": "string"
+        }
+      ],
+      "title": "Requesttype"
+    },
+    "stageId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Stageid"
+    },
+    "status": {
+      "enum": [
+        "pending",
+        "matched",
+        "timed_out",
+        "conflict",
+        "cancelled",
+        "failed"
+      ],
+      "title": "Status",
+      "type": "string"
+    }
+  },
+  "required": [
+    "requestId",
+    "requestType",
+    "allowedResponseTypes",
+    "instanceId",
+    "status",
+    "initiatedBy",
+    "legalResponderRefs",
+    "createdAt"
+  ],
+  "title": "ProtocolRequest",
+  "type": "object"
+}

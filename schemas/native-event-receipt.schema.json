@@ -1,0 +1,116 @@
+{
+  "additionalProperties": false,
+  "description": "Authenticated native event after normalize/dedupe — not a stage decision.",
+  "properties": {
+    "authentic": {
+      "title": "Authentic",
+      "type": "boolean"
+    },
+    "cursor": {
+      "anyOf": [
+        {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Cursor"
+    },
+    "dedupeKey": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Dedupekey",
+      "type": "string"
+    },
+    "eventType": {
+      "anyOf": [
+        {
+          "enum": [
+            "control.stop_request",
+            "control.stop_response",
+            "control.shutdown_approved",
+            "control.permission_response",
+            "control.contract_change_response"
+          ],
+          "type": "string"
+        },
+        {
+          "enum": [
+            "fact.idle",
+            "fact.turn_finished",
+            "fact.submission_received",
+            "fact.native_execution",
+            "fact.session_terminated"
+          ],
+          "type": "string"
+        },
+        {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        }
+      ],
+      "title": "Eventtype"
+    },
+    "instanceId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Instanceid",
+      "type": "string"
+    },
+    "nativeSessionId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Nativesessionid"
+    },
+    "normalizedPayload": {
+      "additionalProperties": true,
+      "title": "Normalizedpayload",
+      "type": "object"
+    },
+    "receiptId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Receiptid",
+      "type": "string"
+    },
+    "receivedAt": {
+      "format": "date-time",
+      "title": "Receivedat",
+      "type": "string"
+    },
+    "source": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Source",
+      "type": "string"
+    }
+  },
+  "required": [
+    "receiptId",
+    "instanceId",
+    "source",
+    "dedupeKey",
+    "eventType",
+    "receivedAt",
+    "authentic"
+  ],
+  "title": "NativeEventReceipt",
+  "type": "object"
+}

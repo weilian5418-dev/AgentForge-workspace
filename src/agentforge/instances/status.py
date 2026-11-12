@@ -53,8 +53,16 @@ def combine_instance_status_facets(
     """Best-effort reverse map for migration readers. Not a source of truth."""
     if lifecycle == "needs_reconciliation":
         return "reconciling"
-    if lifecycle in ("created", "starting", "stop_requested", "stopped", "unknown", "failed", "closed"):
-        return lifecycle  # type: ignore[return-value]
+    if lifecycle in (
+        "created",
+        "starting",
+        "stop_requested",
+        "stopped",
+        "unknown",
+        "failed",
+        "closed",
+    ):
+        return lifecycle
     # lifecycle == active
     if activity == "busy":
         return "running"

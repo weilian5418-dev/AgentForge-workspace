@@ -31,7 +31,7 @@ class _MemSession:
     def scalar(self, stmt: Any) -> Any | None:
         text = str(stmt).lower()
         if "from runs" in text or "runs.id" in text:
-            for (_model, key), row in self.store.items():
+            for (_model, _key), row in self.store.items():
                 if isinstance(row, Run):
                     return row
         if "plans" in text:

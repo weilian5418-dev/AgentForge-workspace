@@ -12,6 +12,7 @@ from procrastinate import App
 from agentforge.core.config import Settings
 from agentforge.queue.app import open_app
 from agentforge.queue.constants import (
+    CONTROL_QUEUE_NAME,
     DEFAULT_QUEUE_NAME,
     INTENT_APPROVAL_FORWARD,
     INTENT_MODEL_PROBE,
@@ -113,6 +114,23 @@ def _enqueue(app: App, snap: ClaimSnapshot) -> None:
     operation_id = str(payload.get("operationId") or "")
     if not operation_id:
         raise ValueError("outbox payload missing operationId")
+
+    collaboration = {
+        "instance.create_session",
+        "instance.request_stop",
+        "instance.close",
+        "instance.resume",
+        "message.deliver",
+        "stage.stop_verify",
+        "stage.released",
+        "stage.evaluate",
+    }
+    if snap.intent_type in collaboration:
+        app.tasks["agentforge.collaboration_operation"].configure(
+            queue=CONTROL_QUEUE_NAME,
+            lock=f"collaboration:{operation_id}",
+        ).defer(intent_type=snap.intent_type, payload=payload, task_version=1)
+        return
 
     if snap.intent_type == INTENT_APPROVAL_FORWARD:
         approval_id = str(payload.get("approvalId") or "")

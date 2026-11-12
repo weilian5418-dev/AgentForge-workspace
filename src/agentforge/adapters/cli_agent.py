@@ -40,7 +40,11 @@ class CliCodingAgentAdapter:
                     "environmentId": environment,
                     "locationRef": exe,
                     "authStatus": "unknown",
-                    "notes": [f"which:{name}", "binary_present_not_validated", "no_session_started"],
+                    "notes": [
+                        f"which:{name}",
+                        "binary_present_not_validated",
+                        "no_session_started",
+                    ],
                 }
             )
         return found
@@ -90,7 +94,9 @@ class CliCodingAgentAdapter:
             evidence_refs=["passive_which_probe", "d04_ledger_without_product_ack"],
         )
 
-    def create_session(self, *, profile_id: str, workspace_id: str, operation_id: str) -> dict[str, Any]:
+    def create_session(
+        self, *, profile_id: str, workspace_id: str, operation_id: str, context: dict[str, Any]
+    ) -> dict[str, Any]:
         _ = (profile_id, workspace_id, operation_id)
         return unknown("createSession not verified in D03")
 

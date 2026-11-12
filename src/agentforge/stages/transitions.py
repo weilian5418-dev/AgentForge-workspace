@@ -58,11 +58,7 @@ def ready_requires(
     stage_eligible_to_start: bool,
 ) -> bool:
     """ready is not 'previous status string == completed'."""
-    return (
-        upstream_required_versions_released
-        and plan_still_valid
-        and stage_eligible_to_start
-    )
+    return upstream_required_versions_released and plan_still_valid and stage_eligible_to_start
 
 
 def waiting_reason_for_block(reason: StageWaitingReason) -> StageWaitingReason:

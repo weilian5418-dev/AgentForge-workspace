@@ -39,8 +39,11 @@
       "type": "string"
     },
     "source": {
-      "const": "runner",
       "default": "runner",
+      "enum": [
+        "runner",
+        "adapter_host"
+      ],
       "title": "Source",
       "type": "string"
     },

@@ -11,7 +11,7 @@ from typing import Any
 
 from agentforge.artifacts.store import ArtifactStore, ArtifactStoreError
 from agentforge.contracts.common import normalize_relative_path
-from agentforge.git.safe import GitSafeError, run_git
+from agentforge.git.safe import run_git
 from agentforge.runner.paths import RunnerPathError, resolve_under_workspace, resolve_workspace_root
 
 

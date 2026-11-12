@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Any, cast
 
 from fastapi import APIRouter, Depends, Request
 from starlette.exceptions import HTTPException
 
 from agentforge.contracts.agents import (
+    DiscoveredInstallationView,
     DiscoveryRunRequest,
     DiscoveryRunResponse,
-    DiscoveredInstallationView,
     ManualInstallationRegisterRequest,
     ProfileCreateRequest,
     ProfileValidateResponse,
@@ -29,10 +29,10 @@ router = APIRouter(prefix="/api/v1", tags=["discovery"])
 
 
 def _settings(request: Request) -> Settings:
-    return request.app.state.settings
+    return cast(Settings, request.app.state.settings)
 
 
-def _engine(request: Request, settings: Settings):
+def _engine(request: Request, settings: Settings) -> Any:
     if settings.database_url is None or request.app.state.database is None:
         raise HTTPException(503, "Database is not configured")
     return request.app.state.database

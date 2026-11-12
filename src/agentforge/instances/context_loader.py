@@ -33,6 +33,7 @@ class ExecutionContextLoader:
         operation_id: str,
         require_session: bool = False,
         attempt_id: str | None = None,
+        historical_stop: bool = False,
     ) -> ExecutionContext:
         instance = self.repo.get_instance(instance_id)
         if instance is None:
@@ -57,7 +58,11 @@ class ExecutionContextLoader:
                 "assignment_version_mismatch",
                 "Instance assignmentVersion does not match role assignment",
             )
-        if run.plan_version is not None and assignment.plan_version != run.plan_version:
+        if (
+            not historical_stop
+            and run.plan_version is not None
+            and assignment.plan_version != run.plan_version
+        ):
             raise InstanceError(
                 "plan_version_mismatch",
                 "Assignment planVersion is not the run's current plan",
@@ -74,9 +79,18 @@ class ExecutionContextLoader:
         profile = self.session.get(AgentProfileRow, instance.agent_profile_id)
         if profile is None:
             raise InstanceError("profile_not_found", "Agent profile missing")
-        if profile.auth_status in ("unauthenticated", "expired"):
+        if not historical_stop and profile.auth_status != "authenticated":
             raise InstanceError("auth_invalid", f"Profile auth status is {profile.auth_status}")
 
+        if not historical_stop and (
+            run.assignment_version != assignment.assignment_version
+            or instance.assignment_version != assignment.assignment_version
+        ):
+            raise InstanceError(
+                "assignment_version_mismatch", "Instance assignment is no longer current"
+            )
+        if not historical_stop and instance.generation != run.active_generation:
+            raise InstanceError("generation_mismatch", "Instance generation is stale")
         native = None
         if instance.native_session_id:
             native = self.repo.get_native_session(instance.native_session_id)
@@ -84,7 +98,7 @@ class ExecutionContextLoader:
                 raise InstanceError("session_not_found", "Bound native session missing")
             if native.instance_id != instance.id:
                 raise InstanceError("session_mismatch", "Native session not bound to instance")
-            if native.binding_status not in ("active", "needs_reconciliation"):
+            if native.binding_status != "active":
                 raise InstanceError(
                     "session_inactive",
                     f"Native session binding_status={native.binding_status}",
@@ -96,7 +110,12 @@ class ExecutionContextLoader:
             attempt = self.repo.get_attempt(resolved_attempt_id)
             if attempt is None:
                 raise InstanceError("attempt_not_found", "Attempt missing")
-            if attempt.instance_id != instance.id:
+            if (
+                attempt.instance_id != instance.id
+                or (not historical_stop and attempt.generation != run.active_generation)
+                or attempt.run_id != run.id
+                or (instance.current_attempt_id and instance.current_attempt_id != attempt.id)
+            ):
                 raise InstanceError("attempt_mismatch", "Attempt does not belong to instance")
 
         workspace_id = (
@@ -110,17 +129,22 @@ class ExecutionContextLoader:
         workspace = self.session.get(GitWorkspaceRow, workspace_id)
         project = self.session.get(Project, run.project_id)
         if workspace is not None:
+            if (
+                workspace.baseline_id != run.baseline_id
+                or workspace.role_id != instance.role_id
+                or workspace.status in {"closed", "blocked"}
+            ):
+                raise InstanceError("workspace_mismatch", "Workspace baseline/role/status changed")
             workspace_root = workspace.worktree_path
             if project is not None and workspace.project_id != project.id:
                 raise InstanceError(
                     "workspace_project_mismatch",
                     "Workspace does not belong to the run project",
                 )
-        elif project is not None:
-            # Fallback authorized project root — still not a caller-supplied absolute path.
-            workspace_root = project.workspace_root or project.root_path
         else:
-            raise InstanceError("workspace_unresolved", "Cannot resolve workspace root from DB")
+            raise InstanceError(
+                "workspace_unresolved", "A registered independent workspace is required"
+            )
 
         root = Path(workspace_root)
         if not root.is_absolute():
@@ -136,9 +160,7 @@ class ExecutionContextLoader:
             or getattr(run, "active_generation", 1)
             or 1
         )
-        session_ref = (
-            (native.session_ref if native else None) or instance.session_ref
-        )
+        session_ref = (native.session_ref if native else None) or instance.session_ref
         if require_session and not session_ref:
             raise InstanceError("session_required", "Active sessionRef required")
 
@@ -154,7 +176,8 @@ class ExecutionContextLoader:
                 attempt_id=resolved_attempt_id,
                 session_ref=session_ref,
                 assignment_version=instance.assignment_version or assignment.assignment_version,
-                baseline_id=getattr(run, "baseline_id", None) or getattr(project, "current_baseline_id", None),
+                baseline_id=getattr(run, "baseline_id", None)
+                or getattr(project, "current_baseline_id", None),
                 permission_scope_ref=instance.permission_scope_ref,
                 budget_ref=instance.budget_ref,
                 expected_workspace_id=workspace_id,

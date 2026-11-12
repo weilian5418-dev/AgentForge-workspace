@@ -124,7 +124,9 @@ def _run(**overrides: Any) -> Run:
     return Run(**base)
 
 
-def test_context_builder_pins_baseline_without_fake_manifest(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_context_builder_pins_baseline_without_fake_manifest(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     session = _MemSession()
     _seed_project(session)
     monkeypatch.setattr(
@@ -172,9 +174,7 @@ def test_rules_path_does_not_call_model() -> None:
         context_manifest_id=None,
         created_at=datetime.now(UTC),
     )
-    proposal = ProposalGenerator(model_invoke=boom).generate(
-        run=run, context=ctx, source="rules"
-    )
+    proposal = ProposalGenerator(model_invoke=boom).generate(run=run, context=ctx, source="rules")
     assert called["n"] == 0
     assert proposal.source == "rules"
     assert proposal.model_call_id is None
@@ -215,9 +215,9 @@ def test_model_source_blocks_without_provider() -> None:
         created_at=datetime.now(UTC),
     )
     with pytest.raises(ProposalError) as exc:
-        ProposalGenerator(model_invoke=lambda **_k: build_rules_draft(run=run, context=ctx)).generate(
-            run=run, context=ctx, source="model"
-        )
+        ProposalGenerator(
+            model_invoke=lambda **_k: build_rules_draft(run=run, context=ctx)
+        ).generate(run=run, context=ctx, source="model")
     assert exc.value.code == "planning_provider_required"
 
 

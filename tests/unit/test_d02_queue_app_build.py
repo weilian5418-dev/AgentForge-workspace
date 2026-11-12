@@ -12,9 +12,7 @@ from agentforge.queue.app import build_queue_app
 
 def test_build_queue_app_registers_tasks() -> None:
     settings = Settings.model_construct(
-        queue_database_url=SecretStr(
-            "postgresql+psycopg://u:p@127.0.0.1:5432/agentforge_queue"
-        )
+        queue_database_url=SecretStr("postgresql+psycopg://u:p@127.0.0.1:5432/agentforge_queue")
     )
     # Do not open a DB connection — only construct App + register blueprint.
     with patch("agentforge.queue.app.SyncPsycopgConnector"):

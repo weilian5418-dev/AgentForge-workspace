@@ -1,0 +1,130 @@
+{
+  "additionalProperties": false,
+  "description": "Intent and result for create/submit/stop/resume/close — not task completion.",
+  "properties": {
+    "attemptId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Attemptid"
+    },
+    "completedAt": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Completedat"
+    },
+    "errorCode": {
+      "anyOf": [
+        {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Errorcode"
+    },
+    "idempotencyKey": {
+      "anyOf": [
+        {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Idempotencykey"
+    },
+    "instanceId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Instanceid",
+      "type": "string"
+    },
+    "kind": {
+      "enum": [
+        "create_session",
+        "submit_task",
+        "deliver_message",
+        "request_stop",
+        "resume",
+        "close",
+        "reconcile"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "nativeRef": {
+      "anyOf": [
+        {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Nativeref"
+    },
+    "operationId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Operationid",
+      "type": "string"
+    },
+    "preparedAt": {
+      "format": "date-time",
+      "title": "Preparedat",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "prepared",
+        "claimed",
+        "native_invoked",
+        "succeeded",
+        "failed",
+        "unknown",
+        "needs_reconciliation"
+      ],
+      "title": "Status",
+      "type": "string"
+    }
+  },
+  "required": [
+    "operationId",
+    "instanceId",
+    "kind",
+    "status",
+    "preparedAt"
+  ],
+  "title": "InstanceOperation",
+  "type": "object"
+}

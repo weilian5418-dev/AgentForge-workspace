@@ -63,7 +63,7 @@ def combine_delivery_status_facets(
         "failed",
         "expired",
     ):
-        return transmission  # type: ignore[return-value]
+        return transmission
     return "unknown"
 
 

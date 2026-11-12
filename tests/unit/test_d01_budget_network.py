@@ -5,6 +5,7 @@ from __future__ import annotations
 from decimal import Decimal
 
 import pytest
+from pydantic import ValidationError
 
 from agentforge.contracts.providers import (
     BudgetAccountCreateRequest,
@@ -111,7 +112,7 @@ def test_remote_requires_https() -> None:
 
 
 def test_provider_create_rejects_embedded_secrets() -> None:
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         ProviderCreateRequest.model_validate(
             {
                 "adapterType": "openai_compatible",

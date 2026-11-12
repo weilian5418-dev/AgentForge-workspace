@@ -89,9 +89,7 @@ class Project(Base):
     environment_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     grant_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
     current_baseline_id: Mapped[str | None] = mapped_column(Text, nullable=True)
-    grant_status: Mapped[str] = mapped_column(
-        Text, nullable=False, server_default=text("'active'")
-    )
+    grant_status: Mapped[str] = mapped_column(Text, nullable=False, server_default=text("'active'"))
     revision: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("1"))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
@@ -110,7 +108,9 @@ class ProjectBaselineRow(Base):
 
     id: Mapped[str] = mapped_column(Text, nullable=False)
     project_id: Mapped[str] = mapped_column(
-        Text, ForeignKey("app.projects.id", name="project_baselines_project_id_fkey"), nullable=False
+        Text,
+        ForeignKey("app.projects.id", name="project_baselines_project_id_fkey"),
+        nullable=False,
     )
     environment_id: Mapped[str] = mapped_column(Text, nullable=False)
     dirty_policy: Mapped[str] = mapped_column(Text, nullable=False)
@@ -930,9 +930,7 @@ class StageRow(Base):
     gate_policy_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
     gate_policy: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     status: Mapped[str] = mapped_column(Text, nullable=False)
-    waiting_reason: Mapped[str] = mapped_column(
-        Text, nullable=False, server_default=text("'none'")
-    )
+    waiting_reason: Mapped[str] = mapped_column(Text, nullable=False, server_default=text("'none'"))
     concurrency_version: Mapped[int] = mapped_column(
         Integer, nullable=False, server_default=text("1")
     )
@@ -1079,9 +1077,7 @@ class MessageDeliveryRow(Base):
     native_receipt_ref: Mapped[str | None] = mapped_column(Text, nullable=True)
     received_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     responded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    next_attempt_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    next_attempt_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     claim_owner: Mapped[str | None] = mapped_column(Text, nullable=True)
     claim_token: Mapped[str | None] = mapped_column(Text, nullable=True)
     claim_expires_at: Mapped[datetime | None] = mapped_column(
@@ -1147,6 +1143,7 @@ class ProtocolRequestRow(Base):
         JSONB, nullable=False, server_default=text("'[]'::jsonb")
     )
     matched_response_ref: Mapped[str | None] = mapped_column(Text, nullable=True)
+    matched_response_digest: Mapped[str | None] = mapped_column(Text, nullable=True)
     conflict_refs: Mapped[list[Any]] = mapped_column(
         JSONB, nullable=False, server_default=text("'[]'::jsonb")
     )
@@ -2123,6 +2120,10 @@ APP_BASELINE_TABLES = (
 )
 
 APP_V14_TABLES = (
+    "planning_contexts",
+    "plan_proposals",
+    "plan_confirmation_requests",
+    "plan_decisions",
     "agent_products",
     "agent_installations",
     "agent_profiles",

@@ -31,15 +31,18 @@ def test_cli_matrix_events_unsupported() -> None:
     matrix = CliCodingAgentAdapter().validate_capabilities("pending")
     assert matrix.capabilities["events"] == "unsupported"
     assert matrix.access_level() == "manual_assisted"
-    assert CliCodingAgentAdapter().respond_approval(
-        session_ref="s", native_request_id="n", decision="allow"
-    )["status"] == "unsupported"
+    assert (
+        CliCodingAgentAdapter().respond_approval(
+            session_ref="s", native_request_id="n", decision="allow"
+        )["status"]
+        == "unsupported"
+    )
 
 
 def test_create_session_not_faked() -> None:
     for adapter in (CursorAgentAdapter(), CliCodingAgentAdapter()):
         result = adapter.create_session(
-            profile_id="aprof_x", workspace_id="ws_x", operation_id="op_x"
+            profile_id="aprof_x", workspace_id="ws_x", operation_id="op_x", context={}
         )
         assert result["status"] in {"unknown", "unsupported"}
 
@@ -51,5 +54,8 @@ def test_passive_discover_uses_which_without_launch(tmp_path: Path) -> None:
         with patch("agentforge.adapters.cursor_agent.Path.home", return_value=tmp_path):
             found = CursorAgentAdapter().discover("windows_native")
     assert found
-    assert all("no_session_started" in row.get("notes", []) or "no_secret_read" in row.get("notes", []) for row in found)
+    assert all(
+        "no_session_started" in row.get("notes", []) or "no_secret_read" in row.get("notes", [])
+        for row in found
+    )
     assert all(row["authStatus"] == "unknown" for row in found)

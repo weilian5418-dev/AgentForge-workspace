@@ -42,7 +42,9 @@ def test_precheck_dirty_git_does_not_clean(tmp_path: Path) -> None:
     root = tmp_path / "repo"
     root.mkdir()
     subprocess.run(["git", "init"], cwd=root, check=True, capture_output=True)
-    subprocess.run(["git", "config", "user.email", "t@t"], cwd=root, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "config", "user.email", "t@t"], cwd=root, check=True, capture_output=True
+    )
     subprocess.run(["git", "config", "user.name", "t"], cwd=root, check=True, capture_output=True)
     (root / "a.txt").write_text("one", encoding="utf-8")
     subprocess.run(["git", "add", "a.txt"], cwd=root, check=True, capture_output=True)

@@ -22,7 +22,7 @@ def _sha256(payload: Any) -> str:
 
 def _dump(model: Any) -> dict[str, Any]:
     if hasattr(model, "model_dump"):
-        return model.model_dump(mode="json", by_alias=True)
+        return dict(model.model_dump(mode="json", by_alias=True))
     if isinstance(model, dict):
         return dict(model)
     raise TypeError(f"unsupported hash input: {type(model)!r}")
@@ -55,8 +55,6 @@ def compute_plan_hash(spec: PlanSpec | dict[str, Any]) -> str:
         "roles": sorted(raw.get("roles") or [], key=lambda r: str(r.get("roleId") or "")),
         "routing": raw.get("routing"),
         "stages": sorted(raw.get("stages") or [], key=lambda s: str(s.get("stageId") or "")),
-        "workPackages": sorted(
-            raw.get("workPackages") or [], key=lambda w: str(w.get("id") or "")
-        ),
+        "workPackages": sorted(raw.get("workPackages") or [], key=lambda w: str(w.get("id") or "")),
     }
     return _sha256(payload)

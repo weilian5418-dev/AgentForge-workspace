@@ -63,18 +63,14 @@ def test_stop_not_verified_blocks() -> None:
 
 
 def test_required_validation_failure_forces_rework() -> None:
-    result = evaluate_gate(
-        _inp(validationHasRequiredFailure=True, validationPassedRequired=True)
-    )
+    result = evaluate_gate(_inp(validationHasRequiredFailure=True, validationPassedRequired=True))
     assert result.outcome == "rework"
     assert result.reason == "required_validation_failed"
     assert result.rework_problem_digest is not None
 
 
 def test_pending_reviewer_waits() -> None:
-    result = evaluate_gate(
-        _inp(reviewRequestIds=["rreq_1"], answeredReviewRequestIds=[])
-    )
+    result = evaluate_gate(_inp(reviewRequestIds=["rreq_1"], answeredReviewRequestIds=[]))
     assert result.outcome == "waiting"
     assert result.reason == "required_reviewer_pending"
     assert result.missing_refs == ["rreq_1"]
@@ -96,9 +92,7 @@ def test_request_changes_rework_until_rounds_exhausted() -> None:
             answeredReviewRequestIds=["rreq_1"],
             reviewVerdicts=["request_changes"],
             repairRound=3,
-            gatePolicy=StageGatePolicy(max_repair_rounds=3).model_dump(
-                mode="json", by_alias=True
-            ),
+            gatePolicy=StageGatePolicy(max_repair_rounds=3).model_dump(mode="json", by_alias=True),
         )
     )
     assert exhausted.outcome == "blocked"

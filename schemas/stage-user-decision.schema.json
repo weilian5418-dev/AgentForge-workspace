@@ -1,0 +1,97 @@
+{
+  "additionalProperties": false,
+  "description": "User stage decision — distinct from D08 plan confirmation.",
+  "properties": {
+    "candidateSetHash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Candidatesethash",
+      "type": "string"
+    },
+    "contractHash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Contracthash",
+      "type": "string"
+    },
+    "decidedAt": {
+      "format": "date-time",
+      "title": "Decidedat",
+      "type": "string"
+    },
+    "decidedBy": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Decidedby",
+      "type": "string"
+    },
+    "decision": {
+      "enum": [
+        "approve",
+        "reject",
+        "needs_revision"
+      ],
+      "title": "Decision",
+      "type": "string"
+    },
+    "decisionId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Decisionid",
+      "type": "string"
+    },
+    "gatePolicyVersion": {
+      "minimum": 1,
+      "title": "Gatepolicyversion",
+      "type": "integer"
+    },
+    "note": {
+      "anyOf": [
+        {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Note"
+    },
+    "requestId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Requestid",
+      "type": "string"
+    },
+    "reviewCycleId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Reviewcycleid",
+      "type": "string"
+    },
+    "stageId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Stageid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "decisionId",
+    "requestId",
+    "stageId",
+    "reviewCycleId",
+    "candidateSetHash",
+    "contractHash",
+    "gatePolicyVersion",
+    "decision",
+    "decidedBy",
+    "decidedAt"
+  ],
+  "title": "StageUserDecision",
+  "type": "object"
+}

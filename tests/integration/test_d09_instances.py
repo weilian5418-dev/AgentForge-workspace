@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 
 import pytest
 from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 
 from agentforge.core.config import Settings
 from agentforge.storage.database import create_database_engine
@@ -48,9 +49,9 @@ def test_active_session_unique_per_instance(session_factory) -> None:
     now = datetime.now(UTC)
     from agentforge.storage.models import (
         AgentInstanceRow,
+        DirectoryGrantRow,
         NativeSessionRow,
         Project,
-        DirectoryGrantRow,
         Run,
     )
 
@@ -136,7 +137,7 @@ def test_active_session_unique_per_instance(session_factory) -> None:
             )
         )
 
-    with pytest.raises(Exception):
+    with pytest.raises(IntegrityError):
         with unit_of_work(session_factory) as uow:
             uow.session.execute(text("SET search_path TO app, public"))
             uow.session.add(

@@ -13,7 +13,7 @@ from agentforge.contracts.common import OpaqueId, RelativePath, Sha256Hex, Short
 class GitStopEvidence(ApiInputModel):
     """Trusted stop proof for workspace freeze — not a generic Runner terminal status."""
 
-    source: Literal["runner"] = "runner"
+    source: Literal["runner", "adapter_host"] = "runner"
     operation_id: OpaqueId
     workspace_id: OpaqueId
     attempt_id: OpaqueId

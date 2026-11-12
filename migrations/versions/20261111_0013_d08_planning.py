@@ -86,8 +86,7 @@ def upgrade() -> None:
     )
     op.execute(
         sa.text(
-            "CREATE INDEX IF NOT EXISTS ix_planning_contexts_run "
-            "ON app.planning_contexts (run_id)"
+            "CREATE INDEX IF NOT EXISTS ix_planning_contexts_run ON app.planning_contexts (run_id)"
         )
     )
 

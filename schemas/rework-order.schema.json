@@ -1,0 +1,200 @@
+{
+  "$defs": {
+    "ReviewFinding": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Evidence"
+        },
+        "location": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Location"
+        },
+        "path": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path"
+        },
+        "reason": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        },
+        "suggestion": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Suggestion"
+        }
+      },
+      "required": [
+        "reason"
+      ],
+      "title": "ReviewFinding",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Targeted rework ticket — one valid order per problem set in a cycle.",
+  "properties": {
+    "allowedModifyScopes": {
+      "items": {
+        "maxLength": 512,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 64,
+      "title": "Allowedmodifyscopes",
+      "type": "array"
+    },
+    "checksToRerun": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9._:-]+$",
+        "type": "string"
+      },
+      "maxItems": 64,
+      "title": "Checkstorerun",
+      "type": "array"
+    },
+    "createdAt": {
+      "format": "date-time",
+      "title": "Createdat",
+      "type": "string"
+    },
+    "involvesPlanOrInterfaceChange": {
+      "default": false,
+      "title": "Involvesplanorinterfacechange",
+      "type": "boolean"
+    },
+    "problemDigest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Problemdigest",
+      "type": "string"
+    },
+    "problems": {
+      "items": {
+        "$ref": "#/$defs/ReviewFinding"
+      },
+      "maxItems": 128,
+      "minItems": 1,
+      "title": "Problems",
+      "type": "array"
+    },
+    "remainingRounds": {
+      "maximum": 10,
+      "minimum": 0,
+      "title": "Remainingrounds",
+      "type": "integer"
+    },
+    "reworkOrderId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Reworkorderid",
+      "type": "string"
+    },
+    "sourceCandidateSetId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Sourcecandidatesetid",
+      "type": "string"
+    },
+    "sourceReviewCycleId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Sourcereviewcycleid",
+      "type": "string"
+    },
+    "stageId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Stageid",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "open",
+        "accepted",
+        "in_progress",
+        "completed",
+        "cancelled",
+        "blocked"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "targetRoleId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Targetroleid",
+      "type": "string"
+    },
+    "targetWorkPackageId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Targetworkpackageid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "reworkOrderId",
+    "stageId",
+    "sourceReviewCycleId",
+    "sourceCandidateSetId",
+    "targetWorkPackageId",
+    "targetRoleId",
+    "problemDigest",
+    "problems",
+    "remainingRounds",
+    "status",
+    "createdAt"
+  ],
+  "title": "ReworkOrder",
+  "type": "object"
+}

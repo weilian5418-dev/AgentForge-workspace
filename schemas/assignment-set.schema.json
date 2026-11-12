@@ -1,0 +1,146 @@
+{
+  "$defs": {
+    "RoleAssignment": {
+      "additionalProperties": false,
+      "properties": {
+        "agentProfileId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Agentprofileid",
+          "type": "string"
+        },
+        "assignmentId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Assignmentid",
+          "type": "string"
+        },
+        "assignmentVersion": {
+          "minimum": 1,
+          "title": "Assignmentversion",
+          "type": "integer"
+        },
+        "confirmedAt": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confirmedat"
+        },
+        "confirmedBy": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confirmedby"
+        },
+        "planVersion": {
+          "minimum": 1,
+          "title": "Planversion",
+          "type": "integer"
+        },
+        "roleId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Roleid",
+          "type": "string"
+        },
+        "runId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Runid",
+          "type": "string"
+        }
+      },
+      "required": [
+        "assignmentId",
+        "runId",
+        "planVersion",
+        "assignmentVersion",
+        "roleId",
+        "agentProfileId"
+      ],
+      "title": "RoleAssignment",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Role→profile mapping for one planVersion + assignmentVersion.",
+  "properties": {
+    "assignmentVersion": {
+      "minimum": 1,
+      "title": "Assignmentversion",
+      "type": "integer"
+    },
+    "capabilityCheckRefs": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9._:-]+$",
+        "type": "string"
+      },
+      "maxItems": 64,
+      "title": "Capabilitycheckrefs",
+      "type": "array"
+    },
+    "createdAt": {
+      "format": "date-time",
+      "title": "Createdat",
+      "type": "string"
+    },
+    "items": {
+      "items": {
+        "$ref": "#/$defs/RoleAssignment"
+      },
+      "maxItems": 32,
+      "minItems": 1,
+      "title": "Items",
+      "type": "array"
+    },
+    "planVersion": {
+      "minimum": 1,
+      "title": "Planversion",
+      "type": "integer"
+    },
+    "profileConfigVersions": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Profileconfigversions",
+      "type": "object"
+    },
+    "runId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Runid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "runId",
+    "planVersion",
+    "assignmentVersion",
+    "items",
+    "createdAt"
+  ],
+  "title": "AssignmentSet",
+  "type": "object"
+}

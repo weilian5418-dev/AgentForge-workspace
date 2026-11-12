@@ -14,11 +14,11 @@ from sqlalchemy.orm import Session
 
 from agentforge.contracts.providers import (
     ContextManifest,
+    ModelAttempt,
     ModelAuthorizationGrant,
     ModelAuthorizationGrantCreateRequest,
     ModelCall,
     ModelCallCreateRequest,
-    ModelAttempt,
     NetworkPolicy,
     ProviderCapabilityItem,
     ProviderCreateRequest,
@@ -69,7 +69,9 @@ class ModelGateway:
 
     def create_provider(self, request: ProviderCreateRequest) -> ProviderProfile:
         policy = request.network_policy or NetworkPolicy(
-            network_class="local" if "127.0.0.1" in request.base_url or "localhost" in request.base_url else "remote"
+            network_class="local"
+            if "127.0.0.1" in request.base_url or "localhost" in request.base_url
+            else "remote"
         )
         try:
             validate_endpoint(request.base_url, policy)
@@ -79,7 +81,9 @@ class ModelGateway:
             raise ModelGatewayError("invalid_auth", "credentialRef not allowed when authMode=none")
         if request.auth_mode != "none":
             if not request.credential_ref:
-                raise ModelGatewayError("credential_required", "credentialRef required for this authMode")
+                raise ModelGatewayError(
+                    "credential_required", "credentialRef required for this authMode"
+                )
             if self.credentials.status(request.credential_ref) != "configured":
                 raise ModelGatewayError("credential_missing", "Model credential not configured")
 
@@ -128,7 +132,9 @@ class ModelGateway:
         return self._provider_contract(row)
 
     def list_providers(self) -> list[ProviderProfile]:
-        rows = self.session.scalars(select(ProviderProfileRow).order_by(ProviderProfileRow.created_at))
+        rows = self.session.scalars(
+            select(ProviderProfileRow).order_by(ProviderProfileRow.created_at)
+        )
         return [self._provider_contract(r) for r in rows]
 
     # --- grants ---
@@ -268,7 +274,9 @@ class ModelGateway:
         # F02: commit dispatch intent before network so crash cannot silently re-send.
         self._commit_intent()
 
-        return self._dispatch_sync(provider, call, attempt, request.messages, max_out, reservation_id)
+        return self._dispatch_sync(
+            provider, call, attempt, request.messages, max_out, reservation_id
+        )
 
     def _dispatch_sync(
         self,
@@ -281,7 +289,13 @@ class ModelGateway:
     ) -> ModelCall:
         # Re-check grant/config at dispatch boundary.
         grant = self.session.get(ModelAuthorizationGrantRow, call.grant_id)
-        if grant is None or grant.status == "revoked":
+        if (
+            grant is None
+            or grant.status in {"revoked", "expired"}
+            or (grant.expires_at is not None and grant.expires_at <= datetime.now(UTC))
+            or provider.status != "enabled"
+            or provider.config_version != call.provider_config_version
+        ):
             call.status = "failed"
             call.error_code = "MODEL_AUTHORIZATION_DENIED"
             if reservation_id:
@@ -310,10 +324,12 @@ class ModelGateway:
         try:
             call.status = "receiving"
             attempt.status = "receiving"
+            base_url, model_id = provider.base_url, provider.model_id
             self.session.flush()
+            self._commit_intent()
             result = adapter.complete(
-                base_url=provider.base_url,
-                model_id=provider.model_id,
+                base_url=base_url,
+                model_id=model_id,
                 messages=messages,
                 max_output_tokens=max_out,
                 auth_header=auth_header,
@@ -566,14 +582,8 @@ class ModelGateway:
         grant.status = new_status
 
     def _commit_intent(self) -> None:
-        """Commit short prepare transaction before network I/O when session supports it."""
-        commit = getattr(self.session, "commit", None)
-        if not callable(commit):
-            return
-        try:
-            commit()
-        except Exception:  # noqa: BLE001 — mem/test sessions may no-op oddly
-            return
+        """A failed commit must prevent external dispatch, never silently fall back."""
+        self.session.commit()
 
     def _build_manifest(
         self, grant: ModelAuthorizationGrantRow, request: ModelCallCreateRequest

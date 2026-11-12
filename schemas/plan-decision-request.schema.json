@@ -1,11 +1,18 @@
 {
   "additionalProperties": false,
-  "description": "Confirm or reject a concrete plan + assignment + gate policy binding.",
+  "description": "Confirm or reject a concrete confirmation request binding.",
   "properties": {
     "assignmentVersion": {
       "minimum": 1,
       "title": "Assignmentversion",
       "type": "integer"
+    },
+    "confirmationRequestId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Confirmationrequestid",
+      "type": "string"
     },
     "decision": {
       "enum": [
@@ -42,14 +49,21 @@
       "minimum": 1,
       "title": "Planversion",
       "type": "integer"
+    },
+    "statusVersion": {
+      "minimum": 1,
+      "title": "Statusversion",
+      "type": "integer"
     }
   },
   "required": [
     "decision",
+    "confirmationRequestId",
     "planVersion",
     "planHash",
     "assignmentVersion",
-    "gatePolicyVersion"
+    "gatePolicyVersion",
+    "statusVersion"
   ],
   "title": "PlanDecisionRequest",
   "type": "object"

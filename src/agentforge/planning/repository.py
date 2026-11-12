@@ -12,8 +12,8 @@ from agentforge.storage.models import (
     Plan,
     PlanConfirmationRequestRow,
     PlanDecisionRow,
-    PlanProposalRow,
     PlanningContextRow,
+    PlanProposalRow,
     RoleAssignmentRow,
     Run,
 )
@@ -44,11 +44,7 @@ class PlanRepository:
             return row
         # MemSession / limited dialects: scan loaded runs.
         for obj in getattr(self.session, "added", []):
-            if (
-                isinstance(obj, Run)
-                and obj.project_id == project_id
-                and obj.idempotency_key == key
-            ):
+            if isinstance(obj, Run) and obj.project_id == project_id and obj.idempotency_key == key:
                 return obj
         return None
 
@@ -61,10 +57,7 @@ class PlanRepository:
 
     def latest_plan(self, run_id: str) -> Plan | None:
         return self.session.scalar(
-            select(Plan)
-            .where(Plan.run_id == run_id)
-            .order_by(Plan.version.desc())
-            .limit(1)
+            select(Plan).where(Plan.run_id == run_id).order_by(Plan.version.desc()).limit(1)
         )
 
     def add_plan(self, row: Plan) -> Plan:
@@ -98,14 +91,10 @@ class PlanRepository:
         self.session.add(row)
         return row
 
-    def get_confirmation_request(
-        self, request_id: str
-    ) -> PlanConfirmationRequestRow | None:
+    def get_confirmation_request(self, request_id: str) -> PlanConfirmationRequestRow | None:
         return self.session.get(PlanConfirmationRequestRow, request_id)
 
-    def pending_confirmation_for_run(
-        self, run_id: str
-    ) -> PlanConfirmationRequestRow | None:
+    def pending_confirmation_for_run(self, run_id: str) -> PlanConfirmationRequestRow | None:
         return self.session.scalar(
             select(PlanConfirmationRequestRow).where(
                 PlanConfirmationRequestRow.run_id == run_id,
@@ -122,9 +111,7 @@ class PlanRepository:
             select(PlanDecisionRow).where(PlanDecisionRow.request_id == request_id)
         )
 
-    def list_assignments(
-        self, run_id: str, assignment_version: int
-    ) -> list[RoleAssignmentRow]:
+    def list_assignments(self, run_id: str, assignment_version: int) -> list[RoleAssignmentRow]:
         return list(
             self.session.scalars(
                 select(RoleAssignmentRow).where(

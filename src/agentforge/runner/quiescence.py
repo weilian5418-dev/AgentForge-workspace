@@ -80,6 +80,42 @@ def validate_stop_proof(
     claim: Any,
 ) -> None:
     """Common D06/D07 trust boundary. Caller holds lock_workspace through freeze."""
+    if claim.source == "adapter_host":
+        from agentforge.storage.models import InstanceOperationRow
+
+        operation = session.get(InstanceOperationRow, claim.operation_id)
+        instance = session.get(AgentInstanceRow, operation.instance_id) if operation else None
+        proof = (operation.payload_json or {}).get("stopProof") if operation else None
+        if (
+            operation is None
+            or operation.kind != "request_stop"
+            or operation.status != "succeeded"
+            or instance is None
+            or instance.lifecycle != "stopped"
+            or instance.workspace_id != workspace_id
+            or instance.current_attempt_id != claim.attempt_id
+            or not isinstance(proof, dict)
+        ):
+            raise StopProofError("untrusted_stop_source", "No bound native stop operation")
+        if (
+            proof.get("workspaceId") != workspace_id
+            or proof.get("attemptId") != claim.attempt_id
+            or proof.get("generation") != claim.generation
+            or proof.get("writesQuiesced") is not True
+            or proof.get("sessionRef") != instance.session_ref
+            or proof.get("checkedAt") != claim.checked_at.isoformat()
+        ):
+            raise StopProofError("stop_evidence_mismatch", "Native proof binding mismatch")
+        checked = claim.checked_at
+        if checked > datetime.now(UTC) or datetime.now(UTC) - checked > timedelta(seconds=60):
+            raise StopProofError("stop_evidence_mismatch", "Native stop proof stale")
+        digest = hashlib.sha256(
+            json.dumps(proof, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+        if digest != claim.evidence_sha256:
+            raise StopProofError("stop_evidence_mismatch", "Native stop digest mismatch")
+        assert_workspace_quiescent(session, workspace_id, except_operation="")
+        return
     if claim.source != "runner" or not claim.writes_quiesced:
         raise StopProofError("writes_not_quiesced", "Stop proof must confirm quiescence")
     op = session.get(RunnerOperationRow, claim.operation_id)
@@ -158,3 +194,40 @@ def validate_stop_proof(
         raise StopProofError(
             "stop_evidence_mismatch", "Workspace executed again after stop verification"
         )
+
+
+def assert_stage_write_open(session: Session, workspace_id: str) -> None:
+    from agentforge.storage.models import InstanceAttemptRow, Run, StageRow
+
+    attempts = session.scalars(
+        select(InstanceAttemptRow).where(InstanceAttemptRow.workspace_id == workspace_id)
+    ).all()
+    for attempt in attempts:
+        instance = session.get(AgentInstanceRow, attempt.instance_id)
+        if instance is None or instance.current_attempt_id != attempt.id:
+            continue
+        run = session.get(Run, attempt.run_id, with_for_update=True, populate_existing=True)
+        stage = (
+            session.get(StageRow, attempt.stage_id, with_for_update=True, populate_existing=True)
+            if attempt.stage_id
+            else None
+        )
+        if (
+            run is None
+            or attempt.generation != run.active_generation
+            or stage is None
+            or stage.plan_version != run.plan_version
+            or stage.write_access_closed
+            or stage.status not in {"pending", "ready", "executing", "stopping", "reviewing"}
+        ):
+            raise WorkspaceBusyError("Stage is not admitting development writes")
+        from agentforge.storage.models import StageSubmissionRow
+
+        submissions = session.scalars(
+            select(StageSubmissionRow).where(
+                StageSubmissionRow.stage_id == stage.id,
+                StageSubmissionRow.generation == run.active_generation,
+            )
+        ).all()
+        if any(attempt.id in sub.attempt_refs for sub in submissions):
+            raise WorkspaceBusyError("Submitted attempt may no longer write")

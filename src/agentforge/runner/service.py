@@ -26,6 +26,7 @@ from agentforge.runner.paths import RunnerPathError, resolve_workspace_root
 from agentforge.runner.profiles import get_profile
 from agentforge.runner.quiescence import (
     WorkspaceBusyError,
+    assert_stage_write_open,
     assert_workspace_quiescent,
     lock_workspace,
 )
@@ -96,6 +97,11 @@ class RunnerService:
             raise RunnerError("already_expired", "expiresAt must be in the future")
         if any(str(key).startswith("__") for key in body.params):
             raise RunnerError("invalid_params", "Reserved Runner parameter name")
+        if get_profile(body.profile_id).writes:
+            try:
+                assert_stage_write_open(self.session, body.workspace_id)
+            except WorkspaceBusyError as exc:
+                raise RunnerError("stage_writes_closed", str(exc)) from exc
         workspace = lock_workspace(self.session, body.workspace_id)
         if workspace is not None:
             if str(resolve_workspace_root(body.workspace_root)) != str(
@@ -187,6 +193,11 @@ class RunnerService:
         row = self.session.get(RunnerOperationRow, body.operation_id)
         if row is None:
             raise RunnerError("operation_not_found", "Runner operation not found")
+        if get_profile(row.profile_id).writes:
+            try:
+                assert_stage_write_open(self.session, row.workspace_id)
+            except WorkspaceBusyError as exc:
+                raise RunnerError("stage_writes_closed", str(exc)) from exc
         workspace = lock_workspace(self.session, row.workspace_id)
         row = self.session.get(
             RunnerOperationRow, body.operation_id, with_for_update=True, populate_existing=True

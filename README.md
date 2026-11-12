@@ -14,9 +14,11 @@
 | D05 | 受控 Runner（注册 profile / ticket / 受限操作） |
 | D06 | 产物总线（freeze → verify → publish；消费需 D10） |
 | D07 | 安全 Git worktree / 可恢复快照 / 集成冲突保留 |
-| D08 | 只读规划 → 编译校验 → 分配草稿 → 用户确认（不启 Agent） |
+| D08 | 授权规划（规则 / ModelGateway）→ 编译校验 → 能力绑定 → 用户确认 |
+| D09 | 独立工作区 / 实例准备、持久派发、结构化消息与协议匹配 |
+| D10 | 停止证明 → 不可变候选 → 验证 / 审核 → 锁内阶段放行与返工约束 |
 
-未完成或不在本仓库宣称范围：D09 实例与消息、D10 阶段门禁放行、公网托管与完整 OPS。审核意见见 `docs/reviews/`。
+D08～D10 已完成本轮代码修复及自动化回归，真实 Agent 产品、真实模型与持续运行队列仍需联调验收。适配器能力为 unknown / unsupported 时继续阻塞执行；公网托管与完整 OPS 不在当前验收范围。审核意见见 `docs/reviews/`。
 
 ## 本机启动
 
@@ -49,7 +51,7 @@ AGENTFORGE_DATABASE_URL=postgresql+psycopg://agentforge_api:YOUR_PASSWORD@127.0.
 AGENTFORGE_QUEUE_DATABASE_URL=postgresql+psycopg://agentforge_driver:YOUR_PASSWORD@127.0.0.1:5432/agentforge
 ```
 
-迁移使用 `agentforge_migrator` 临时覆盖连接串；服务角色授权见 `deploy/postgres/grants.sql`。期望 Alembic head：`20261111_0013`。
+迁移使用 `agentforge_migrator` 临时覆盖连接串；服务角色授权见 `deploy/postgres/grants.sql`。期望 Alembic head：`20261112_0016`。本轮未对已有业务库执行迁移或授权脚本，运行前需要检查实际版本。
 
 ## 开发与验证
 
@@ -74,3 +76,5 @@ AGENTFORGE_QUEUE_DATABASE_URL=postgresql+psycopg://agentforge_driver:YOUR_PASSWO
 - `environment` — 本机同步与运行 helper  
 
 本次权限、派发、Runner 与停止证明修复的接口变化和验证边界见 [专项修复记录](docs/reviews/D04-D07-fixes-and-validation.md)。
+
+D08～D10 的修复、内部签名票据、控制队列配置与测试边界见 [修复与验证记录](docs/reviews/2026-11-12-D08-D10-fixes.md)。

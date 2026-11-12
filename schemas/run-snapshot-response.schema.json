@@ -81,6 +81,21 @@
       "default": null,
       "title": "Assignmentversion"
     },
+    "baselineId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Baselineid"
+    },
     "budget": {
       "$ref": "#/$defs/BudgetLimits"
     },
@@ -194,11 +209,19 @@
       "title": "Planversion"
     },
     "planningProviderProfileId": {
-      "maxLength": 128,
-      "minLength": 1,
-      "pattern": "^[A-Za-z0-9._:-]+$",
-      "title": "Planningproviderprofileid",
-      "type": "string"
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Planningproviderprofileid"
     },
     "projectId": {
       "maxLength": 128,
@@ -252,7 +275,6 @@
     "executionProfile",
     "failurePolicy",
     "budget",
-    "planningProviderProfileId",
     "outputs",
     "createdAt",
     "updatedAt"

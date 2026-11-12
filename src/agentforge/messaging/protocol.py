@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 from datetime import UTC, datetime
 from typing import Any
 
@@ -58,17 +60,6 @@ class ProtocolRouter:
         req = self.repo.get_protocol_request(request_id)
         if req is None:
             raise InstanceError("protocol_request_not_found", request_id)
-        if req.status != "pending":
-            if req.matched_response_ref == response_ref:
-                return {"status": "duplicate_ignored", "requestId": request_id}
-            # Opposite/different content → conflict, do not overwrite history.
-            conflicts = list(req.conflict_refs or [])
-            if response_ref not in conflicts:
-                conflicts.append(response_ref)
-            req.conflict_refs = conflicts
-            req.status = "conflict"
-            return {"status": "conflict", "requestId": request_id}
-
         if response_type not in (req.allowed_response_types or []):
             raise InstanceError(
                 "illegal_response_type",
@@ -78,28 +69,55 @@ class ProtocolRouter:
             raise InstanceError("illegal_responder", "Responder not authorized for request")
         if req.instance_id != instance_id:
             raise InstanceError("instance_mismatch", "Response instance mismatch")
-        if req.native_session_id and native_session_id and req.native_session_id != native_session_id:
+        if req.native_session_id and req.native_session_id != native_session_id:
             raise InstanceError("session_mismatch", "Response session mismatch")
-        if req.attempt_id and attempt_id and req.attempt_id != attempt_id:
+        if req.attempt_id and req.attempt_id != attempt_id:
             raise InstanceError("attempt_mismatch", "Response attempt mismatch")
-        if req.generation is not None and generation is not None and req.generation != generation:
+        if req.generation is not None and req.generation != generation:
             raise InstanceError("generation_mismatch", "Response generation mismatch")
-        if req.plan_version is not None and plan_version is not None and req.plan_version != plan_version:
+        if req.plan_version is not None and req.plan_version != plan_version:
             raise InstanceError("plan_version_mismatch", "Response plan version mismatch")
-        if (
-            req.assignment_version is not None
-            and assignment_version is not None
-            and req.assignment_version != assignment_version
-        ):
+        if req.assignment_version is not None and req.assignment_version != assignment_version:
             raise InstanceError("assignment_version_mismatch", "Response assignment mismatch")
-        if req.stage_id and stage_id and req.stage_id != stage_id:
+        if req.stage_id and req.stage_id != stage_id:
             raise InstanceError("stage_mismatch", "Response stage mismatch")
-        if req.deadline_at is not None and req.deadline_at < _now():
+        digest = hashlib.sha256(
+            json.dumps(
+                {
+                    "requestId": request_id,
+                    "type": response_type,
+                    "sender": responder_ref,
+                    "session": native_session_id,
+                    "attempt": attempt_id,
+                    "generation": generation,
+                    "plan": plan_version,
+                    "assignment": assignment_version,
+                    "stage": stage_id,
+                    "content": content or {},
+                },
+                sort_keys=True,
+                separators=(",", ":"),
+                allow_nan=False,
+            ).encode()
+        ).hexdigest()
+        if req.status == "pending" and req.deadline_at is not None and req.deadline_at < _now():
             req.status = "timed_out"
             raise InstanceError("protocol_request_expired", "Request deadline passed")
 
+        if req.status != "pending":
+            if req.matched_response_ref == response_ref and req.matched_response_digest == digest:
+                return {"status": "duplicate_ignored", "requestId": request_id}
+            # Opposite/different content → conflict, do not overwrite history.
+            conflicts = list(req.conflict_refs or [])
+            if response_ref not in conflicts:
+                conflicts.append(response_ref)
+            req.conflict_refs = conflicts
+            req.status = "conflict"
+            return {"status": "conflict", "requestId": request_id}
+
         req.status = "matched"
         req.matched_response_ref = response_ref
+        req.matched_response_digest = digest
         # shutdown_approved only means peer accepted close request — not stopped.
         return {
             "status": "matched",

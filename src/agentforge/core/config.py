@@ -12,6 +12,7 @@ RunMode = Literal["dev", "local", "hosted"]
 
 
 class Settings(BaseSettings):
+    internal_signing_key: SecretStr | None = Field(default=None, repr=False)
     model_config = SettingsConfigDict(
         env_prefix="AGENTFORGE_", env_file=".env", env_file_encoding="utf-8", extra="ignore"
     )
@@ -24,7 +25,14 @@ class Settings(BaseSettings):
     # Driver/worker URL with queue schema DML. API role alone cannot enqueue.
     queue_database_url: SecretStr | None = Field(default=None, repr=False)
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
-    expected_alembic_revision: str = "20261111_0013"
+    expected_alembic_revision: str = "20261112_0016"
+
+    @field_validator("internal_signing_key")
+    @classmethod
+    def valid_internal_key(cls, value: SecretStr | None) -> SecretStr | None:
+        if value is not None and len(value.get_secret_value()) < 32:
+            raise ValueError("Internal signing key must contain at least 32 characters")
+        return value
 
     @field_validator("api_token")
     @classmethod

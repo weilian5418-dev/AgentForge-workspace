@@ -66,9 +66,7 @@ def _approval(
 
 def test_allow_when_confirmed_digest_matches() -> None:
     desc = _descriptor()
-    result = evaluate(
-        EvaluationRequest(descriptor=desc, mode="execute", approval=_approval(desc))
-    )
+    result = evaluate(EvaluationRequest(descriptor=desc, mode="execute", approval=_approval(desc)))
     assert result.verdict == "allow"
     assert result.permitted
 

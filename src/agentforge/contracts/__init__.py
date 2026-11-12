@@ -18,16 +18,6 @@ from agentforge.contracts.agents import (
     RoleAssignmentsResponse,
     RoleSpec,
 )
-from agentforge.contracts.messages import (
-    CollaborationMessage,
-    DeliveryAttempt,
-    MessageCreateRequest,
-    MessageDelivery,
-    MessageDeliveryListResponse,
-    MessageListResponse,
-    NativeEventReceipt,
-    ProtocolRequest,
-)
 from agentforge.contracts.artifacts import (
     AcceptanceRequest,
     AcceptanceResponse,
@@ -42,25 +32,6 @@ from agentforge.contracts.base import ApiInputModel, ContractModel
 from agentforge.contracts.common import SCHEMA_VERSION
 from agentforge.contracts.errors import ErrorCode, ErrorDetail, ErrorResponse, build_error
 from agentforge.contracts.events import EventEnvelope, EventType, parse_event_payload
-from agentforge.contracts.plans import (
-    ApprovalDecisionRequest,
-    ApprovalListResponse,
-    ApprovalSummary,
-    AssignmentSet,
-    CompilationReport,
-    ConfirmationRequest,
-    PlanDecisionRequest,
-    PlanProposal,
-    PlanProposalRequest,
-    PlanResponse,
-    PlanRevision,
-    PlanRevisionRequest,
-    PlanSpec,
-    PlanStageDefinition,
-    PlanWorkPackageSpec,
-    PlanningContext,
-    RoutingDecision,
-)
 from agentforge.contracts.grants import (
     DirectoryGrant,
     DirectoryGrantCreateRequest,
@@ -70,6 +41,35 @@ from agentforge.contracts.grants import (
     ProjectBaseline,
     ProjectInputRecord,
     TrustPolicy,
+)
+from agentforge.contracts.messages import (
+    CollaborationMessage,
+    DeliveryAttempt,
+    MessageCreateRequest,
+    MessageDelivery,
+    MessageDeliveryListResponse,
+    MessageListResponse,
+    NativeEventReceipt,
+    ProtocolRequest,
+)
+from agentforge.contracts.plans import (
+    ApprovalDecisionRequest,
+    ApprovalListResponse,
+    ApprovalSummary,
+    AssignmentSet,
+    CompilationReport,
+    ConfirmationRequest,
+    PlanDecisionRequest,
+    PlanningContext,
+    PlanProposal,
+    PlanProposalRequest,
+    PlanResponse,
+    PlanRevision,
+    PlanRevisionRequest,
+    PlanSpec,
+    PlanStageDefinition,
+    PlanWorkPackageSpec,
+    RoutingDecision,
 )
 from agentforge.contracts.projects import (
     ProjectCreateRequest,

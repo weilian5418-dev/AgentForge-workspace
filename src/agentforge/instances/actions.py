@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime
-from typing import Any, Protocol
+from typing import Any, Protocol, cast
 
 from sqlalchemy.orm import Session
 
@@ -14,7 +14,7 @@ from agentforge.contracts.runs import OperationAccepted
 from agentforge.instances.errors import InstanceError
 from agentforge.instances.repository import InstanceRepository
 from agentforge.instances.status import combine_instance_status_facets
-from agentforge.storage.models import InstanceOperationRow, ProtocolRequestRow
+from agentforge.storage.models import InstanceOperationRow, Outbox, ProtocolRequestRow
 
 
 def _now() -> datetime:
@@ -66,6 +66,15 @@ class InstanceActionService:
             "close": "close",
         }
         kind = kind_map[body.action]
+        existing = self.repo.find_operation_by_idempotency(
+            instance_id=instance_id,
+            kind=kind,
+            idempotency_key=f"{instance_id}:{kind}:{instance.current_attempt_id}:{body.reason or 'none'}",
+        )
+        if existing:
+            return OperationAccepted(
+                operation_id=existing.id, status="accepted", run_id=instance.run_id
+            )
         op_id = _id("iop")
         self.repo.add_operation(
             InstanceOperationRow(
@@ -73,8 +82,15 @@ class InstanceActionService:
                 instance_id=instance_id,
                 kind=kind,
                 status="prepared",
-                idempotency_key=f"{instance_id}:{kind}:{body.reason or 'none'}",
-                payload_json={"reason": body.reason, "actor": actor},
+                idempotency_key=f"{instance_id}:{kind}:{instance.current_attempt_id}:{body.reason or 'none'}",
+                attempt_id=instance.current_attempt_id,
+                payload_json={
+                    "reason": body.reason,
+                    "actor": actor,
+                    "sessionRef": instance.session_ref,
+                    "nativeSessionId": instance.native_session_id,
+                    "generation": instance.generation,
+                },
                 prepared_at=_now(),
             )
         )
@@ -82,7 +98,7 @@ class InstanceActionService:
         if body.action == "request_stop":
             instance.lifecycle = "stop_requested"
             instance.status = combine_instance_status_facets(
-                "stop_requested", instance.activity or "busy"
+                "stop_requested", cast(Any, instance.activity or "busy")
             )
             instance.updated_at = _now()
             self.repo.add_protocol_request(
@@ -107,105 +123,28 @@ class InstanceActionService:
                 )
             )
 
+        self.session.add(
+            Outbox(
+                id=_id("obx"),
+                run_id=instance.run_id,
+                intent_type=f"instance.{kind}",
+                target="instance",
+                payload={"operationId": op_id, "instanceId": instance.id},
+                idempotency_key=f"instance-op:{op_id}",
+                delivery_status="pending",
+                attempt_count=0,
+            )
+        )
         return OperationAccepted(operation_id=op_id, status="accepted", run_id=instance.run_id)
 
     def execute_stop_handshake(self, operation_id: str) -> dict[str, Any]:
-        """Native stop request + inspect evidence. shutdown_approved ≠ stopped."""
-        op = self.repo.get_operation(operation_id)
-        if op is None or op.kind != "request_stop":
-            raise InstanceError("operation_not_found", operation_id)
-        instance = self.repo.get_instance(op.instance_id)
-        if instance is None:
-            raise InstanceError("instance_not_found", op.instance_id)
-        session_ref = instance.session_ref
-        if not session_ref:
-            op.status = "failed"
-            op.error_code = "no_session"
-            op.completed_at = _now()
-            return {"status": "failed", "error": "no_session"}
-
-        if self.adapter_factory is None:
-            op.status = "unknown"
-            op.error_code = "adapter_unavailable"
-            op.completed_at = _now()
-            return {"status": "unknown"}
-
-        from agentforge.storage.models import AgentProfileRow
-
-        profile = self.session.get(AgentProfileRow, instance.agent_profile_id)
-        adapter = self.adapter_factory(profile.adapter_id if profile else "unknown")
-        stop_result = adapter.request_stop(session_ref=session_ref, operation_id=operation_id)
-        accepted = stop_result.get("support") in ("supported", "ok") or stop_result.get(
-            "accepted"
+        raise InstanceError(
+            "engine_coordinator_required",
+            "Use instances.worker with an Engine; native I/O inside caller transactions is prohibited",
         )
-        # Always inspect — handshake acceptance is not stop evidence.
-        inspection = adapter.inspect_execution(session_ref=session_ref)
-        running = inspection.get("running")
-        if running is True:
-            op.status = "unknown"
-            op.error_code = "stop_accepted_but_still_running"
-            op.native_ref = stop_result.get("nativeRequestId")
-            op.payload_json = {
-                **dict(op.payload_json or {}),
-                "stop": stop_result,
-                "inspect": inspection,
-            }
-            op.completed_at = _now()
-            # Do not freeze/close conflicting resources while unknown.
-            return {"status": "unknown", "stopAccepted": bool(accepted), "running": True}
-
-        if running is False:
-            instance.lifecycle = "stopped"
-            instance.activity = "idle"
-            instance.status = combine_instance_status_facets("stopped", "idle")
-            instance.updated_at = _now()
-            op.status = "succeeded"
-            op.completed_at = _now()
-            op.payload_json = {
-                **dict(op.payload_json or {}),
-                "stop": stop_result,
-                "inspect": inspection,
-            }
-            return {"status": "succeeded", "stopped": True}
-
-        op.status = "unknown"
-        op.error_code = "inspect_inconclusive"
-        op.completed_at = _now()
-        return {"status": "unknown", "inspect": inspection}
 
     def execute_close(self, operation_id: str) -> dict[str, Any]:
-        op = self.repo.get_operation(operation_id)
-        if op is None or op.kind != "close":
-            raise InstanceError("operation_not_found", operation_id)
-        instance = self.repo.get_instance(op.instance_id)
-        if instance is None:
-            raise InstanceError("instance_not_found", op.instance_id)
-        if instance.lifecycle not in ("stopped", "failed", "closed"):
-            raise InstanceError(
-                "not_stopped",
-                "Close requires confirmed stop; shutdown_approved alone is insufficient",
-            )
-        session_ref = instance.session_ref
-        if session_ref and self.adapter_factory is not None:
-            from agentforge.storage.models import AgentProfileRow
-
-            profile = self.session.get(AgentProfileRow, instance.agent_profile_id)
-            adapter = self.adapter_factory(profile.adapter_id if profile else "unknown")
-            adapter.close_session(session_ref=session_ref)
-
-        native = (
-            self.repo.get_native_session(instance.native_session_id)
-            if instance.native_session_id
-            else None
+        raise InstanceError(
+            "engine_coordinator_required",
+            "Use instances.worker with an Engine; native I/O inside caller transactions is prohibited",
         )
-        if native is not None:
-            native.binding_status = "closed"
-            native.closed_at = _now()
-        # Closing session must not delete workspace or candidates.
-        instance.lifecycle = "closed"
-        instance.activity = "idle"
-        instance.status = combine_instance_status_facets("closed", "idle")
-        instance.updated_at = _now()
-        op.status = "succeeded"
-        op.completed_at = _now()
-        return {"status": "succeeded", "closed": True}

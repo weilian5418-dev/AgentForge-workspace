@@ -11,9 +11,7 @@ from agentforge.core.config import Settings
 def test_require_queue_url_does_not_silently_use_api_url(tmp_path) -> None:
     settings = Settings(
         state_dir=tmp_path / "st",
-        database_url=SecretStr(
-            "postgresql+psycopg://agentforge_api:x@127.0.0.1:5432/agentforge"
-        ),
+        database_url=SecretStr("postgresql+psycopg://agentforge_api:x@127.0.0.1:5432/agentforge"),
         queue_database_url=None,
     )
     with pytest.raises(ValueError, match="QUEUE_DATABASE_URL"):

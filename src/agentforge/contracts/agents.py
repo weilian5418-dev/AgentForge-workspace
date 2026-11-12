@@ -242,6 +242,7 @@ class AgentInstance(ContractModel):
         if self.activity is None:
             object.__setattr__(self, "activity", "idle")
 
+        assert self.activity is not None
         if self.status is not None:
             facets = split_legacy_instance_status(self.status)
             if self.lifecycle != facets.lifecycle or self.activity != facets.activity:
@@ -272,9 +273,7 @@ class AgentInstance(ContractModel):
             )
         elif self.current_execution and self.current_execution.attempt_id:
             if self.current_attempt_id is None:
-                object.__setattr__(
-                    self, "current_attempt_id", self.current_execution.attempt_id
-                )
+                object.__setattr__(self, "current_attempt_id", self.current_execution.attempt_id)
             elif self.current_attempt_id != self.current_execution.attempt_id:
                 raise ValueError("currentAttemptId must match currentExecution.attemptId")
         return self

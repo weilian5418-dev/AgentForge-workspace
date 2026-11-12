@@ -6,18 +6,21 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from agentforge.contracts.agents import AgentInstance, ExecutionRequest
+from agentforge.contracts.plans import PlanSpec
 from agentforge.contracts.runs import OperationAccepted
+from agentforge.instances.bindings import require_profile
 from agentforge.instances.eligibility import EligibilityService
 from agentforge.instances.errors import InstanceError
 from agentforge.instances.repository import InstanceRepository
 from agentforge.instances.status import combine_instance_status_facets
 from agentforge.storage.models import (
     AgentInstanceRow,
-    AgentProfileRow,
     ExecutionRequestRow,
+    GitWorkspaceRow,
     InstanceOperationRow,
     Outbox,
     Plan,
@@ -48,10 +51,18 @@ class ExecutionPreparationService:
         actor: str,
         idempotency_key: str,
     ) -> OperationAccepted:
-        existing = self.repo.get_execution_request(
-            run_id=run_id, idempotency_key=idempotency_key
-        )
+        run = self.session.get(Run, run_id, with_for_update=True, populate_existing=True)
+        if run is None:
+            raise InstanceError("run_not_found", run_id)
+        existing = self.repo.get_execution_request(run_id=run_id, idempotency_key=idempotency_key)
         if existing is not None:
+            if (
+                existing.plan_hash != body.plan_hash
+                or existing.plan_version != body.plan_version
+                or existing.assignment_version != body.assignment_version
+                or existing.gate_policy_version != body.gate_policy_version
+            ):
+                raise InstanceError("idempotency_conflict", "Execution request changed")
             return OperationAccepted(
                 operation_id=existing.id,
                 status="accepted" if existing.status == "prepared" else existing.status,  # type: ignore[arg-type]
@@ -88,18 +99,40 @@ class ExecutionPreparationService:
         if any(a.plan_version != body.plan_version for a in assignments):
             raise InstanceError("assignment_plan_mismatch", "Assignments bind other plan")
 
+        if (
+            run.assignment_version != body.assignment_version
+            or run.gate_policy_version != body.gate_policy_version
+        ):
+            raise InstanceError("assignment_revoked", "Execution binding is stale")
+        spec = PlanSpec.model_validate(plan.spec_json)
+        workspaces = {}
         # Re-check profiles / auth — block, do not auto-replace.
         for asg in assignments:
-            profile = self.session.get(AgentProfileRow, asg.agent_profile_id)
-            if profile is None:
-                raise InstanceError("profile_not_found", f"Missing profile {asg.agent_profile_id}")
-            if profile.auth_status in ("unauthenticated", "expired"):
-                raise InstanceError("auth_invalid", "Login expired or invalid")
-            if asg.profile_config_version and asg.profile_config_version != profile.config_version:
+            role = next((r for r in spec.roles if r.role_id == asg.role_id), None)
+            if role is None or asg.confirmed_at is None:
+                raise InstanceError("assignment_revoked", "Role is not confirmed")
+            require_profile(
+                self.session,
+                asg.agent_profile_id,
+                set(role.required_capabilities),
+                expected_version=asg.profile_config_version,
+            )
+            candidates = list(
+                self.session.scalars(
+                    select(GitWorkspaceRow).where(
+                        GitWorkspaceRow.project_id == run.project_id,
+                        GitWorkspaceRow.baseline_id == run.baseline_id,
+                        GitWorkspaceRow.role_id == asg.role_id,
+                        GitWorkspaceRow.status == "active",
+                    )
+                ).all()
+            )
+            if len(candidates) != 1:
                 raise InstanceError(
-                    "profile_config_changed",
-                    "User changed agent configuration since confirmation",
+                    "workspace_unbound",
+                    "Prepare one independent active workspace per role using D07",
                 )
+            workspaces[asg.id] = candidates[0]
 
         request_id = _id("exreq")
         self.repo.add_execution_request(
@@ -141,9 +174,10 @@ class ExecutionPreparationService:
                 gate_policy_version=body.gate_policy_version,
                 lifecycle=lifecycle,
                 activity=activity,
-                status=combine_instance_status_facets(lifecycle, activity),
-                execution_environment=getattr(project, "environment_id", None) or "windows_native",
-                workspace_id=None,
+                status=combine_instance_status_facets("created", "idle"),
+                execution_environment=project.environment_id,
+                workspace_id=workspaces[asg.id].id,
+                generation=run.active_generation,
                 created_at=_now(),
                 updated_at=_now(),
             )

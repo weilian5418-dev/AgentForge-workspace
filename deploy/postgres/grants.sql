@@ -61,7 +61,27 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON
   app.plan_proposals,
   app.plan_confirmation_requests,
   app.plan_decisions,
-  app.role_assignments
+  app.role_assignments,
+  app.agent_instances,
+  app.native_sessions,
+  app.instance_operations,
+  app.instance_attempts,
+  app.execution_requests,
+  app.collaboration_messages,
+  app.message_deliveries,
+  app.delivery_attempts,
+  app.protocol_requests,
+  app.native_event_receipts,
+  app.stages,
+  app.stage_submissions,
+  app.candidate_sets,
+  app.review_cycles,
+  app.review_requests,
+  app.review_reports,
+  app.stage_user_decisions,
+  app.gate_decisions,
+  app.rework_orders,
+  app.release_records
 TO agentforge_api, agentforge_driver;
 
 -- Queue transport DML (driver + worker). API must not hold queue credentials.

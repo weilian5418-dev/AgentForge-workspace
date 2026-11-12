@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated, Any
+from typing import Annotated, Any, cast
 
 from fastapi import APIRouter, Depends, Header, Request
 from starlette.exceptions import HTTPException
@@ -19,6 +19,7 @@ from agentforge.contracts.messages import (
 )
 from agentforge.contracts.runs import OperationAccepted
 from agentforge.core.config import Settings
+from agentforge.core.service_identity import verify_ticket
 from agentforge.instances.actions import InstanceActionService
 from agentforge.instances.errors import InstanceError
 from agentforge.instances.event_ingestor import NativeEventIngestor
@@ -32,10 +33,10 @@ router = APIRouter(prefix="/api/v1", tags=["instances"])
 
 
 def _settings(request: Request) -> Settings:
-    return request.app.state.settings
+    return cast(Settings, request.app.state.settings)
 
 
-def _require_engine(request: Request, settings: Settings):
+def _require_engine(request: Request, settings: Settings) -> Any:
     engine = getattr(request.app.state, "database", None) or create_database_engine(settings)
     if engine is None:
         raise HTTPException(503, "database_unavailable: Database is not configured")
@@ -80,8 +81,7 @@ def create_execution_request(
     if not admits_new_work(read_admission(settings)):
         raise HTTPException(503, "admission_blocked: Platform is not admitting new work")
     key = idempotency_key or (
-        f"{body.plan_hash}:{body.plan_version}:{body.assignment_version}:"
-        f"{body.gate_policy_version}"
+        f"{body.plan_hash}:{body.plan_version}:{body.assignment_version}:{body.gate_policy_version}"
     )
     engine = _require_engine(request, settings)
     try:
@@ -142,9 +142,7 @@ def instance_action(
     engine = _require_engine(request, settings)
     try:
         with unit_of_work_connection(engine) as uow:
-            return InstanceActionService(uow.session).request_action(
-                instance_id, body, actor="api"
-            )
+            return InstanceActionService(uow.session).request_action(instance_id, body, actor="api")
     except InstanceError as exc:
         raise _map_error(exc) from exc
 
@@ -159,9 +157,7 @@ def create_message(
     engine = _require_engine(request, settings)
     try:
         with unit_of_work_connection(engine) as uow:
-            msg = MessageService(uow.session).create(
-                run_id, body, sender_ref="user:api"
-            )
+            msg = MessageService(uow.session).create(run_id, body, sender_ref="user:api")
             return msg.model_dump(mode="json", by_alias=True)
     except InstanceError as exc:
         raise _map_error(exc) from exc
@@ -205,8 +201,17 @@ def ingest_native_event(
     x_internal_service: Annotated[str | None, Header(alias="X-Internal-Service")] = None,
 ) -> dict[str, Any]:
     """Separate internal auth entry — users cannot self-set authentic/stopped."""
-    if not x_internal_service:
-        raise HTTPException(401, "internal_auth_required: Missing X-Internal-Service")
+    try:
+        subject = verify_ticket(
+            settings,
+            x_internal_service or "",
+            audience="native-event",
+            request_id=str(body.get("dedupeKey") or ""),
+        )
+        if subject != body.get("instanceId"):
+            raise ValueError("Wrong subject")
+    except (ValueError, TypeError, KeyError):
+        raise HTTPException(403, "internal_auth_required: Signed service ticket required") from None
     engine = _require_engine(request, settings)
     try:
         with unit_of_work_connection(engine) as uow:
@@ -225,3 +230,32 @@ def ingest_native_event(
         raise _map_error(exc) from exc
     except KeyError as exc:
         raise HTTPException(400, f"missing_field: {exc}") from exc
+
+
+@router.post("/internal/agent-messages")
+def agent_message(
+    request: Request, body: MessageCreateRequest, settings: Annotated[Settings, Depends(_settings)]
+) -> dict[str, Any]:
+    if not body.idempotency_key:
+        raise HTTPException(422, "idempotencyKey required")
+    try:
+        subject = verify_ticket(
+            settings,
+            request.headers.get("X-Agent-Ticket", ""),
+            audience="agent-message",
+            request_id=body.idempotency_key,
+        )
+    except (ValueError, TypeError, KeyError):
+        raise HTTPException(403, "Signed instance ticket required") from None
+    from agentforge.storage.models import AgentInstanceRow
+
+    engine = _require_engine(request, settings)
+    try:
+        with unit_of_work_connection(engine) as uow:
+            instance = uow.session.get(AgentInstanceRow, subject)
+            if instance is None:
+                raise InstanceError("instance_not_found", subject)
+            message = MessageService(uow.session).create(instance.run_id, body, sender_ref=subject)
+            return message.model_dump(mode="json", by_alias=True)
+    except InstanceError as exc:
+        raise _map_error(exc) from exc

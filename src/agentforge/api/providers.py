@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Annotated, Any
+from typing import Annotated, Any, cast
 
 from fastapi import APIRouter, Depends, Request, Response
 from starlette.exceptions import HTTPException
@@ -16,8 +16,8 @@ from agentforge.contracts.providers import (
     ModelCall,
     ModelCallCreateRequest,
     ProviderCreateRequest,
-    ProviderCredentialRegisterRequest,
     ProviderCredentialRefResponse,
+    ProviderCredentialRegisterRequest,
     ProviderProbeRequest,
     ProviderProbeResult,
     ProviderProfile,
@@ -29,7 +29,12 @@ from agentforge.core.credentials import CredentialError
 from agentforge.models.budget import BudgetError, BudgetService
 from agentforge.models.credentials import ModelCredentialStore
 from agentforge.models.gateway import ModelGateway, ModelGatewayError
-from agentforge.queue.operations import OperationError, accept_model_probe, get_operation, request_manual_replay
+from agentforge.queue.operations import (
+    OperationError,
+    accept_model_probe,
+    get_operation,
+    request_manual_replay,
+)
 from agentforge.runtime.control import admits_new_work, read_admission
 from agentforge.storage.uow import unit_of_work_connection
 
@@ -37,10 +42,10 @@ router = APIRouter(prefix="/api/v1", tags=["providers"])
 
 
 def _settings(request: Request) -> Settings:
-    return request.app.state.settings
+    return cast(Settings, request.app.state.settings)
 
 
-def _engine(request: Request, settings: Settings):
+def _engine(request: Request, settings: Settings) -> Any:
     if settings.database_url is None or request.app.state.database is None:
         raise HTTPException(503, "Database is not configured")
     return request.app.state.database

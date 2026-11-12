@@ -63,8 +63,24 @@
     }
   },
   "additionalProperties": false,
-  "description": "Create a goal and enter preflight/planning. Does not dispatch development.\n\n``mode=auto`` means the platform may auto-propose a plan; it does **not** mean\nthe platform may confirm assignments or start executors without user decisions.\n``planningProviderProfileId`` configures the platform planning model only.",
+  "description": "Create a goal and enter preflight/planning. Does not dispatch development.\n\n``mode=auto`` means the platform may auto-propose a plan; it does **not** mean\nthe platform may confirm assignments or start executors without user decisions.\n``planningProviderProfileId`` configures the platform planning model only;\nomit it for rules-only planning (do not invent a fake profile).",
   "properties": {
+    "baselineId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Optional pin of the authorized baseline used for this run.",
+      "title": "Baselineid"
+    },
     "budget": {
       "$ref": "#/$defs/BudgetLimitsInput"
     },
@@ -91,6 +107,21 @@
       "minLength": 1,
       "title": "Goal",
       "type": "string"
+    },
+    "idempotencyKey": {
+      "anyOf": [
+        {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Client idempotency key for create; same key returns the same run.",
+      "title": "Idempotencykey"
     },
     "inputRefs": {
       "items": {
@@ -128,11 +159,19 @@
       "type": "array"
     },
     "planningProviderProfileId": {
-      "maxLength": 128,
-      "minLength": 1,
-      "pattern": "^[A-Za-z0-9._:-]+$",
-      "title": "Planningproviderprofileid",
-      "type": "string"
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Planningproviderprofileid"
     },
     "projectId": {
       "maxLength": 128,
@@ -146,8 +185,7 @@
     "projectId",
     "goal",
     "outputs",
-    "budget",
-    "planningProviderProfileId"
+    "budget"
   ],
   "title": "RunCreateRequest",
   "type": "object"

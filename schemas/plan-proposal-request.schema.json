@@ -1,0 +1,73 @@
+{
+  "additionalProperties": false,
+  "description": "Request a read-only plan proposal. Does not start development.",
+  "properties": {
+    "grantId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Grantid"
+    },
+    "idempotencyKey": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Idempotencykey"
+    },
+    "includeInputContent": {
+      "default": false,
+      "title": "Includeinputcontent",
+      "type": "boolean"
+    },
+    "maxInputBytes": {
+      "default": 65536,
+      "maximum": 131072,
+      "minimum": 1,
+      "title": "Maxinputbytes",
+      "type": "integer"
+    },
+    "note": {
+      "anyOf": [
+        {
+          "maxLength": 2048,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Note"
+    },
+    "source": {
+      "default": "auto",
+      "enum": [
+        "rules",
+        "model",
+        "auto"
+      ],
+      "title": "Source",
+      "type": "string"
+    }
+  },
+  "title": "PlanProposalRequest",
+  "type": "object"
+}

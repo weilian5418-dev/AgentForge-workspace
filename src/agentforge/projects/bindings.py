@@ -139,8 +139,7 @@ def verify_wsl_binding(
         wsl_env.last_checked_at = datetime.now(UTC)
 
     evidence = (
-        f"wsl_test_d:{wsl_distro}:{candidate}:"
-        f"win_identity={compute_directory_identity(win_root)}"
+        f"wsl_test_d:{wsl_distro}:{candidate}:win_identity={compute_directory_identity(win_root)}"
     )
     row = EnvironmentPathBindingRow(
         id=f"bind_{uuid.uuid4().hex[:16]}",

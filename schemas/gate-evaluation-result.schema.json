@@ -1,0 +1,63 @@
+{
+  "additionalProperties": false,
+  "description": "Pure evaluator output — waiting/rework/blocked/release are not interchangeable.",
+  "properties": {
+    "allowedReleaseWorkPackageIds": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9._:-]+$",
+        "type": "string"
+      },
+      "maxItems": 64,
+      "title": "Allowedreleaseworkpackageids",
+      "type": "array"
+    },
+    "missingRefs": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9._:-]+$",
+        "type": "string"
+      },
+      "maxItems": 64,
+      "title": "Missingrefs",
+      "type": "array"
+    },
+    "outcome": {
+      "enum": [
+        "waiting",
+        "rework",
+        "blocked",
+        "release"
+      ],
+      "title": "Outcome",
+      "type": "string"
+    },
+    "reason": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Reason",
+      "type": "string"
+    },
+    "reworkProblemDigest": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Reworkproblemdigest"
+    }
+  },
+  "required": [
+    "outcome",
+    "reason"
+  ],
+  "title": "GateEvaluationResult",
+  "type": "object"
+}

@@ -88,8 +88,10 @@ class BudgetService:
     def available(self, account: BudgetAccountRow) -> tuple[Decimal | None, int | None]:
         settled = _d(account.settled_amount)
         reserved = _d(account.reserved_amount)
-        limit = _d(account.hard_limit) if account.hard_limit else (
-            _d(account.soft_limit) if account.soft_limit else None
+        limit = (
+            _d(account.hard_limit)
+            if account.hard_limit
+            else (_d(account.soft_limit) if account.soft_limit else None)
         )
         money_avail = None if limit is None else (limit - settled - reserved)
         token_avail = None
@@ -278,9 +280,7 @@ class BudgetService:
         if require_open:
             where.append(BudgetAccountRow.status == "open")
         try:
-            result = self.session.execute(
-                update(BudgetAccountRow).where(*where).values(**values)
-            )
+            result = self.session.execute(update(BudgetAccountRow).where(*where).values(**values))
             if getattr(result, "rowcount", 1) == 0:
                 raise BudgetError("BUDGET_CONFLICT", "Concurrent budget update; retry")
         except BudgetError:

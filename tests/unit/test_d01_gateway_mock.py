@@ -9,18 +9,13 @@ from unittest.mock import patch
 from agentforge.contracts.providers import (
     ModelAuthorizationGrantCreateRequest,
     ModelCallCreateRequest,
-    NetworkPolicy,
     ProviderCreateRequest,
 )
 from agentforge.core.config import Settings
 from agentforge.models.adapters import NormalizedCompletion, NormalizedUsage
 from agentforge.models.gateway import ModelGateway
 from agentforge.storage.models import (
-    ContextManifestRow,
     ModelAttemptRow,
-    ModelAuthorizationGrantRow,
-    ModelCallRow,
-    ProviderProfileRow,
     UsageRecordRow,
 )
 
@@ -42,6 +37,9 @@ class _MemSession:
                 row.created_at = now
             if hasattr(row, "updated_at") and getattr(row, "updated_at", None) is None:
                 row.updated_at = now
+
+    def commit(self) -> None:
+        self.flush()
 
     def get(self, model: type, key: str) -> Any | None:
         return self.store.get((model, key))

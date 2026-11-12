@@ -68,9 +68,7 @@ def test_redirect_to_link_local_blocked(monkeypatch: pytest.MonkeyPatch) -> None
 
     class _Client:
         def __init__(self, **kwargs: object) -> None:
-            self._client = real_client(
-                transport=transport, follow_redirects=False, trust_env=False
-            )
+            self._client = real_client(transport=transport, follow_redirects=False, trust_env=False)
 
         def __enter__(self) -> httpx.Client:
             return self._client.__enter__()

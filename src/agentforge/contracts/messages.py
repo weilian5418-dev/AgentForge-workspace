@@ -212,6 +212,7 @@ class CollaborationMessage(ContractModel):
 
 
 class MessageCreateRequest(ApiInputModel):
+    idempotency_key: OpaqueId | None = None
     """Public message input — excludes platform-derived stage.release."""
 
     recipient_refs: list[ShortText] = Field(min_length=1, max_length=32)
@@ -283,19 +284,15 @@ class MessageDelivery(ContractModel):
         if self.reply_status is None:
             object.__setattr__(self, "reply_status", "not_required")
 
-        if not reply_must_not_downgrade_transmission(
-            self.transmission_status, self.reply_status
-        ):
+        assert self.reply_status is not None
+        if not reply_must_not_downgrade_transmission(self.transmission_status, self.reply_status):
             raise ValueError(
                 "reply status awaiting_reply/responded/timed_out requires "
                 "transmissionStatus=received"
             )
         if self.status is not None:
             facets = split_legacy_delivery_status(self.status)
-            if (
-                self.transmission_status != facets.transmission
-                or self.reply_status != facets.reply
-            ):
+            if self.transmission_status != facets.transmission or self.reply_status != facets.reply:
                 expected = combine_delivery_status_facets(
                     self.transmission_status, self.reply_status
                 )
@@ -309,9 +306,7 @@ class MessageDelivery(ContractModel):
             object.__setattr__(
                 self,
                 "status",
-                combine_delivery_status_facets(
-                    self.transmission_status, self.reply_status
-                ),
+                combine_delivery_status_facets(self.transmission_status, self.reply_status),
             )
         return self
 

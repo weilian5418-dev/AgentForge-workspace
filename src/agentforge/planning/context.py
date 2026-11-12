@@ -70,6 +70,7 @@ class PlanningContextBuilder:
             )
 
         input_ids = list(run.input_refs or [])
+        input_versions = []
         if input_ids:
             available = {
                 row.id: row
@@ -87,11 +88,18 @@ class PlanningContextBuilder:
                         f"Input {input_id} is missing or not available",
                     )
 
+        for ref in input_ids:
+            item = available[ref]
+            input_versions.append(
+                {"id": item.id, "version": item.input_version, "sha256": item.sha256}
+            )
         summary_payload = {
             "baselineId": baseline.id,
             "baselineStatus": baseline.status,
             "gitCommit": baseline.git_commit,
-            "inputIds": sorted(input_ids),
+            "inputVersions": sorted(input_versions, key=lambda r: str(r["id"])),
+            "baselineHash": baseline.manifest_hash,
+            "grantVersion": project.grant_version,
             "projectId": run.project_id,
             "runId": run.id,
         }
@@ -100,8 +108,7 @@ class PlanningContextBuilder:
         ).hexdigest()
         context_id = f"pctx_{uuid.uuid4().hex[:20]}"
         summary = (
-            f"baseline={baseline.id} inputs={len(input_ids)} "
-            f"dirty_policy={baseline.dirty_policy}"
+            f"baseline={baseline.id} inputs={len(input_ids)} dirty_policy={baseline.dirty_policy}"
         )
         view = PlanningContext(
             context_id=context_id,

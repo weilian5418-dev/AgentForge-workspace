@@ -29,7 +29,6 @@ from agentforge.stages.transitions import (
     review_cycle_fingerprint_parts,
 )
 
-
 NOW = datetime(2026, 11, 12, tzinfo=UTC)
 H = "a" * 64
 

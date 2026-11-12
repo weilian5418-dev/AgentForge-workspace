@@ -1,7 +1,93 @@
 {
+  "$defs": {
+    "CurrentExecutionRef": {
+      "additionalProperties": false,
+      "description": "What the instance is bound to right now — not lifecycle and not idle/busy.",
+      "properties": {
+        "attemptId": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Attemptid"
+        },
+        "generation": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Generation"
+        },
+        "stageId": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stageid"
+        },
+        "workPackageId": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Workpackageid"
+        }
+      },
+      "title": "CurrentExecutionRef",
+      "type": "object"
+    }
+  },
   "additionalProperties": false,
-  "description": "Platform-managed role execution instance (not the API process instance).",
+  "description": "Platform-managed role execution instance (not the API process instance).\n\nOne instance may have many historical native sessions; only one active binding\nis valid at a time. Do not overwrite old sessionRef and lose history.",
   "properties": {
+    "activity": {
+      "anyOf": [
+        {
+          "enum": [
+            "idle",
+            "busy",
+            "waiting_input",
+            "waiting_approval"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Activity"
+    },
     "agentProfileId": {
       "maxLength": 128,
       "minLength": 1,
@@ -15,6 +101,19 @@
       "pattern": "^[A-Za-z0-9._:-]+$",
       "title": "Assignmentid",
       "type": "string"
+    },
+    "assignmentVersion": {
+      "anyOf": [
+        {
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Assignmentversion"
     },
     "budgetRef": {
       "anyOf": [
@@ -46,6 +145,17 @@
       "default": null,
       "title": "Currentattemptid"
     },
+    "currentExecution": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/CurrentExecutionRef"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
     "executionEnvironment": {
       "maxLength": 512,
       "minLength": 1,
@@ -58,6 +168,44 @@
       "pattern": "^[A-Za-z0-9._:-]+$",
       "title": "Instanceid",
       "type": "string"
+    },
+    "lifecycle": {
+      "anyOf": [
+        {
+          "enum": [
+            "created",
+            "starting",
+            "active",
+            "stop_requested",
+            "stopped",
+            "unknown",
+            "failed",
+            "closed",
+            "needs_reconciliation"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Lifecycle"
+    },
+    "nativeSessionId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Nativesessionid"
     },
     "permissionScopeRef": {
       "anyOf": [
@@ -118,22 +266,30 @@
       "title": "Stageid"
     },
     "status": {
-      "enum": [
-        "created",
-        "starting",
-        "running",
-        "waiting_input",
-        "waiting_approval",
-        "stop_requested",
-        "stopped",
-        "unknown",
-        "reconciling",
-        "blocked",
-        "failed",
-        "closed"
+      "anyOf": [
+        {
+          "enum": [
+            "created",
+            "starting",
+            "running",
+            "waiting_input",
+            "waiting_approval",
+            "stop_requested",
+            "stopped",
+            "unknown",
+            "reconciling",
+            "blocked",
+            "failed",
+            "closed"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
       ],
-      "title": "Status",
-      "type": "string"
+      "default": null,
+      "title": "Status"
     },
     "workspaceId": {
       "anyOf": [
@@ -157,7 +313,6 @@
     "runId",
     "roleId",
     "agentProfileId",
-    "status",
     "executionEnvironment"
   ],
   "title": "AgentInstance",

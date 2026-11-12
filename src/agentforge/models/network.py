@@ -29,7 +29,7 @@ def _host_ips(host: str) -> list[str]:
         raise NetworkPolicyError("dns_resolution_failed", f"Cannot resolve host {host}") from exc
     ips: list[str] = []
     for info in infos:
-        addr = info[4][0]
+        addr = str(info[4][0])
         if addr not in ips:
             ips.append(addr)
     if not ips:

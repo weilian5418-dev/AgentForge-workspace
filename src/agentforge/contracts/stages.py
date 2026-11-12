@@ -255,8 +255,7 @@ class StageSubmissionRequest(ApiInputModel):
             normalized = str(key).replace("_", "").lower()
             if normalized in forbidden or normalized.endswith("=true"):
                 raise ValueError(
-                    f"clients cannot declare trusted stage flags ({key}); "
-                    "submission is intent only"
+                    f"clients cannot declare trusted stage flags ({key}); submission is intent only"
                 )
             # Explicit camelCase / snake flags
             if key in (

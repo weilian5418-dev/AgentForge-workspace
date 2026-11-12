@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-import secrets
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
+from typing import Any
 
-from sqlalchemy import or_, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from agentforge.instances.errors import InstanceError
 from agentforge.storage.models import (
     CollaborationMessageRow,
     DeliveryAttemptRow,
@@ -66,58 +67,11 @@ class MessageRepository:
             )
         )
 
-    def claim_deliveries(
-        self,
-        *,
-        owner: str,
-        limit: int = 10,
-        claim_ttl_seconds: int = 30,
-    ) -> list[MessageDeliveryRow]:
-        now = _now()
-        expires = now + timedelta(seconds=claim_ttl_seconds)
-        try:
-            candidates = list(
-                self.session.scalars(
-                    select(MessageDeliveryRow)
-                    .where(
-                        or_(
-                            MessageDeliveryRow.transmission_status == "pending",
-                            (MessageDeliveryRow.transmission_status == "claimed")
-                            & (MessageDeliveryRow.claim_expires_at <= now),
-                        )
-                    )
-                    .where(
-                        or_(
-                            MessageDeliveryRow.next_attempt_at.is_(None),
-                            MessageDeliveryRow.next_attempt_at <= now,
-                        )
-                    )
-                    .order_by(MessageDeliveryRow.created_at.asc())
-                    .with_for_update(skip_locked=True)
-                    .limit(limit)
-                ).all()
-            )
-        except Exception:
-            candidates = []
-        if not candidates:
-            added = getattr(self.session, "added", [])
-            candidates = [
-                row
-                for row in added
-                if isinstance(row, MessageDeliveryRow)
-                and row.transmission_status in ("pending", "claimed")
-            ][:limit]
-        claimed: list[MessageDeliveryRow] = []
-        for row in candidates:
-            row.transmission_status = "claimed"
-            row.status = "dispatching"
-            row.claim_owner = owner
-            row.claim_token = secrets.token_urlsafe(16)
-            row.claim_expires_at = expires
-            row.updated_at = now
-            claimed.append(row)
-        self.session.flush()
-        return claimed
+    def claim_deliveries(self, **kwargs: Any) -> Any:
+        raise InstanceError(
+            "engine_coordinator_required",
+            "Use durable instances.worker, not transaction-bound claim helpers",
+        )
 
     def add_delivery_attempt(self, row: DeliveryAttemptRow) -> DeliveryAttemptRow:
         self.session.add(row)

@@ -7,7 +7,6 @@ import os
 import secrets
 import uuid
 from datetime import UTC, datetime
-from pathlib import Path
 from typing import Any
 
 from agentforge.core.config import Settings
@@ -24,7 +23,7 @@ class ModelCredentialStore:
         if not self.registry_path.exists():
             return {"credentials": {}}
         _assert_safe_path(self.registry_path)
-        return json.loads(self.registry_path.read_text(encoding="utf-8"))
+        return dict(json.loads(self.registry_path.read_text(encoding="utf-8")))
 
     def _save(self, data: dict[str, Any]) -> None:
         _assert_safe_path(self.registry_path.parent)
