@@ -46,7 +46,12 @@ EventType = Literal[
     "instance.started",
     "instance.stop_requested",
     "instance.stopped",
+    "instance.needs_reconciliation",
     "message.delivered",
+    "message.delivery_unknown",
+    "protocol.request_matched",
+    "protocol.request_conflict",
+    "native_event.ingested",
     "native_approval.requested",
     "native_approval.confirmed",
     "stage.candidate_frozen",
@@ -162,6 +167,23 @@ class MessageDeliveredPayload(ContractModel):
     delivery_id: OpaqueId
     recipient_instance_id: OpaqueId
     status: ShortText
+    transmission_status: ShortText | None = None
+    reply_status: ShortText | None = None
+
+
+class ProtocolRequestPayload(ContractModel):
+    request_id: OpaqueId
+    request_type: ShortText
+    instance_id: OpaqueId
+    status: ShortText
+
+
+class NativeEventIngestedPayload(ContractModel):
+    receipt_id: OpaqueId
+    instance_id: OpaqueId
+    dedupe_key: ShortText
+    event_type: ShortText
+    cursor: ShortText | None = None
 
 
 class NativeApprovalPayload(ContractModel):
@@ -246,7 +268,12 @@ _PAYLOAD_BY_TYPE: dict[str, type[ContractModel]] = {
     "instance.started": InstanceLifecyclePayload,
     "instance.stop_requested": InstanceLifecyclePayload,
     "instance.stopped": InstanceLifecyclePayload,
+    "instance.needs_reconciliation": InstanceLifecyclePayload,
     "message.delivered": MessageDeliveredPayload,
+    "message.delivery_unknown": MessageDeliveredPayload,
+    "protocol.request_matched": ProtocolRequestPayload,
+    "protocol.request_conflict": ProtocolRequestPayload,
+    "native_event.ingested": NativeEventIngestedPayload,
     "native_approval.requested": NativeApprovalPayload,
     "native_approval.confirmed": NativeApprovalPayload,
     "stage.candidate_frozen": StageCandidateFrozenPayload,

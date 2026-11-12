@@ -10,7 +10,10 @@ from agentforge.api.app import create_app
 from agentforge.contracts.agents import (
     AgentInstance,
     AgentProfile,
+    ExecutionEligibility,
     ExecutionRequest,
+    InstanceOperation,
+    NativeSession,
     RoleAssignment,
     RoleSpec,
 )
@@ -38,8 +41,11 @@ from agentforge.contracts.git_workspaces import (
 )
 from agentforge.contracts.messages import (
     CollaborationMessage,
+    DeliveryAttempt,
     MessageCreateRequest,
     MessageDelivery,
+    NativeEventReceipt,
+    ProtocolRequest,
 )
 from agentforge.contracts.plans import (
     ApprovalSummary,
@@ -104,6 +110,9 @@ SCHEMA_MODELS: dict[str, type[Any]] = {
     "role-assignment.schema.json": RoleAssignment,
     "agent-profile.schema.json": AgentProfile,
     "agent-instance.schema.json": AgentInstance,
+    "native-session.schema.json": NativeSession,
+    "instance-operation.schema.json": InstanceOperation,
+    "execution-eligibility.schema.json": ExecutionEligibility,
     "execution-request.schema.json": ExecutionRequest,
     "stage.schema.json": Stage,
     "gate-decision.schema.json": GateDecision,
@@ -113,6 +122,9 @@ SCHEMA_MODELS: dict[str, type[Any]] = {
     "message-create-request.schema.json": MessageCreateRequest,
     "collaboration-message.schema.json": CollaborationMessage,
     "message-delivery.schema.json": MessageDelivery,
+    "delivery-attempt.schema.json": DeliveryAttempt,
+    "protocol-request.schema.json": ProtocolRequest,
+    "native-event-receipt.schema.json": NativeEventReceipt,
     "template-document.schema.json": TemplateDocument,
     "template-import-request.schema.json": TemplateImportRequest,
     "error-response.schema.json": ErrorResponse,
@@ -152,7 +164,12 @@ EVENT_PAYLOAD_TYPES = (
     "instance.started",
     "instance.stop_requested",
     "instance.stopped",
+    "instance.needs_reconciliation",
     "message.delivered",
+    "message.delivery_unknown",
+    "protocol.request_matched",
+    "protocol.request_conflict",
+    "native_event.ingested",
     "native_approval.requested",
     "native_approval.confirmed",
     "stage.candidate_frozen",
