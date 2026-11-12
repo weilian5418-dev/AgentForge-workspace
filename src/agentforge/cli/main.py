@@ -59,6 +59,7 @@ approval_app = typer.Typer(help="Action authorization / native approval (D04)")
 runner_app = typer.Typer(help="Controlled Runner operations (D05)")
 artifact_app = typer.Typer(help="Artifact bus freeze/verify/publish (D06)")
 git_app = typer.Typer(help="Git worktrees / snapshots / integrate (D07)")
+run_app = typer.Typer(help="Runs / plan propose / confirm (D08)")
 app.add_typer(auth_app, name="auth")
 app.add_typer(grant_app, name="grant")
 app.add_typer(project_app, name="project")
@@ -69,6 +70,7 @@ app.add_typer(approval_app, name="approval")
 app.add_typer(runner_app, name="runner")
 app.add_typer(artifact_app, name="artifact")
 app.add_typer(git_app, name="git")
+app.add_typer(run_app, name="run")
 
 
 def load_settings() -> Settings:
@@ -1373,3 +1375,195 @@ def git_cleanup(
         as_json=json_out,
         human=f"workspace={view.workspace_id} status={view.status}",
     )
+
+
+def _run_service():
+    from agentforge.storage.database import create_database_engine
+    from agentforge.storage.uow import unit_of_work_connection
+
+    settings = load_settings()
+    engine = create_database_engine(settings)
+    if engine is None:
+        typer.echo("database_unavailable: Database is not configured", err=True)
+        raise typer.Exit(DEPENDENCY_UNAVAILABLE)
+    return settings, engine, unit_of_work_connection
+
+
+@run_app.command("create")
+def run_create(
+    project_id: str = typer.Option(..., "--project-id"),
+    goal: str = typer.Option(..., "--goal"),
+    outputs: str = typer.Option("markdown", "--outputs", help="Comma-separated artifact kinds"),
+    idempotency_key: str | None = typer.Option(None, "--idempotency-key"),
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """Create a run goal. Does not start development agents."""
+    from agentforge.contracts.runs import RunCreateRequest
+    from agentforge.planning.service import PlanningError, PlanningService
+
+    _settings, engine, uow_fn = _run_service()
+    kinds = [k.strip() for k in outputs.split(",") if k.strip()]
+    try:
+        with uow_fn(engine) as uow:
+            view = PlanningService(uow.session).create_run(
+                RunCreateRequest.model_validate(
+                    {
+                        "projectId": project_id,
+                        "goal": goal,
+                        "outputs": kinds,
+                        "budget": {},
+                        "idempotencyKey": idempotency_key,
+                    }
+                )
+            )
+            payload = view.model_dump(mode="json", by_alias=True)
+    except PlanningError as exc:
+        typer.echo(f"{exc.code}: {exc.message}", err=True)
+        raise typer.Exit(FAILURE) from None
+    emit(payload, as_json=json_out, human=f"run={view.run_id} status={view.status}")
+
+
+@run_app.command("get")
+def run_get(
+    run_id: str = typer.Option(..., "--run-id"),
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    from agentforge.planning.service import PlanningError, PlanningService
+
+    _settings, engine, uow_fn = _run_service()
+    try:
+        with uow_fn(engine) as uow:
+            view = PlanningService(uow.session).get_run(run_id)
+            payload = view.model_dump(mode="json", by_alias=True)
+    except PlanningError as exc:
+        typer.echo(f"{exc.code}: {exc.message}", err=True)
+        raise typer.Exit(FAILURE) from None
+    emit(payload, as_json=json_out, human=f"run={view.id} status={view.status}")
+
+
+@run_app.command("propose")
+def run_propose(
+    run_id: str = typer.Option(..., "--run-id"),
+    source: str = typer.Option("rules", "--source", help="rules|model|auto"),
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """Generate a plan proposal and compile it. Does not approve."""
+    from agentforge.contracts.plans import PlanProposalRequest
+    from agentforge.planning.service import PlanningError, PlanningService
+
+    _settings, engine, uow_fn = _run_service()
+    try:
+        with uow_fn(engine) as uow:
+            view = PlanningService(uow.session).propose(
+                run_id,
+                PlanProposalRequest.model_validate({"source": source}),
+            )
+            payload = view.model_dump(mode="json", by_alias=True)
+    except PlanningError as exc:
+        typer.echo(f"{exc.code}: {exc.message}", err=True)
+        raise typer.Exit(FAILURE) from None
+    compile_status = view.compilation.status if view.compilation else "?"
+    emit(
+        payload,
+        as_json=json_out,
+        human=f"plan v{view.plan_version} compile={compile_status} hash={view.plan_hash[:12]}…",
+    )
+
+
+@run_app.command("plan")
+def run_plan(
+    run_id: str = typer.Option(..., "--run-id"),
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    from agentforge.planning.service import PlanningError, PlanningService
+
+    _settings, engine, uow_fn = _run_service()
+    try:
+        with uow_fn(engine) as uow:
+            view = PlanningService(uow.session).get_plan(run_id)
+            payload = view.model_dump(mode="json", by_alias=True)
+    except PlanningError as exc:
+        typer.echo(f"{exc.code}: {exc.message}", err=True)
+        raise typer.Exit(FAILURE) from None
+    emit(
+        payload,
+        as_json=json_out,
+        human=f"plan v{view.plan_version} status={view.status} confirm={view.confirmation_state}",
+    )
+
+
+@run_app.command("assign")
+def run_assign(
+    run_id: str = typer.Option(..., "--run-id"),
+    plan_version: int = typer.Option(..., "--plan-version"),
+    role_id: str = typer.Option("role_writer", "--role-id"),
+    profile_id: str = typer.Option(..., "--profile-id"),
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """Save a draft assignment set and open a confirmation request when valid."""
+    from agentforge.contracts.agents import RoleAssignmentPutItem
+    from agentforge.planning.service import PlanningError, PlanningService
+
+    _settings, engine, uow_fn = _run_service()
+    try:
+        with uow_fn(engine) as uow:
+            items = PlanningService(uow.session).put_assignments(
+                run_id,
+                plan_version=plan_version,
+                items=[
+                    RoleAssignmentPutItem.model_validate(
+                        {"roleId": role_id, "agentProfileId": profile_id}
+                    )
+                ],
+            )
+            plan = PlanningService(uow.session).get_plan(run_id)
+            payload = {
+                "assignments": [i.model_dump(mode="json", by_alias=True) for i in items],
+                "plan": plan.model_dump(mode="json", by_alias=True),
+            }
+    except PlanningError as exc:
+        typer.echo(f"{exc.code}: {exc.message}", err=True)
+        raise typer.Exit(FAILURE) from None
+    creq = plan.confirmation.request_id if plan.confirmation else "-"
+    emit(payload, as_json=json_out, human=f"assignmentVersion={plan.assignment_version} creq={creq}")
+
+
+@run_app.command("decide")
+def run_decide(
+    run_id: str = typer.Option(..., "--run-id"),
+    decision: str = typer.Option(..., "--decision", help="approve|reject"),
+    confirmation_request_id: str = typer.Option(..., "--confirmation-request-id"),
+    plan_version: int = typer.Option(..., "--plan-version"),
+    plan_hash: str = typer.Option(..., "--plan-hash"),
+    assignment_version: int = typer.Option(..., "--assignment-version"),
+    gate_policy_version: int = typer.Option(..., "--gate-policy-version"),
+    status_version: int = typer.Option(..., "--status-version"),
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """Decide a confirmation request. Approve enters preparing; does not start agents."""
+    from agentforge.contracts.plans import PlanDecisionRequest
+    from agentforge.planning.service import PlanningError, PlanningService
+
+    _settings, engine, uow_fn = _run_service()
+    try:
+        with uow_fn(engine) as uow:
+            view = PlanningService(uow.session).decide(
+                run_id,
+                PlanDecisionRequest.model_validate(
+                    {
+                        "decision": decision,
+                        "confirmationRequestId": confirmation_request_id,
+                        "planVersion": plan_version,
+                        "planHash": plan_hash,
+                        "assignmentVersion": assignment_version,
+                        "gatePolicyVersion": gate_policy_version,
+                        "statusVersion": status_version,
+                    }
+                ),
+                actor="cli",
+            )
+            payload = view.model_dump(mode="json", by_alias=True)
+    except PlanningError as exc:
+        typer.echo(f"{exc.code}: {exc.message}", err=True)
+        raise typer.Exit(FAILURE) from None
+    emit(payload, as_json=json_out, human=f"plan status={view.status} runConfirm={view.confirmation_state}")

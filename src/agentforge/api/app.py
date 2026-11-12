@@ -32,6 +32,7 @@ from agentforge.api.git import router as git_router
 from agentforge.api.projects import router as projects_router
 from agentforge.api.providers import router as providers_router
 from agentforge.api.runner import router as runner_router
+from agentforge.api.runs import router as runs_router
 from agentforge.core.config import Settings
 from agentforge.core.credentials import CredentialError, CredentialVerifier
 from agentforge.runtime.components import component_status_snapshot
@@ -263,6 +264,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return app.openapi()
 
     app.include_router(projects_router, dependencies=[Depends(authenticate)])
+    app.include_router(runs_router, dependencies=[Depends(authenticate)])
     app.include_router(providers_router, dependencies=[Depends(authenticate)])
     app.include_router(discovery_router, dependencies=[Depends(authenticate)])
     app.include_router(approvals_router, dependencies=[Depends(authenticate)])

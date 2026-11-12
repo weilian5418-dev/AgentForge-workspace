@@ -33,9 +33,24 @@ class PlanRepository:
         return self.session.get(Run, run_id)
 
     def get_run_by_idempotency(self, project_id: str, key: str) -> Run | None:
-        return self.session.scalar(
-            select(Run).where(Run.project_id == project_id, Run.idempotency_key == key)
-        )
+        row: Run | None = None
+        try:
+            row = self.session.scalar(
+                select(Run).where(Run.project_id == project_id, Run.idempotency_key == key)
+            )
+        except Exception:
+            row = None
+        if row is not None:
+            return row
+        # MemSession / limited dialects: scan loaded runs.
+        for obj in getattr(self.session, "added", []):
+            if (
+                isinstance(obj, Run)
+                and obj.project_id == project_id
+                and obj.idempotency_key == key
+            ):
+                return obj
+        return None
 
     def add_run(self, row: Run) -> Run:
         self.session.add(row)
@@ -126,11 +141,12 @@ class PlanRepository:
     def lock_run(self, run_id: str) -> Run | None:
         """Row lock when the dialect supports FOR UPDATE; MemSession falls back to get."""
         try:
-            return self.session.scalar(
-                select(Run).where(Run.id == run_id).with_for_update()
-            )
+            row = self.session.scalar(select(Run).where(Run.id == run_id).with_for_update())
+            if row is not None:
+                return row
         except Exception:
-            return self.session.get(Run, run_id)
+            pass
+        return self.session.get(Run, run_id)
 
 
 def plan_row_from_spec(

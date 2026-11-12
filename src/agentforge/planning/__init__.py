@@ -15,6 +15,7 @@ from agentforge.planning.hashing import (
 )
 from agentforge.planning.proposals import ProposalError, ProposalGenerator, build_rules_draft
 from agentforge.planning.repository import PlanRepository, plan_row_from_spec
+from agentforge.planning.service import PlanningError, PlanningService
 
 __all__ = [
     "COMPILER_VERSION",
@@ -25,6 +26,8 @@ __all__ = [
     "PlanRepository",
     "PlanningContextBuilder",
     "PlanningContextError",
+    "PlanningError",
+    "PlanningService",
     "ProposalError",
     "ProposalGenerator",
     "build_rules_draft",
