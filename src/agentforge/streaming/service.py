@@ -9,7 +9,6 @@ from collections.abc import AsyncIterator, Callable
 from dataclasses import dataclass, field
 from typing import Any
 
-from sqlalchemy import select
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
@@ -17,13 +16,13 @@ from agentforge.contracts.event_stream import EventBatch, PublicEventEnvelope, S
 from agentforge.core.config import Settings
 from agentforge.core.credentials import CredentialError, CredentialVerifier
 from agentforge.queries.authorization import AuthenticatedPrincipal, authorize_run_read
-from agentforge.storage.models import Event, EventReplayWindowRow
 from agentforge.streaming.framing import (
     encode_business_event,
     encode_control_frame,
     encode_heartbeat,
 )
 from agentforge.streaming.projector import ProjectionError, project_public_event
+from agentforge.streaming.retention import read_after_in_window
 
 MAX_BATCH_EVENTS = 100
 MAX_BATCH_BYTES = 256 * 1024
@@ -82,32 +81,40 @@ def read_bounded_batch(
     max_batch = max(1, min(int(max_batch), MAX_BATCH_EVENTS))
     with engine.connect() as conn:
         with Session(bind=conn, autoflush=False, expire_on_commit=False) as session:
-            run = authorize_run_read(session, principal, run_id)
-            latest = int(run.last_sequence or 0)
-            window = session.get(EventReplayWindowRow, run_id)
-            floor = int(window.replay_floor_sequence) if window is not None else 0
-            if after_sequence < floor:
+            authorize_run_read(session, principal, run_id)
+            window_read = read_after_in_window(
+                session,
+                run_id=run_id,
+                after_sequence=after_sequence,
+                limit=max_batch,
+            )
+            if window_read.status in {
+                "cursor_expired",
+                "cursor_ahead",
+                "gap_detected",
+            }:
                 return EventBatch.model_validate(
                     {
                         "events": [],
                         "nextAfterSequence": after_sequence,
                         "resyncRequired": True,
-                        "reason": "cursor_expired",
+                        "reason": window_read.reason or window_read.status,
                         "encodedBytes": 0,
                     }
                 )
-            rows = list(
-                session.scalars(
-                    select(Event)
-                    .where(Event.run_id == run_id, Event.sequence > after_sequence)
-                    .order_by(Event.sequence.asc())
-                    .limit(max_batch)
-                ).all()
-            )
+            if window_read.status == "caught_up":
+                return EventBatch.model_validate(
+                    {
+                        "events": [],
+                        "nextAfterSequence": after_sequence,
+                        "resyncRequired": False,
+                        "encodedBytes": 0,
+                    }
+                )
             events: list[PublicEventEnvelope] = []
             encoded = 0
             next_seq = after_sequence
-            for row in rows:
+            for row in window_read.events:
                 try:
                     projected = project_public_event(
                         event_id=row.event_id,
@@ -133,8 +140,6 @@ def read_bounded_batch(
                 if events and encoded + len(frame) > MAX_BATCH_BYTES:
                     break
                 if not events and len(frame) > MAX_BATCH_BYTES:
-                    # First event alone exceeds budget — continue with invalidated? project already
-                    # may have shrunk; still emit resync rather than hang forever.
                     return EventBatch.model_validate(
                         {
                             "events": [],

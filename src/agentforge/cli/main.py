@@ -2140,6 +2140,44 @@ def driver_sweep(
     emit(payload, as_json=json_out, human=f"sweep complete limit={limit}")
 
 
+@driver_app.command("advance-replay-floor")
+def driver_advance_replay_floor(
+    run_id: str = typer.Option(..., "--run-id"),
+    new_floor: int = typer.Option(..., "--new-floor", min=0),
+    delete_online: bool = typer.Option(
+        False, "--delete-online", help="Only after archive watermark covers the range"
+    ),
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """Advance SSE replay floor. Default does not delete audit events."""
+    from agentforge.streaming.retention import RetentionError, advance_replay_floor
+
+    _settings, engine, uow_fn = _run_service()
+    try:
+        with uow_fn(engine) as uow:
+            window = advance_replay_floor(
+                uow.session,
+                run_id=run_id,
+                new_floor=new_floor,
+                delete_online=delete_online,
+            )
+    except RetentionError as exc:
+        typer.echo(f"{exc.code}: {exc.message}", err=True)
+        raise typer.Exit(FAILURE) from None
+    payload = {
+        "runId": window.run_id,
+        "replayFloorSequence": window.replay_floor_sequence,
+        "lastArchivedSequence": window.last_archived_sequence,
+        "retentionVersion": window.retention_version,
+        "latestSequence": window.latest_sequence,
+    }
+    emit(
+        payload,
+        as_json=json_out,
+        human=f"floor={window.replay_floor_sequence} archived={window.last_archived_sequence}",
+    )
+
+
 stage_app = typer.Typer(help="Stage gates / submissions / reviews (D10)")
 app.add_typer(stage_app, name="stage")
 

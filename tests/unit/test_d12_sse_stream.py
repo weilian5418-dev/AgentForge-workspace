@@ -117,25 +117,32 @@ async def test_stream_slot_limits_and_release() -> None:
 
 
 def test_read_bounded_batch_resync_when_below_floor() -> None:
+    from agentforge.streaming.retention import WindowReadResult
+
     engine = MagicMock()
     conn = MagicMock()
     session = MagicMock()
     engine.connect.return_value.__enter__.return_value = conn
-    # Session(bind=conn) context manager
     with patch("agentforge.streaming.service.Session") as session_cls:
         session_cls.return_value.__enter__.return_value = session
-        run = MagicMock(last_sequence=10)
-        window = MagicMock(replay_floor_sequence=5)
         with patch(
-            "agentforge.streaming.service.authorize_run_read", return_value=run
+            "agentforge.streaming.service.authorize_run_read", return_value=MagicMock()
         ):
-            session.get.return_value = window
-            batch = read_bounded_batch(
-                engine,
-                principal=AuthenticatedPrincipal("c", 1, "user:api"),
-                run_id="run_1",
-                after_sequence=2,
-            )
+            with patch(
+                "agentforge.streaming.service.read_after_in_window",
+                return_value=WindowReadResult(
+                    events=[],
+                    next_after_sequence=2,
+                    status="cursor_expired",
+                    reason="cursor_expired",
+                ),
+            ):
+                batch = read_bounded_batch(
+                    engine,
+                    principal=AuthenticatedPrincipal("c", 1, "user:api"),
+                    run_id="run_1",
+                    after_sequence=2,
+                )
     assert batch.resync_required is True
     assert batch.reason == "cursor_expired"
 
