@@ -24,6 +24,7 @@ from agentforge.api.events import router as events_router
 from agentforge.api.git import router as git_router
 from agentforge.api.integrations import router as integrations_router
 from agentforge.api.instances import router as instances_router
+from agentforge.api.logs import router as logs_router
 from agentforge.api.projects import router as projects_router
 from agentforge.api.providers import router as providers_router
 from agentforge.api.runner import router as runner_router
@@ -316,4 +317,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(runner_router, dependencies=[Depends(authenticate)])
     app.include_router(artifacts_router, dependencies=[Depends(authenticate)])
     app.include_router(git_router, dependencies=[Depends(authenticate)])
+    app.include_router(logs_router, dependencies=[Depends(authenticate)])
     return app

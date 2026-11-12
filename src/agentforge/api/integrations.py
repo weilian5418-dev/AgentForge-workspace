@@ -13,8 +13,14 @@ from agentforge.contracts.integrations import (
     IntegrationBuildView,
     IntegrationSelection,
     IntegrationSelectionRequest,
+    ValidationCycleRequest,
+    ValidationCycleView,
 )
 from agentforge.core.config import Settings
+from agentforge.integration.check_worker import (
+    CheckWorkerError,
+    start_validation_for_version,
+)
 from agentforge.integration.coordinator import (
     IntegrationError,
     process_integration_build,
@@ -157,3 +163,44 @@ def reconcile_build(
         return reconcile_integration_build(engine, settings, build_id=build_id)
     except IntegrationError as exc:
         raise _map_build(exc) from exc
+
+
+@router.post(
+    "/integration-versions/{version_id}/validation-cycles",
+    response_model=ValidationCycleView,
+    status_code=201,
+)
+def open_validation_cycle_api(
+    request: Request,
+    version_id: str,
+    body: ValidationCycleRequest,
+    settings: Annotated[Settings, Depends(_settings)],
+) -> ValidationCycleView:
+    """Open a validation cycle from a confirmed policy — clients cannot pass outcomes."""
+    engine = _require_engine(request, settings)
+    # Default first check: python_pytest_v1 with tests/ — policy_ref selects package.
+    check_specs = [
+        {
+            "checkId": "python_pytest",
+            "checkVersion": "v1",
+            "config": {"testPaths": ["tests"], "minimumCollectedTests": 1},
+        }
+    ]
+    try:
+        return start_validation_for_version(
+            engine,
+            settings,
+            principal=_principal(request),
+            version_id=version_id,
+            body=body,
+            check_specs=check_specs,
+        )
+    except CheckWorkerError as exc:
+        status = {
+            "version_not_found": 404,
+            "run_not_found": 404,
+            "unauthorized": 401,
+            "invalid_config": 400,
+            "check_not_registered": 400,
+        }.get(exc.code, 400)
+        raise HTTPException(status, f"{exc.code}: {exc.message}") from exc
