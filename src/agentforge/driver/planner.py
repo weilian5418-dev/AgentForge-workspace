@@ -48,11 +48,14 @@ def choose_next_action(snapshot: CollaborationSnapshot) -> NextAction:
                 detail="await stop proof",
             )
         if attempt.status == "submitted":
+            # StageService.submit already accepted — wait for stop/verify pipeline.
             return NextAction(
-                kind="accept_submissions",
+                kind="register_wait",
                 stage_id=attempt.stage_id,
                 work_package_id=attempt.work_package_id,
-                detail=f"submission pending for {attempt.attempt_id}",
+                wait_reason="stop_verification",
+                wait_key=f"submit:{attempt.attempt_id}",
+                detail=f"submission accepted for {attempt.attempt_id}",
             )
 
     # 3) Stage review / rework in progress.

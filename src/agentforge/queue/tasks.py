@@ -132,11 +132,12 @@ def collaboration_operation(
 def driver_step(
     run_id: str, wake_signal_id: str | None = None, task_version: int = 1
 ) -> str:
-    """Bounded Driver fragment. Full drive_once lands in D11.8; wake must not be dropped."""
+    """Bounded Driver fragment via drive_once (D11.8)."""
     from agentforge.core.config import Settings
-    from agentforge.driver.signals import claim_pending_signals, complete_observed_signals
+    from agentforge.driver.fencing import DriverFenceLost
+    from agentforge.driver.service import drive_once
+    from agentforge.queue.control_identity import require_control_role
     from agentforge.storage.database import create_database_engine
-    from agentforge.storage.uow import unit_of_work_connection
 
     if task_version != 1:
         raise ValueError("Unsupported task version")
@@ -147,19 +148,16 @@ def driver_step(
     if engine is None:
         raise ValueError("Database not configured")
     try:
-        # Until drive_once exists, acknowledge the signal so sweeps do not storm.
-        # D11.8 replaces this with fenced graph invoke.
-        with unit_of_work_connection(engine) as uow:
-            claimed = claim_pending_signals(
-                uow.session,
-                run_id=run_id,
-                owner=f"driver_step:{wake_signal_id or 'none'}",
-                limit=8,
-            )
-            ids = [s.wake_signal_id for s in claimed]
-            if wake_signal_id and wake_signal_id not in ids:
-                ids.append(wake_signal_id)
-            complete_observed_signals(uow.session, ids)
-            return f"acked:{len(ids)}"
+        require_control_role(engine)
+        result = drive_once(
+            settings,
+            run_id=run_id,
+            wake_signal_id=wake_signal_id,
+            owner=f"driver_step:{wake_signal_id or 'none'}",
+            engine=engine,
+        )
+        return f"{result.outcome}:{result.thread_id or '-'}"
+    except DriverFenceLost as exc:
+        return f"fence_lost:{exc.message}"
     finally:
         engine.dispose()
