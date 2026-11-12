@@ -1567,3 +1567,165 @@ def run_decide(
         typer.echo(f"{exc.code}: {exc.message}", err=True)
         raise typer.Exit(FAILURE) from None
     emit(payload, as_json=json_out, human=f"plan status={view.status} runConfirm={view.confirmation_state}")
+
+instance_app = typer.Typer(help="Agent instances / sessions / messages (D09)")
+app.add_typer(instance_app, name="instance")
+
+
+@instance_app.command("list")
+def instance_list(
+    run_id: str = typer.Option(..., "--run-id"),
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """List role instances for a run."""
+    from agentforge.instances.errors import InstanceError
+    from agentforge.instances.preparation import ExecutionPreparationService
+
+    _settings, engine, uow_fn = _run_service()
+    try:
+        with uow_fn(engine) as uow:
+            items = ExecutionPreparationService(uow.session).list_instances(run_id)
+            payload = [i.model_dump(mode="json", by_alias=True) for i in items]
+    except InstanceError as exc:
+        typer.echo(f"{exc.code}: {exc.message}", err=True)
+        raise typer.Exit(FAILURE) from None
+    emit(payload, as_json=json_out, human=f"instances={len(payload)}")
+
+
+@instance_app.command("get")
+def instance_get(
+    instance_id: str = typer.Option(..., "--instance-id"),
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """Query session, workspace, and current execution summary."""
+    from agentforge.instances.errors import InstanceError
+    from agentforge.instances.preparation import ExecutionPreparationService
+
+    _settings, engine, uow_fn = _run_service()
+    try:
+        with uow_fn(engine) as uow:
+            view = ExecutionPreparationService(uow.session).get_instance(instance_id)
+            payload = {
+                "instance": view["instance"].model_dump(mode="json", by_alias=True),
+                "session": view["session"],
+                "currentExecution": view["currentExecution"],
+            }
+    except InstanceError as exc:
+        typer.echo(f"{exc.code}: {exc.message}", err=True)
+        raise typer.Exit(FAILURE) from None
+    emit(payload, as_json=json_out, human=f"instance={instance_id} lifecycle={payload['instance'].get('lifecycle')}")
+
+
+@instance_app.command("stop")
+def instance_stop(
+    instance_id: str = typer.Option(..., "--instance-id"),
+    reason: str | None = typer.Option(None, "--reason"),
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """Request stop. 202/accepted only ¡ª poll operation for completion."""
+    from agentforge.contracts.agents import AgentInstanceActionRequest
+    from agentforge.instances.actions import InstanceActionService
+    from agentforge.instances.errors import InstanceError
+
+    _settings, engine, uow_fn = _run_service()
+    try:
+        with uow_fn(engine) as uow:
+            accepted = InstanceActionService(uow.session).request_action(
+                instance_id,
+                AgentInstanceActionRequest.model_validate(
+                    {"action": "request_stop", "reason": reason}
+                ),
+                actor="cli",
+            )
+            payload = accepted.model_dump(mode="json", by_alias=True)
+    except InstanceError as exc:
+        typer.echo(f"{exc.code}: {exc.message}", err=True)
+        raise typer.Exit(FAILURE) from None
+    emit(
+        payload,
+        as_json=json_out,
+        human=f"accepted operation={accepted.operation_id} (not stopped yet)",
+    )
+
+
+@instance_app.command("operation")
+def instance_operation(
+    operation_id: str = typer.Option(..., "--operation-id"),
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """Query persistent operation result. 202 accept ¡Ù start/delivery complete."""
+    from agentforge.instances.errors import InstanceError
+    from agentforge.messaging.service import MessageService
+
+    _settings, engine, uow_fn = _run_service()
+    try:
+        with uow_fn(engine) as uow:
+            view = MessageService(uow.session).get_operation_status(operation_id)
+            payload = view.model_dump(mode="json", by_alias=True)
+    except InstanceError as exc:
+        typer.echo(f"{exc.code}: {exc.message}", err=True)
+        raise typer.Exit(FAILURE) from None
+    emit(payload, as_json=json_out, human=f"operation={operation_id} status={view.status}")
+
+
+@instance_app.command("messages")
+def instance_messages(
+    run_id: str = typer.Option(..., "--run-id"),
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """Query business collaboration messages for a run."""
+    from agentforge.instances.errors import InstanceError
+    from agentforge.messaging.service import MessageService
+
+    _settings, engine, uow_fn = _run_service()
+    try:
+        with uow_fn(engine) as uow:
+            items = MessageService(uow.session).list_messages(run_id)
+            payload = [i.model_dump(mode="json", by_alias=True) for i in items]
+    except InstanceError as exc:
+        typer.echo(f"{exc.code}: {exc.message}", err=True)
+        raise typer.Exit(FAILURE) from None
+    emit(payload, as_json=json_out, human=f"messages={len(payload)}")
+
+
+@run_app.command("prepare")
+def run_prepare(
+    run_id: str = typer.Option(..., "--run-id"),
+    plan_hash: str = typer.Option(..., "--plan-hash"),
+    plan_version: int = typer.Option(..., "--plan-version"),
+    assignment_version: int = typer.Option(..., "--assignment-version"),
+    gate_policy_version: int = typer.Option(..., "--gate-policy-version"),
+    idempotency_key: str | None = typer.Option(None, "--idempotency-key"),
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """Idempotent prepare confirmed execution instances. Does not dispatch stage tasks."""
+    from agentforge.contracts.agents import ExecutionRequest
+    from agentforge.instances.errors import InstanceError
+    from agentforge.instances.preparation import ExecutionPreparationService
+
+    _settings, engine, uow_fn = _run_service()
+    key = idempotency_key or f"{plan_hash}:{plan_version}:{assignment_version}"
+    try:
+        with uow_fn(engine) as uow:
+            accepted = ExecutionPreparationService(uow.session).prepare(
+                run_id,
+                ExecutionRequest.model_validate(
+                    {
+                        "planHash": plan_hash,
+                        "planVersion": plan_version,
+                        "assignmentVersion": assignment_version,
+                        "gatePolicyVersion": gate_policy_version,
+                    }
+                ),
+                actor="cli",
+                idempotency_key=key,
+            )
+            payload = accepted.model_dump(mode="json", by_alias=True)
+    except InstanceError as exc:
+        typer.echo(f"{exc.code}: {exc.message}", err=True)
+        raise typer.Exit(FAILURE) from None
+    emit(
+        payload,
+        as_json=json_out,
+        human=f"accepted operation={accepted.operation_id} (instances preparing)",
+    )
