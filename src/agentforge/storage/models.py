@@ -1796,7 +1796,12 @@ class PlatformAdmissionRow(Base):
 
 class IntegrationVersionRow(Base):
     __tablename__ = "integration_versions"
-    __table_args__ = (PrimaryKeyConstraint("id", name="integration_versions_pkey"),)
+    __table_args__ = (
+        PrimaryKeyConstraint("id", name="integration_versions_pkey"),
+        UniqueConstraint(
+            "run_id", "version_number", name="integration_versions_run_number_unique"
+        ),
+    )
 
     id: Mapped[str] = mapped_column(Text, nullable=False)
     run_id: Mapped[str] = mapped_column(
@@ -1806,12 +1811,337 @@ class IntegrationVersionRow(Base):
     commit_or_tree: Mapped[str | None] = mapped_column(Text, nullable=True)
     content_hash: Mapped[str] = mapped_column(Text, nullable=False)
     environment_ref: Mapped[str] = mapped_column(Text, nullable=False)
+    # Legacy compatibility — read-only transition fields.
     validation_refs: Mapped[list[Any]] = mapped_column(
         JSONB, nullable=False, server_default=text("'[]'::jsonb")
     )
     review_refs: Mapped[list[Any]] = mapped_column(
         JSONB, nullable=False, server_default=text("'[]'::jsonb")
     )
+    selection_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    selection_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
+    git_integration_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    version_number: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default=text("1")
+    )
+    tree_manifest_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
+    baseline_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
+    contract_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
+    input_versions_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
+    build_environment_ref: Mapped[str | None] = mapped_column(Text, nullable=True)
+    parent_version_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class EventReplayWindowRow(Base):
+    __tablename__ = "event_replay_windows"
+    __table_args__ = (
+        PrimaryKeyConstraint("run_id", name="event_replay_windows_pkey"),
+        CheckConstraint("replay_floor_sequence >= 0", name="event_replay_windows_floor_check"),
+        CheckConstraint(
+            "last_archived_sequence >= 0", name="event_replay_windows_archived_check"
+        ),
+        CheckConstraint(
+            "last_archived_sequence <= replay_floor_sequence",
+            name="event_replay_windows_order_check",
+        ),
+        CheckConstraint("retention_version >= 1", name="event_replay_windows_retention_check"),
+    )
+
+    run_id: Mapped[str] = mapped_column(
+        Text, ForeignKey("app.runs.id", ondelete="CASCADE"), nullable=False
+    )
+    replay_floor_sequence: Mapped[int] = mapped_column(
+        BigInteger, nullable=False, server_default=text("0")
+    )
+    last_archived_sequence: Mapped[int] = mapped_column(
+        BigInteger, nullable=False, server_default=text("0")
+    )
+    retention_version: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default=text("1")
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class IntegrationSelectionRow(Base):
+    __tablename__ = "integration_selections"
+    __table_args__ = (
+        PrimaryKeyConstraint("id", name="integration_selections_pkey"),
+        UniqueConstraint(
+            "run_id", "request_key", name="integration_selections_run_key_unique"
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(Text, nullable=False)
+    run_id: Mapped[str] = mapped_column(
+        Text, ForeignKey("app.runs.id", ondelete="CASCADE"), nullable=False
+    )
+    handoff_ref: Mapped[str] = mapped_column(Text, nullable=False)
+    handoff_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    baseline_ref: Mapped[str | None] = mapped_column(Text, nullable=True)
+    baseline_tree_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    source_bindings: Mapped[list[Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    merge_policy_version: Mapped[str] = mapped_column(Text, nullable=False)
+    selection_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    request_key: Mapped[str] = mapped_column(Text, nullable=False)
+    created_by: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class IntegrationBuildRow(Base):
+    __tablename__ = "integration_builds"
+    __table_args__ = (
+        PrimaryKeyConstraint("id", name="integration_builds_pkey"),
+        UniqueConstraint("run_id", "operation_key", name="integration_builds_run_key_unique"),
+    )
+
+    id: Mapped[str] = mapped_column(Text, nullable=False)
+    run_id: Mapped[str] = mapped_column(
+        Text, ForeignKey("app.runs.id", ondelete="CASCADE"), nullable=False
+    )
+    selection_id: Mapped[str] = mapped_column(Text, nullable=False)
+    operation_key: Mapped[str] = mapped_column(Text, nullable=False)
+    request_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(Text, nullable=False)
+    workspace_ref: Mapped[str | None] = mapped_column(Text, nullable=True)
+    claim_token: Mapped[str | None] = mapped_column(Text, nullable=True)
+    result_version_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    error_code: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class IntegrationValidationCycleRow(Base):
+    __tablename__ = "integration_validation_cycles"
+    __table_args__ = (
+        PrimaryKeyConstraint("id", name="integration_validation_cycles_pkey"),
+    )
+
+    id: Mapped[str] = mapped_column(Text, nullable=False)
+    version_id: Mapped[str] = mapped_column(
+        Text, ForeignKey("app.integration_versions.id", ondelete="CASCADE"), nullable=False
+    )
+    policy_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    environment_fingerprint: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(Text, nullable=False)
+    required_checks: Mapped[list[Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    required_review_roles: Mapped[list[Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class IntegrationCheckRunRow(Base):
+    __tablename__ = "integration_check_runs"
+    __table_args__ = (
+        PrimaryKeyConstraint("id", name="integration_check_runs_pkey"),
+        UniqueConstraint(
+            "cycle_id",
+            "check_id",
+            "check_version",
+            "config_hash",
+            "attempt_no",
+            name="integration_check_runs_attempt_unique",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(Text, nullable=False)
+    cycle_id: Mapped[str] = mapped_column(
+        Text,
+        ForeignKey("app.integration_validation_cycles.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    check_id: Mapped[str] = mapped_column(Text, nullable=False)
+    check_version: Mapped[str] = mapped_column(Text, nullable=False)
+    config_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    attempt_no: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("1"))
+    status: Mapped[str] = mapped_column(Text, nullable=False)
+    operation_ref: Mapped[str | None] = mapped_column(Text, nullable=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class IntegrationCheckReportRow(Base):
+    __tablename__ = "integration_check_reports"
+    __table_args__ = (PrimaryKeyConstraint("id", name="integration_check_reports_pkey"),)
+
+    id: Mapped[str] = mapped_column(Text, nullable=False)
+    check_run_id: Mapped[str] = mapped_column(
+        Text, ForeignKey("app.integration_check_runs.id", ondelete="CASCADE"), nullable=False
+    )
+    version_id: Mapped[str] = mapped_column(
+        Text, ForeignKey("app.integration_versions.id", ondelete="CASCADE"), nullable=False
+    )
+    tree_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    policy_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    environment_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    outcome: Mapped[str] = mapped_column(Text, nullable=False)
+    structured_result: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'{}'::jsonb")
+    )
+    evidence_refs: Mapped[list[Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    report_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class IntegrationReviewRequestRow(Base):
+    __tablename__ = "integration_review_requests"
+    __table_args__ = (PrimaryKeyConstraint("id", name="integration_review_requests_pkey"),)
+
+    id: Mapped[str] = mapped_column(Text, nullable=False)
+    cycle_id: Mapped[str] = mapped_column(
+        Text,
+        ForeignKey("app.integration_validation_cycles.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    version_id: Mapped[str] = mapped_column(
+        Text, ForeignKey("app.integration_versions.id", ondelete="CASCADE"), nullable=False
+    )
+    tree_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    selection_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    contract_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    policy_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    reviewer_binding: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(Text, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class IntegrationReviewReportRow(Base):
+    __tablename__ = "integration_review_reports"
+    __table_args__ = (
+        PrimaryKeyConstraint("id", name="integration_review_reports_pkey"),
+        UniqueConstraint(
+            "request_id", "response_key", name="integration_review_reports_request_key_unique"
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(Text, nullable=False)
+    request_id: Mapped[str] = mapped_column(
+        Text,
+        ForeignKey("app.integration_review_requests.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    cycle_id: Mapped[str] = mapped_column(
+        Text,
+        ForeignKey("app.integration_validation_cycles.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    version_id: Mapped[str] = mapped_column(
+        Text, ForeignKey("app.integration_versions.id", ondelete="CASCADE"), nullable=False
+    )
+    tree_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    verdict: Mapped[str] = mapped_column(Text, nullable=False)
+    reviewer_identity_ref: Mapped[str] = mapped_column(Text, nullable=False)
+    response_key: Mapped[str] = mapped_column(Text, nullable=False)
+    evidence_refs: Mapped[list[Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class DeliveryManifestRow(Base):
+    __tablename__ = "delivery_manifests"
+    __table_args__ = (
+        PrimaryKeyConstraint("id", name="delivery_manifests_pkey"),
+        UniqueConstraint("run_id", "revision", name="delivery_manifests_run_revision_unique"),
+        UniqueConstraint("manifest_hash", name="delivery_manifests_hash_unique"),
+    )
+
+    id: Mapped[str] = mapped_column(Text, nullable=False)
+    run_id: Mapped[str] = mapped_column(
+        Text, ForeignKey("app.runs.id", ondelete="CASCADE"), nullable=False
+    )
+    version_id: Mapped[str] = mapped_column(Text, nullable=False)
+    cycle_id: Mapped[str] = mapped_column(Text, nullable=False)
+    revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    manifest_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    payload_ref: Mapped[str] = mapped_column(Text, nullable=False)
+    technical_status: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class RunDeliveryRow(Base):
+    __tablename__ = "run_deliveries"
+    __table_args__ = (
+        PrimaryKeyConstraint("run_id", name="run_deliveries_pkey"),
+        CheckConstraint("delivery_revision >= 1", name="run_deliveries_revision_check"),
+    )
+
+    run_id: Mapped[str] = mapped_column(
+        Text, ForeignKey("app.runs.id", ondelete="CASCADE"), nullable=False
+    )
+    current_version_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    current_manifest_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    delivery_revision: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default=text("1")
+    )
+    technical_status: Mapped[str] = mapped_column(
+        Text, nullable=False, server_default=text("'not_started'")
+    )
+    acceptance_status: Mapped[str] = mapped_column(
+        Text, nullable=False, server_default=text("'none'")
+    )
+    invalidated_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class AcceptanceDecisionRow(Base):
+    __tablename__ = "acceptance_decisions"
+    __table_args__ = (
+        PrimaryKeyConstraint("id", name="acceptance_decisions_pkey"),
+        UniqueConstraint(
+            "run_id", "actor_ref", "request_key", name="acceptance_decisions_actor_key_unique"
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(Text, nullable=False)
+    run_id: Mapped[str] = mapped_column(
+        Text, ForeignKey("app.runs.id", ondelete="CASCADE"), nullable=False
+    )
+    manifest_id: Mapped[str] = mapped_column(Text, nullable=False)
+    manifest_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    version_id: Mapped[str] = mapped_column(Text, nullable=False)
+    delivery_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    actor_ref: Mapped[str] = mapped_column(Text, nullable=False)
+    decision: Mapped[str] = mapped_column(Text, nullable=False)
+    accepted_member_ids: Mapped[list[Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    rejected_member_ids: Mapped[list[Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    request_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    request_key: Mapped[str] = mapped_column(Text, nullable=False)
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
@@ -2457,7 +2787,18 @@ APP_V14_TABLES = (
     "recovery_observations",
     "recovery_decisions",
     "platform_admission",
+    "event_replay_windows",
+    "integration_selections",
+    "integration_builds",
     "integration_versions",
+    "integration_validation_cycles",
+    "integration_check_runs",
+    "integration_check_reports",
+    "integration_review_requests",
+    "integration_review_reports",
+    "delivery_manifests",
+    "run_deliveries",
+    "acceptance_decisions",
     "run_status_reconciliation_batches",
     "run_status_reconciliations",
     "execution_environments",

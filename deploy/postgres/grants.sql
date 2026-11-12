@@ -90,7 +90,19 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON
   app.recovery_cases,
   app.recovery_observations,
   app.recovery_decisions,
-  app.platform_admission
+  app.platform_admission,
+  app.event_replay_windows,
+  app.integration_selections,
+  app.integration_builds,
+  app.integration_versions,
+  app.integration_validation_cycles,
+  app.integration_check_runs,
+  app.integration_check_reports,
+  app.integration_review_requests,
+  app.integration_review_reports,
+  app.delivery_manifests,
+  app.run_deliveries,
+  app.acceptance_decisions
 TO agentforge_api, agentforge_driver;
 
 -- Graph checkpoint DML is driver-only (PostgresSaver tables installed separately).

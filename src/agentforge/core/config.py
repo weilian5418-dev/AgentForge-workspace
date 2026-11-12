@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     # Driver/worker URL with queue schema DML. API role alone cannot enqueue.
     queue_database_url: SecretStr | None = Field(default=None, repr=False)
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
-    expected_alembic_revision: str = "20261112_0016"
+    expected_alembic_revision: str = "20261112_0018"
 
     @field_validator("internal_signing_key")
     @classmethod
