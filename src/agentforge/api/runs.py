@@ -15,9 +15,12 @@ from agentforge.contracts.plans import (
     PlanRevisionRequest,
 )
 from agentforge.contracts.runs import RunAcceptedResponse, RunCreateRequest, RunSnapshotResponse
+from agentforge.contracts.snapshots import RunSnapshot
 from agentforge.core.config import Settings
 from agentforge.planning.executor import propose_plan as execute_proposal
 from agentforge.planning.service import PlanningError, PlanningService
+from agentforge.queries.authorization import api_principal
+from agentforge.queries.snapshots import SnapshotError, load_run_snapshot
 from agentforge.runtime.control import admits_new_work, read_admission
 from agentforge.storage.database import create_database_engine
 from agentforge.storage.uow import unit_of_work_connection
@@ -56,6 +59,18 @@ def _map_error(exc: PlanningError) -> HTTPException:
     return HTTPException(status, f"{exc.code}: {exc.message}")
 
 
+def _map_snapshot_error(exc: SnapshotError) -> HTTPException:
+    status = {
+        "run_not_found": 404,
+        "project_not_found": 404,
+        "unauthorized": 401,
+        "forbidden": 403,
+        "snapshot_stale": 409,
+        "storage_integrity": 500,
+    }.get(exc.code, 400)
+    return HTTPException(status, f"{exc.code}: {exc.message}")
+
+
 @router.post("/runs", response_model=RunAcceptedResponse)
 def create_run(
     request: Request,
@@ -84,6 +99,25 @@ def get_run(
             return PlanningService(uow.session).get_run(run_id)
     except PlanningError as exc:
         raise _map_error(exc) from exc
+
+
+@router.get("/runs/{run_id}/snapshot", response_model=RunSnapshot)
+def get_run_snapshot(
+    request: Request,
+    run_id: str,
+    settings: Annotated[Settings, Depends(_settings)],
+) -> RunSnapshot:
+    """Consistent bounded snapshot (REPEATABLE READ) for SSE bootstrap / UI."""
+    engine = _require_engine(request, settings)
+    try:
+        return load_run_snapshot(
+            engine,
+            settings,
+            principal=api_principal(),
+            run_id=run_id,
+        )
+    except SnapshotError as exc:
+        raise _map_snapshot_error(exc) from exc
 
 
 @router.post("/runs/{run_id}/plan-proposals", response_model=PlanResponse)

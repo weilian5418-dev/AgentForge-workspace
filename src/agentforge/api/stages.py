@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from typing import Annotated, Any, cast
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Query, Request
 from starlette.exceptions import HTTPException
 
 from agentforge.artifacts.store import ArtifactStore
+from agentforge.contracts.snapshots import PageCursorResponse
 from agentforge.contracts.stages import (
     GateDecisionListResponse,
     ReviewCycleListResponse,
@@ -19,6 +20,9 @@ from agentforge.contracts.stages import (
 )
 from agentforge.core.config import Settings
 from agentforge.core.service_identity import verify_ticket
+from agentforge.queries.authorization import api_principal
+from agentforge.queries.details import list_run_details
+from agentforge.queries.snapshots import SnapshotError
 from agentforge.stages.errors import StageError
 from agentforge.stages.service import StageService
 from agentforge.storage.database import create_database_engine
@@ -58,13 +62,32 @@ def _map_error(exc: StageError) -> HTTPException:
     return HTTPException(status, f"{exc.code}: {exc.message}")
 
 
-@router.get("/runs/{run_id}/stages", response_model=StageListResponse)
+@router.get("/runs/{run_id}/stages")
 def list_stages(
     request: Request,
     run_id: str,
     settings: Annotated[Settings, Depends(_settings)],
-) -> StageListResponse:
+    cursor: Annotated[str | None, Query()] = None,
+    limit: Annotated[int | None, Query(ge=1, le=100)] = None,
+    snapshot_token: Annotated[str | None, Query(alias="snapshotToken")] = None,
+) -> StageListResponse | PageCursorResponse:
     engine = _require_engine(request, settings)
+    if cursor is not None or snapshot_token is not None or limit is not None:
+        try:
+            with unit_of_work_connection(engine) as uow:
+                return list_run_details(
+                    uow.session,
+                    api_principal(),
+                    run_id=run_id,
+                    resource="stages",
+                    cursor=cursor,
+                    limit=limit or 50,
+                    snapshot_token=snapshot_token,
+                    settings=settings,
+                )
+        except SnapshotError as exc:
+            status = 409 if exc.code == "snapshot_stale" else 404 if "not_found" in exc.code else 400
+            raise HTTPException(status, f"{exc.code}: {exc.message}") from exc
     with unit_of_work_connection(engine) as uow:
         return StageListResponse(
             items=StageService(

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Annotated, Any, cast
 
-from fastapi import APIRouter, Depends, Header, Request
+from fastapi import APIRouter, Depends, Header, Query, Request
 from starlette.exceptions import HTTPException
 
 from agentforge.contracts.agents import (
@@ -18,6 +18,7 @@ from agentforge.contracts.messages import (
     MessageListResponse,
 )
 from agentforge.contracts.runs import OperationAccepted
+from agentforge.contracts.snapshots import PageCursorResponse
 from agentforge.core.config import Settings
 from agentforge.core.service_identity import verify_ticket
 from agentforge.instances.actions import InstanceActionService
@@ -25,6 +26,9 @@ from agentforge.instances.errors import InstanceError
 from agentforge.instances.event_ingestor import NativeEventIngestor
 from agentforge.instances.preparation import ExecutionPreparationService
 from agentforge.messaging.service import MessageService
+from agentforge.queries.authorization import api_principal
+from agentforge.queries.details import list_run_details
+from agentforge.queries.snapshots import SnapshotError
 from agentforge.runtime.control import admits_new_work, read_admission
 from agentforge.storage.database import create_database_engine
 from agentforge.storage.uow import unit_of_work_connection
@@ -93,13 +97,32 @@ def create_execution_request(
         raise _map_error(exc) from exc
 
 
-@router.get("/runs/{run_id}/instances", response_model=AgentInstanceListResponse)
+@router.get("/runs/{run_id}/instances")
 def list_instances(
     request: Request,
     run_id: str,
     settings: Annotated[Settings, Depends(_settings)],
-) -> AgentInstanceListResponse:
+    cursor: Annotated[str | None, Query()] = None,
+    limit: Annotated[int | None, Query(ge=1, le=100)] = None,
+    snapshot_token: Annotated[str | None, Query(alias="snapshotToken")] = None,
+) -> AgentInstanceListResponse | PageCursorResponse:
     engine = _require_engine(request, settings)
+    if cursor is not None or snapshot_token is not None or limit is not None:
+        try:
+            with unit_of_work_connection(engine) as uow:
+                return list_run_details(
+                    uow.session,
+                    api_principal(),
+                    run_id=run_id,
+                    resource="instances",
+                    cursor=cursor,
+                    limit=limit or 50,
+                    snapshot_token=snapshot_token,
+                    settings=settings,
+                )
+        except SnapshotError as exc:
+            status = 409 if exc.code == "snapshot_stale" else 404 if "not_found" in exc.code else 400
+            raise HTTPException(status, f"{exc.code}: {exc.message}") from exc
     try:
         with unit_of_work_connection(engine) as uow:
             items = ExecutionPreparationService(uow.session).list_instances(run_id)
@@ -163,13 +186,32 @@ def create_message(
         raise _map_error(exc) from exc
 
 
-@router.get("/runs/{run_id}/messages", response_model=MessageListResponse)
+@router.get("/runs/{run_id}/messages")
 def list_messages(
     request: Request,
     run_id: str,
     settings: Annotated[Settings, Depends(_settings)],
-) -> MessageListResponse:
+    cursor: Annotated[str | None, Query()] = None,
+    limit: Annotated[int | None, Query(ge=1, le=100)] = None,
+    snapshot_token: Annotated[str | None, Query(alias="snapshotToken")] = None,
+) -> MessageListResponse | PageCursorResponse:
     engine = _require_engine(request, settings)
+    if cursor is not None or snapshot_token is not None or limit is not None:
+        try:
+            with unit_of_work_connection(engine) as uow:
+                return list_run_details(
+                    uow.session,
+                    api_principal(),
+                    run_id=run_id,
+                    resource="messages",
+                    cursor=cursor,
+                    limit=limit or 50,
+                    snapshot_token=snapshot_token,
+                    settings=settings,
+                )
+        except SnapshotError as exc:
+            status = 409 if exc.code == "snapshot_stale" else 404 if "not_found" in exc.code else 400
+            raise HTTPException(status, f"{exc.code}: {exc.message}") from exc
     try:
         with unit_of_work_connection(engine) as uow:
             items = MessageService(uow.session).list_messages(run_id)
