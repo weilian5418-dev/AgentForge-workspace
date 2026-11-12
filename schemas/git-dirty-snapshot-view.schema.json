@@ -1,0 +1,57 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "baselineId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Baselineid",
+      "type": "string"
+    },
+    "contentHash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Contenthash",
+      "type": "string"
+    },
+    "createdAt": {
+      "format": "date-time",
+      "title": "Createdat",
+      "type": "string"
+    },
+    "manifestHash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Manifesthash",
+      "type": "string"
+    },
+    "pathCount": {
+      "minimum": 0,
+      "title": "Pathcount",
+      "type": "integer"
+    },
+    "projectId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Projectid",
+      "type": "string"
+    },
+    "snapshotId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Snapshotid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "snapshotId",
+    "projectId",
+    "baselineId",
+    "contentHash",
+    "manifestHash",
+    "pathCount",
+    "createdAt"
+  ],
+  "title": "DirtySnapshotView",
+  "type": "object"
+}

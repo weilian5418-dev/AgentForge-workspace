@@ -1,0 +1,94 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "attemptId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Attemptid"
+    },
+    "baselineId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Baselineid",
+      "type": "string"
+    },
+    "directoryIdentity": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Directoryidentity",
+      "type": "string"
+    },
+    "dirtySnapshotId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Dirtysnapshotid"
+    },
+    "projectId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Projectid",
+      "type": "string"
+    },
+    "roleId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Roleid"
+    },
+    "sourceRoot": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Sourceroot",
+      "type": "string"
+    },
+    "strategy": {
+      "enum": [
+        "commit_only",
+        "managed_dirty_snapshot",
+        "blocked"
+      ],
+      "title": "Strategy",
+      "type": "string"
+    }
+  },
+  "required": [
+    "projectId",
+    "baselineId",
+    "strategy",
+    "sourceRoot",
+    "directoryIdentity"
+  ],
+  "title": "PrepareWorktreeRequest",
+  "type": "object"
+}

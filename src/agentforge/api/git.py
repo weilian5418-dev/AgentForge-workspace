@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, cast
 
 from fastapi import APIRouter, Depends, Request
+from sqlalchemy import Engine
 from starlette.exceptions import HTTPException
 
 from agentforge.artifacts.store import ArtifactStore
@@ -29,20 +30,20 @@ router = APIRouter(prefix="/api/v1", tags=["git"])
 
 
 def _settings(request: Request) -> Settings:
-    return request.app.state.settings
+    return cast(Settings, request.app.state.settings)
 
 
-def _engine(request: Request, settings: Settings):
+def _engine(request: Request, settings: Settings) -> Engine:
     if settings.database_url is None or request.app.state.database is None:
         raise HTTPException(503, "Database is not configured")
-    return request.app.state.database
+    return cast(Engine, request.app.state.database)
 
 
 def _store(settings: Settings) -> ArtifactStore:
     return ArtifactStore(Path(settings.state_dir) / "artifact_store")
 
 
-def _svc(request: Request, settings: Settings) -> tuple:
+def _svc(request: Request, settings: Settings) -> tuple[Engine, ArtifactStore, Path]:
     return _engine(request, settings), _store(settings), Path(settings.state_dir)
 
 
@@ -66,13 +67,12 @@ def _map(exc: GitWorkspaceError) -> HTTPException:
         "stop_workspace_mismatch": 409,
         "attempt_mismatch": 409,
         "generation_mismatch": 409,
-        "untrusted_stop_source": 403,
-        "writes_not_quiesced": 409,
         "workspace_still_writable": 409,
+        "writes_not_quiesced": 409,
+        "untrusted_stop_source": 403,
         "stop_evidence_mismatch": 409,
         "snapshot_not_found": 404,
         "snapshot_ids_required": 400,
-        "refs_active": 409,
         "workspace_active": 409,
         "force_not_safe": 409,
     }.get(exc.code, 400)

@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, cast
 
 from fastapi import APIRouter, Depends, Request, Response
+from sqlalchemy import Engine
 from starlette.exceptions import HTTPException
 
 from agentforge.artifacts.service import ArtifactBusError, ArtifactService
@@ -29,13 +30,13 @@ router = APIRouter(prefix="/api/v1", tags=["artifacts"])
 
 
 def _settings(request: Request) -> Settings:
-    return request.app.state.settings
+    return cast(Settings, request.app.state.settings)
 
 
-def _engine(request: Request, settings: Settings):
+def _engine(request: Request, settings: Settings) -> Engine:
     if settings.database_url is None or request.app.state.database is None:
         raise HTTPException(503, "Database is not configured")
-    return request.app.state.database
+    return cast(Engine, request.app.state.database)
 
 
 def _store(settings: Settings) -> ArtifactStore:
@@ -53,6 +54,9 @@ def _map(exc: ArtifactBusError) -> HTTPException:
         "untrusted_stop_source": 403,
         "stop_not_terminal": 409,
         "generation_mismatch": 409,
+        "stop_workspace_mismatch": 409,
+        "workspace_still_writable": 409,
+        "writes_not_quiesced": 409,
         "attempt_mismatch": 409,
         "stop_evidence_mismatch": 409,
         "stop_evidence_missing": 400,

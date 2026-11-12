@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Literal
 
 from pydantic import Field
 
 from agentforge.contracts.base import ApiInputModel, ContractModel
 from agentforge.contracts.common import OpaqueId, RelativePath, Sha256Hex, ShortText, UtcDateTime
+from agentforge.contracts.git_workspaces import GitStopEvidence
 
 CandidateState = Literal[
     "frozen",
@@ -20,16 +21,8 @@ CandidateState = Literal[
 ]
 
 
-class StopEvidenceClaim(ApiInputModel):
-    """Must be produced by a trusted Runner; client-asserted stopped=true is rejected."""
-
-    source: Literal["runner"] = "runner"
-    operation_id: OpaqueId
-    attempt_id: OpaqueId | None = None
-    generation: int = Field(ge=1, strict=True)
-    evidence_sha256: Sha256Hex
-    evidence_path: RelativePath = "_agentforge/stop_evidence.json"
-    writable_scope: ShortText
+class StopEvidenceClaim(GitStopEvidence):
+    """The same ledger-backed stop proof is required for D06 and D07."""
 
 
 class FreezeCandidateRequest(ApiInputModel):

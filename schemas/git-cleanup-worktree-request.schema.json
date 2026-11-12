@@ -1,0 +1,23 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "force": {
+      "default": false,
+      "description": "Still refuses if active refs/processes; never deletes user source root",
+      "title": "Force",
+      "type": "boolean"
+    },
+    "workspaceId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Workspaceid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "workspaceId"
+  ],
+  "title": "CleanupWorktreeRequest",
+  "type": "object"
+}

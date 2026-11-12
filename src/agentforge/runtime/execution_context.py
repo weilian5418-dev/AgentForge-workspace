@@ -108,16 +108,25 @@ def bind_execution_context(
             "environment_mismatch",
             "environmentId does not match the bound allocation",
         )
-    if expected_attempt_id is not None and attempt_id is not None and expected_attempt_id != attempt_id:
+    if expected_attempt_id is not None and expected_attempt_id != attempt_id:
         raise ExecutionContextError(
             "attempt_mismatch",
             "attemptId does not match the bound allocation",
         )
 
+    if not workspace_root.strip():
+        raise ExecutionContextError("invalid_workspace_root", "workspaceRoot is empty")
     try:
-        resolved = str(Path(workspace_root).resolve())
+        root = Path(workspace_root)
+        if not root.is_absolute() or not root.is_dir():
+            raise ExecutionContextError(
+                "invalid_workspace_root", "workspaceRoot must be an existing absolute directory"
+            )
+        resolved = str(root.resolve(strict=True))
     except OSError as exc:
-        raise ExecutionContextError("invalid_workspace_root", "workspaceRoot could not be resolved") from exc
+        raise ExecutionContextError(
+            "invalid_workspace_root", "workspaceRoot could not be resolved"
+        ) from exc
     if not resolved:
         raise ExecutionContextError("invalid_workspace_root", "workspaceRoot is empty")
 
@@ -140,10 +149,25 @@ def bind_execution_context(
 
 def assert_context_complete(ctx: ExecutionContext, *, require_session: bool = False) -> None:
     """Adapter Host gate: non-null ids are insufficient — context must be coherent."""
-    if not ctx.profile_id or not ctx.operation_id or not ctx.instance_id or not ctx.workspace_id:
+    if any(
+        not value.strip()
+        for value in (ctx.profile_id, ctx.operation_id, ctx.instance_id, ctx.workspace_id)
+    ):
         raise ExecutionContextError("incomplete_context", "ExecutionContext missing required ids")
-    if not ctx.environment_id:
-        raise ExecutionContextError("incomplete_context", "environmentId required on ExecutionContext")
+    if ctx.generation < 1:
+        raise ExecutionContextError("invalid_generation", "generation must be >= 1")
+    if (
+        not ctx.workspace_root.strip()
+        or not Path(ctx.workspace_root).is_absolute()
+        or not Path(ctx.workspace_root).is_dir()
+    ):
+        raise ExecutionContextError(
+            "invalid_workspace_root", "workspaceRoot must be an existing absolute directory"
+        )
+    if not ctx.environment_id.strip():
+        raise ExecutionContextError(
+            "incomplete_context", "environmentId required on ExecutionContext"
+        )
     if require_session and not ctx.session_ref:
         raise ExecutionContextError("session_required", "sessionRef required for this operation")
 
@@ -199,5 +223,16 @@ def verify_recovery(
     return checks
 
 
-def recovery_all_ok(checks: list[RecoveryCheck]) -> bool:
-    return bool(checks) and all(c.ok for c in checks)
+def recovery_all_ok(
+    checks: list[RecoveryCheck],
+    *,
+    required_facets: frozenset[RecoveryFacet] = frozenset({"session", "workspace", "files"}),
+) -> bool:
+    """Every required facet must be verified exactly once; omitted is not success."""
+    by_facet = {check.facet: check for check in checks}
+    return (
+        bool(required_facets)
+        and len(by_facet) == len(checks)
+        and required_facets <= by_facet.keys()
+        and all(check.ok for check in checks)
+    )

@@ -1,0 +1,92 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "baselineIds": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9._:-]+$",
+        "type": "string"
+      },
+      "maxItems": 16,
+      "title": "Baselineids",
+      "type": "array"
+    },
+    "grantId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Grantid",
+      "type": "string"
+    },
+    "idempotencyKey": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Idempotencykey",
+      "type": "string"
+    },
+    "inputIds": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9._:-]+$",
+        "type": "string"
+      },
+      "maxItems": 64,
+      "title": "Inputids",
+      "type": "array"
+    },
+    "maxOutputTokens": {
+      "anyOf": [
+        {
+          "maximum": 128000,
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Maxoutputtokens"
+    },
+    "messages": {
+      "items": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "maxItems": 64,
+      "minItems": 1,
+      "title": "Messages",
+      "type": "array"
+    },
+    "providerId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Providerid",
+      "type": "string"
+    },
+    "purpose": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Purpose",
+      "type": "string"
+    },
+    "stream": {
+      "default": false,
+      "title": "Stream",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "providerId",
+    "grantId",
+    "purpose",
+    "messages",
+    "idempotencyKey"
+  ],
+  "title": "ModelCallCreateRequest",
+  "type": "object"
+}

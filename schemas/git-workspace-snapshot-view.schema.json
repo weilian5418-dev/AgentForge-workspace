@@ -1,0 +1,64 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "contentHash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Contenthash",
+      "type": "string"
+    },
+    "createdAt": {
+      "format": "date-time",
+      "title": "Createdat",
+      "type": "string"
+    },
+    "headCommit": {
+      "anyOf": [
+        {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Headcommit"
+    },
+    "manifestHash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Manifesthash",
+      "type": "string"
+    },
+    "note": {
+      "default": "Recoverable via D06 store; audit must not use mutable worktree",
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Note",
+      "type": "string"
+    },
+    "snapshotId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Snapshotid",
+      "type": "string"
+    },
+    "workspaceId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Workspaceid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "snapshotId",
+    "workspaceId",
+    "contentHash",
+    "manifestHash",
+    "createdAt"
+  ],
+  "title": "WorkspaceSnapshotView",
+  "type": "object"
+}

@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, cast
 
 from fastapi import APIRouter, Depends, Query, Request
+from sqlalchemy import Engine
 from starlette.exceptions import HTTPException
 
 from agentforge.contracts.plans import (
@@ -21,7 +22,6 @@ from agentforge.permissions.service import (
     decide,
     get_approval,
     list_approvals,
-    process_pending_forward,
     record_native_request,
     retry_forward,
 )
@@ -32,13 +32,13 @@ router = APIRouter(prefix="/api/v1", tags=["approvals"])
 
 
 def _settings(request: Request) -> Settings:
-    return request.app.state.settings
+    return cast(Settings, request.app.state.settings)
 
 
-def _engine(request: Request, settings: Settings):
+def _engine(request: Request, settings: Settings) -> Engine:
     if settings.database_url is None or request.app.state.database is None:
         raise HTTPException(503, "Database is not configured")
-    return request.app.state.database
+    return cast(Engine, request.app.state.database)
 
 
 def _map(exc: ApprovalError) -> HTTPException:
@@ -129,11 +129,6 @@ def post_decision(
                 note=body.note,
                 forward=body.forward,
             )
-            pending = body.forward and summary.status == "forwarding"
-        # Native adapter call happens only after decision/intent commit.
-        if pending:
-            with unit_of_work_connection(engine) as uow:
-                summary = process_pending_forward(uow.session, approval_id)
         return summary
     except ApprovalError as exc:
         raise _map(exc) from exc
@@ -174,10 +169,6 @@ def post_retry_forward(
             summary = retry_forward(
                 uow.session, approval_id=approval_id, reconcile_token=reconcile_token
             )
-            pending = summary.status == "forwarding"
-        if pending:
-            with unit_of_work_connection(engine) as uow:
-                summary = process_pending_forward(uow.session, approval_id)
         return summary
     except ApprovalError as exc:
         raise _map(exc) from exc

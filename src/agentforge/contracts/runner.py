@@ -7,7 +7,7 @@ from typing import Any, Literal
 from pydantic import Field
 
 from agentforge.contracts.base import ApiInputModel, ContractModel
-from agentforge.contracts.common import OpaqueId, RelativePath, Sha256Hex, ShortText, UtcDateTime
+from agentforge.contracts.common import OpaqueId, Sha256Hex, ShortText, UtcDateTime
 
 RunnerProfileId = Literal[
     "prepare_dir",
@@ -37,6 +37,9 @@ class RunnerTicketIssueRequest(ApiInputModel):
         description="Platform-resolved workspace absolute path; runner re-validates confinement."
     )
     node_id: OpaqueId = "local"
+    environment_id: OpaqueId | None = None
+    instance_id: OpaqueId | None = None
+    session_ref: ShortText | None = None
     attempt_id: OpaqueId | None = None
     generation: int = Field(default=1, ge=1, strict=True)
     scope: ShortText

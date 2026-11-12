@@ -11,7 +11,12 @@ from procrastinate import App
 
 from agentforge.core.config import Settings
 from agentforge.queue.app import open_app
-from agentforge.queue.constants import DEFAULT_QUEUE_NAME, INTENT_MODEL_PROBE, TASK_MODEL_PROBE
+from agentforge.queue.constants import (
+    DEFAULT_QUEUE_NAME,
+    INTENT_APPROVAL_FORWARD,
+    INTENT_MODEL_PROBE,
+    TASK_MODEL_PROBE,
+)
 from agentforge.storage.database import create_database_engine
 from agentforge.storage.exceptions import OutboxClaimError
 from agentforge.storage.repositories.outbox import OutboxRepository
@@ -29,7 +34,9 @@ class ClaimSnapshot:
     payload: dict[str, Any]
 
 
-def dispatch_once(settings: Settings, *, owner: str | None = None, limit: int = 20) -> dict[str, Any]:
+def dispatch_once(
+    settings: Settings, *, owner: str | None = None, limit: int = 20
+) -> dict[str, Any]:
     """Claim a batch, commit, enqueue outside the claim txn, then confirm/fail."""
     engine = create_database_engine(settings)
     if engine is None:
@@ -106,6 +113,16 @@ def _enqueue(app: App, snap: ClaimSnapshot) -> None:
     operation_id = str(payload.get("operationId") or "")
     if not operation_id:
         raise ValueError("outbox payload missing operationId")
+
+    if snap.intent_type == INTENT_APPROVAL_FORWARD:
+        approval_id = str(payload.get("approvalId") or "")
+        if not approval_id:
+            raise ValueError("approval outbox payload missing approvalId")
+        app.tasks["agentforge.forward_approval"].configure(
+            queue=DEFAULT_QUEUE_NAME,
+            lock=f"approval:{approval_id}",
+        ).defer(approval_id=approval_id, operation_id=operation_id, task_version=1)
+        return
 
     if snap.intent_type == INTENT_MODEL_PROBE or payload.get("taskType") == TASK_MODEL_PROBE:
         task = app.tasks["agentforge.execute_model_operation"]

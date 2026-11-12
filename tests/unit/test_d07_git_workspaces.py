@@ -56,7 +56,10 @@ class _MemSession:
     def flush(self) -> None:
         return None
 
-    def get(self, model: type, key: str) -> Any | None:
+    def execute(self, statement: Any) -> None:
+        assert "pg_advisory_xact_lock" in str(statement)
+
+    def get(self, model: type, key: str, **_kwargs: Any) -> Any | None:
         return self.store.get((model, key))
 
     def scalar(self, stmt: Any) -> Any | None:
@@ -217,8 +220,14 @@ def _seed_stop(
             action_digest="a" * 64,
             scope="ws/",
             params_json={},
-            status=status,
-            result_json={},
+            status="succeeded",
+            result_json={
+                "executionReceipt": {
+                    "runnerSynchronousOnly": True,
+                    "dispatchToken": "test-receipt",
+                    "operationId": operation_id,
+                }
+            },
             process_ref=f"host:{operation_id}",
             approval_id=None,
             require_effective_approval=False,
@@ -228,10 +237,26 @@ def _seed_stop(
             updated_at=now,
         )
     )
-    evidence = _write_stop_evidence(worktree_path, attempt_id=attempt_id)
-    evidence["operationId"] = operation_id
-    evidence["workspaceId"] = workspace_id
-    return evidence
+    from agentforge.runner.service import RunnerService
+
+    ticket = RunnerService(session).record_stop_evidence(operation_id)
+    row = session.get(RunnerOperationRow, operation_id)
+    row.status = status
+    proof = dict(ticket.result["stopEvidence"])
+    return {
+        key: proof[key]
+        for key in (
+            "source",
+            "operationId",
+            "workspaceId",
+            "attemptId",
+            "generation",
+            "evidenceSha256",
+            "writableScope",
+            "writesQuiesced",
+            "checkedAt",
+        )
+    }
 
 
 def _freeze(svc: GitWorkspaceService, workspace_id: str, evidence: dict[str, Any]):

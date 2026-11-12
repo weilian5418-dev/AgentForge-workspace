@@ -201,13 +201,21 @@ def evaluate(request: EvaluationRequest) -> EvaluationResult:
             "Final action does not match approved ActionDescriptor",
         )
 
-    if descriptor.attempt_id and approval.attempt_id and approval.attempt_id != descriptor.attempt_id:
+    if (
+        descriptor.attempt_id
+        and approval.attempt_id
+        and approval.attempt_id != descriptor.attempt_id
+    ):
         return EvaluationResult(
             "deny",
             "attempt_mismatch",
             "Grant attemptId does not match current attempt",
         )
-    if descriptor.instance_id and approval.instance_id and approval.instance_id != descriptor.instance_id:
+    if (
+        descriptor.instance_id
+        and approval.instance_id
+        and approval.instance_id != descriptor.instance_id
+    ):
         return EvaluationResult(
             "deny",
             "instance_mismatch",

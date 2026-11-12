@@ -44,8 +44,7 @@ class AdapterHost:
         if not instance_id or not workspace_id or not operation_id:
             raise PermissionError("instanceId, workspaceId, and operationId are required")
         if context is None:
-            # Legacy callers: ids present is not proof of a single allocation.
-            return
+            raise PermissionError("ExecutionContext is required for managed operations")
         try:
             assert_context_complete(context)
         except ExecutionContextError as exc:
@@ -63,9 +62,7 @@ class AdapterHost:
     def require_context(self, context: ExecutionContext, *, require_session: bool = False) -> None:
         """Strong gate: refuse when context is incomplete or profile unregistered."""
         if context.profile_id not in self.registered_profile_ids:
-            raise PermissionError(
-                f"Profile not registered with Adapter Host: {context.profile_id}"
-            )
+            raise PermissionError(f"Profile not registered with Adapter Host: {context.profile_id}")
         try:
             assert_context_complete(context, require_session=require_session)
         except ExecutionContextError as exc:

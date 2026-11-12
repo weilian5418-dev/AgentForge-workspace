@@ -49,7 +49,10 @@ class _MemSession:
     def flush(self) -> None:
         return None
 
-    def get(self, model: type, key: str) -> Any | None:
+    def execute(self, statement: Any) -> None:
+        assert "pg_advisory_xact_lock" in str(statement)
+
+    def get(self, model: type, key: str, **_kwargs: Any) -> Any | None:
         return self.store.get((model, key))
 
     def delete(self, row: Any) -> None:
@@ -77,6 +80,8 @@ class _MemSession:
             return _Result([r for r in self.added if isinstance(r, ArtifactPublicationRow)])
         if "artifact_candidates" in text:
             return _Result([r for r in self.added if isinstance(r, ArtifactCandidateRow)])
+        if "runner_operations" in text:
+            return _Result([r for r in self.added if isinstance(r, RunnerOperationRow)])
         if "content_objects" in text:
             return _Result([r for r in self.added if isinstance(r, ContentObjectRow)])
         return _Result([])
@@ -90,13 +95,19 @@ def _seed_runner(session: _MemSession, *, operation_id: str = "rop_1", generatio
             workspace_id="ws_1",
             workspace_root="/tmp",
             node_id="local",
-            attempt_id=None,
+            attempt_id="att_1",
             generation=generation,
             action_digest="a" * 64,
             scope="ws/",
             params_json={},
             status="succeeded",
-            result_json={},
+            result_json={
+                "executionReceipt": {
+                    "operationId": operation_id,
+                    "dispatchToken": "fixture",
+                    "runnerSynchronousOnly": True,
+                }
+            },
             process_ref="host:rop_1",
             approval_id=None,
             require_effective_approval=False,
@@ -132,6 +143,29 @@ def _freeze(
     *,
     env_hash: str | None = None,
 ) -> Any:
+    # Create a server-side receipt for the fixture's explicitly stopped operation.
+    from agentforge.runner.service import RunnerService
+
+    row = svc.session.get(RunnerOperationRow, "rop_1")
+    proof = {
+        "source": "runner",
+        "operationId": "rop_1",
+        "workspaceId": "ws_1",
+        "attemptId": "att_1",
+        "generation": 1,
+        "evidenceSha256": evidence_sha,
+        "writableScope": "ws/",
+        "writesQuiesced": True,
+        "checkedAt": datetime.now(UTC),
+    }
+    if row is not None:
+        row.workspace_root = str(ws.resolve())
+        ticket = RunnerService(svc.session).record_stop_evidence("rop_1")
+        trusted = ticket.result["stopEvidence"]
+        proof = {key: trusted[key] for key in proof}
+        marker = ws / "_agentforge" / "stop_evidence.json"
+        if evidence_sha != hashlib.sha256(marker.read_bytes()).hexdigest():
+            proof["evidenceSha256"] = evidence_sha
     body = FreezeCandidateRequest.model_validate(
         {
             "projectId": "proj_1",
@@ -141,14 +175,7 @@ def _freeze(
             "contractId": "ctr_1",
             "contractVersion": 1,
             "environmentHash": env_hash or ("b" * 64),
-            "stopEvidence": {
-                "source": "runner",
-                "operationId": "rop_1",
-                "generation": 1,
-                "evidenceSha256": evidence_sha,
-                "evidencePath": "_agentforge/stop_evidence.json",
-                "writableScope": "ws_1/",
-            },
+            "stopEvidence": proof,
             "kind": "code",
         }
     )
@@ -224,7 +251,7 @@ def test_reject_untrusted_stop_and_bad_evidence(tmp_path: Path) -> None:
     ws, evidence_sha, rel = _workspace_with_evidence(tmp_path)
     with pytest.raises(ArtifactBusError) as exc:
         _freeze(svc, ws, evidence_sha, rel)
-    assert exc.value.code == "untrusted_stop_source"
+    assert exc.value.code == "stop_evidence_missing"
 
     _seed_runner(session)
     with pytest.raises(ArtifactBusError) as exc2:

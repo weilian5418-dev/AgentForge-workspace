@@ -6,7 +6,7 @@ import hashlib
 import os
 from dataclasses import dataclass
 from pathlib import PurePosixPath
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 BridgeOutcome = Literal["mapped", "mapping_unsupported", "manual_required"]
 
@@ -71,7 +71,12 @@ def parse_scope(scope: str) -> ParsedScope | None:
         path = ":".join(parts[2:]).strip()
         if not path:
             return None
-        return ParsedScope(kind="file", access=access, path=_norm_path(path), raw=raw)
+        return ParsedScope(
+            kind="file",
+            access=cast(Literal["read", "write"], access),
+            path=_norm_path(path),
+            raw=raw,
+        )
 
     if kind == "cmd" and len(parts) >= 3:
         exe = parts[1].strip()
@@ -124,8 +129,7 @@ def scope_fits(*, native_scope: str, platform_scope: str) -> bool:
 
     if native.kind == "cmd":
         return (
-            native.executable == platform.executable
-            and native.args_digest == platform.args_digest
+            native.executable == platform.executable and native.args_digest == platform.args_digest
         )
 
     if native.kind == "net":

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Literal
 
 from pydantic import Field
 
@@ -19,13 +19,18 @@ class GitStopEvidence(ApiInputModel):
     attempt_id: OpaqueId
     generation: int = Field(ge=1, strict=True)
     evidence_sha256: Sha256Hex
-    evidence_path: RelativePath = "_agentforge/stop_evidence.json"
+    evidence_path: RelativePath = Field(
+        default="_agentforge/stop_evidence.json",
+        deprecated=True,
+        description="Legacy display field; trust is established by the Runner ledger, never this file",
+    )
     writable_scope: ShortText
     writes_quiesced: bool = Field(
         strict=True,
         description="Must be true: no child/writable execution remains for the scope",
     )
     checked_at: UtcDateTime
+
 
 BaselineStrategy = Literal["commit_only", "managed_dirty_snapshot", "blocked"]
 WorkspaceStatus = Literal[

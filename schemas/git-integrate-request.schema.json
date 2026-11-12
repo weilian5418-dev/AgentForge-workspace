@@ -1,0 +1,118 @@
+{
+  "$defs": {
+    "CandidateSnapshotRef": {
+      "additionalProperties": false,
+      "description": "Locks a specific frozen snapshot — integrate must not follow 'latest'.",
+      "properties": {
+        "snapshotId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Snapshotid",
+          "type": "string"
+        },
+        "workspaceId": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "title": "Workspaceid",
+          "type": "string"
+        }
+      },
+      "required": [
+        "workspaceId",
+        "snapshotId"
+      ],
+      "title": "CandidateSnapshotRef",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "baselineId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Baselineid",
+      "type": "string"
+    },
+    "candidateSnapshots": {
+      "description": "Ordered locked snapshots; merge uses these ids only",
+      "items": {
+        "$ref": "#/$defs/CandidateSnapshotRef"
+      },
+      "maxItems": 16,
+      "minItems": 1,
+      "title": "Candidatesnapshots",
+      "type": "array"
+    },
+    "candidateWorkspaceIds": {
+      "anyOf": [
+        {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "type": "string"
+          },
+          "maxItems": 16,
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Deprecated alias; prefer candidateSnapshots",
+      "title": "Candidateworkspaceids"
+    },
+    "directoryIdentity": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Directoryidentity",
+      "type": "string"
+    },
+    "mergeOrder": {
+      "anyOf": [
+        {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "type": "string"
+          },
+          "maxItems": 16,
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Optional workspace id order; must match candidateSnapshots set",
+      "title": "Mergeorder"
+    },
+    "projectId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Projectid",
+      "type": "string"
+    },
+    "sourceRoot": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Sourceroot",
+      "type": "string"
+    }
+  },
+  "required": [
+    "projectId",
+    "baselineId",
+    "sourceRoot",
+    "directoryIdentity",
+    "candidateSnapshots"
+  ],
+  "title": "IntegrateRequest",
+  "type": "object"
+}

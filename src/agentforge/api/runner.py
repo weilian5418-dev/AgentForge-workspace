@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, cast
 
 from fastapi import APIRouter, Depends, Request
+from sqlalchemy import Engine
 from starlette.exceptions import HTTPException
 
 from agentforge.contracts.runner import (
@@ -16,6 +17,7 @@ from agentforge.contracts.runner import (
     RunnerTicketIssueRequest,
 )
 from agentforge.core.config import Settings
+from agentforge.runner.executor import execute_runner
 from agentforge.runner.profiles import list_profiles
 from agentforge.runner.service import RunnerError, RunnerService
 from agentforge.runtime.control import admits_new_work, read_admission
@@ -25,13 +27,13 @@ router = APIRouter(prefix="/api/v1", tags=["runner"])
 
 
 def _settings(request: Request) -> Settings:
-    return request.app.state.settings
+    return cast(Settings, request.app.state.settings)
 
 
-def _engine(request: Request, settings: Settings):
+def _engine(request: Request, settings: Settings) -> Engine:
     if settings.database_url is None or request.app.state.database is None:
         raise HTTPException(503, "Database is not configured")
-    return request.app.state.database
+    return cast(Engine, request.app.state.database)
 
 
 def _map(exc: RunnerError) -> HTTPException:
@@ -105,8 +107,7 @@ def execute(
         raise HTTPException(503, "Admission does not accept new work")
     engine = _engine(request, settings)
     try:
-        with unit_of_work_connection(engine) as uow:
-            return RunnerService(uow.session).execute(body)
+        return execute_runner(engine, body)
     except RunnerError as exc:
         raise _map(exc) from exc
 
@@ -121,8 +122,6 @@ def stop_evidence(
     engine = _engine(request, settings)
     try:
         with unit_of_work_connection(engine) as uow:
-            return RunnerService(uow.session).record_stop_evidence(
-                operation_id, reason=body.reason
-            )
+            return RunnerService(uow.session).record_stop_evidence(operation_id, reason=body.reason)
     except RunnerError as exc:
         raise _map(exc) from exc

@@ -17,9 +17,11 @@ from agentforge.permissions.service import (
     decide,
     is_effective_grant,
     mark_forward_reconciled,
-    process_pending_forward,
     record_native_request,
     retry_forward,
+)
+from agentforge.permissions.service import (
+    process_pending_forward as process_engine_forward,
 )
 from agentforge.storage.models import ApprovalMappingRow, Outbox
 
@@ -38,7 +40,7 @@ class _MemSession:
     def flush(self) -> None:
         return None
 
-    def get(self, model: type, key: str) -> Any | None:
+    def get(self, model: type, key: str, **_kwargs: Any) -> Any | None:
         return self.store.get((model, key))
 
     def refresh(self, row: Any) -> None:
@@ -73,7 +75,21 @@ def _body(**overrides: Any) -> NativeApprovalRecordRequest:
     return NativeApprovalRecordRequest.model_validate(base)
 
 
-def _decide_and_forward(session: _MemSession, summary_id: str, digest: str, decision: str = "approve"):
+def process_pending_forward(session, approval_id):
+    from contextlib import contextmanager
+    from types import SimpleNamespace
+
+    @contextmanager
+    def transaction(_engine):
+        yield SimpleNamespace(session=session)
+
+    with patch("agentforge.storage.uow.unit_of_work_connection", transaction):
+        return process_engine_forward(object(), approval_id)
+
+
+def _decide_and_forward(
+    session: _MemSession, summary_id: str, digest: str, decision: str = "approve"
+):
     decided = decide(
         session,  # type: ignore[arg-type]
         approval_id=summary_id,
@@ -134,7 +150,9 @@ def test_record_and_decide_mapping_unsupported_without_product_ack() -> None:
     row = session.get(ApprovalMappingRow, summary.id)
     assert row is not None
     assert is_effective_grant(row) is False
-    assert any(isinstance(x, Outbox) for x in session.added) or decided.status == "mapping_unsupported"
+    assert (
+        any(isinstance(x, Outbox) for x in session.added) or decided.status == "mapping_unsupported"
+    )
 
 
 def test_wrong_digest_rejected() -> None:
@@ -173,7 +191,9 @@ def test_expired_blocks_late_decision() -> None:
 
 def test_confirm_approve_is_effective_with_mock_adapter() -> None:
     class _OkAdapter:
-        def respond_approval(self, *, session_ref: str, native_request_id: str, decision: str, **_kw):
+        def respond_approval(
+            self, *, session_ref: str, native_request_id: str, decision: str, **_kw
+        ):
             assert decision == "allow"
             return {
                 "status": "acked",
@@ -192,7 +212,9 @@ def test_confirm_approve_is_effective_with_mock_adapter() -> None:
 
 def test_supported_alone_is_not_native_confirm() -> None:
     class _SupportedOnly:
-        def respond_approval(self, *, session_ref: str, native_request_id: str, decision: str, **_kw):
+        def respond_approval(
+            self, *, session_ref: str, native_request_id: str, decision: str, **_kw
+        ):
             return {"status": "supported", "detail": "interface exists"}
 
     session = _MemSession()
@@ -205,7 +227,9 @@ def test_supported_alone_is_not_native_confirm() -> None:
 
 def test_reject_confirmed_is_not_effective_grant() -> None:
     class _OkAdapter:
-        def respond_approval(self, *, session_ref: str, native_request_id: str, decision: str, **_kw):
+        def respond_approval(
+            self, *, session_ref: str, native_request_id: str, decision: str, **_kw
+        ):
             assert decision == "deny"
             return {"status": "acked", "confirmationRef": "ack-deny"}
 
@@ -224,7 +248,9 @@ def test_delivery_unknown_requires_reconcile_before_retry() -> None:
         def __init__(self) -> None:
             self.calls = 0
 
-        def respond_approval(self, *, session_ref: str, native_request_id: str, decision: str, **_kw):
+        def respond_approval(
+            self, *, session_ref: str, native_request_id: str, decision: str, **_kw
+        ):
             self.calls += 1
             if self.calls == 1:
                 return {"status": "unknown", "detail": "timeout"}

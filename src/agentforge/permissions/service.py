@@ -3,15 +3,13 @@
 from __future__ import annotations
 
 import uuid
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any, Literal
 
-from sqlalchemy import select
+from sqlalchemy import func, literal, select, update
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Session
-
-import json
-
-from sqlalchemy import text
 
 from agentforge.adapters.registry import get_adapter
 from agentforge.contracts.plans import (
@@ -21,7 +19,6 @@ from agentforge.contracts.plans import (
 )
 from agentforge.permissions.action import ActionDescriptor, action_descriptor_digest
 from agentforge.permissions.bridge import map_user_decision
-from agentforge.permissions.digest import compute_action_digest
 from agentforge.permissions.evaluator import EvaluationRequest, evaluate
 from agentforge.queue.constants import INTENT_APPROVAL_FORWARD
 from agentforge.storage.models import ApprovalMappingRow, Outbox
@@ -55,7 +52,7 @@ def _to_summary(row: ApprovalMappingRow) -> ApprovalSummary:
             platform_scope=str(meta.get("platformScope") or "unknown"),
             mapping_version=str(meta.get("mappingVersion") or "1"),
             decision_id=str(meta["decisionId"]) if meta.get("decisionId") else None,
-            forward_state=meta.get("forwardState") or "not_started",  # type: ignore[arg-type]
+            forward_state=meta.get("forwardState") or "not_started",
             native_confirmation_ref=(
                 str(meta["nativeConfirmationRef"]) if meta.get("nativeConfirmationRef") else None
             ),
@@ -172,78 +169,54 @@ def try_consume_once(
         return True
     existing_op = meta.get("consumedByOperationId")
     if meta.get("consumedAt") and existing_op == operation_id:
-        return True
+        session.refresh(row)
+        current = _mapping_payload(row)
+        return (
+            row.status == "consumed"
+            and current.get("consumedByOperationId") == operation_id
+            and not current.get("revokedAt")
+            and row.expires_at > _now()
+        )
     if meta.get("consumedAt") and existing_op and existing_op != operation_id:
         return False
 
-    consumed_at = _now().isoformat()
-    patch = {
-        "consumedAt": consumed_at,
-        "consumedByOperationId": operation_id,
-    }
-    bind = {"id": row.id, "patch": json.dumps(patch)}
-    # Prefer atomic JSONB conditional update when talking to real Postgres.
-    try:
-        result = session.execute(
-            text(
-                """
-                UPDATE app.approval_mappings
-                SET
-                  mapping_json = COALESCE(mapping_json, '{}'::jsonb) || CAST(:patch AS jsonb),
-                  status = 'consumed',
-                  updated_at = now()
-                WHERE id = :id
-                  AND status = 'confirmed'
-                  AND user_decision = 'approve'
-                  AND native_confirmed = true
-                  AND (
-                    mapping_json->>'consumedAt' IS NULL
-                    OR mapping_json->>'consumedByOperationId' = :opid
-                  )
-                """
-            ),
-            {**bind, "opid": operation_id},
+    # Atomic, database-clock check. Database exceptions must fail closed; test doubles
+    # implement the repository interface rather than activating a production fallback.
+    clock = func.clock_timestamp()
+    metadata = func.coalesce(ApprovalMappingRow.mapping_json, literal({}, type_=JSONB))
+    patch = {"consumedAt": _now().isoformat(), "consumedByOperationId": operation_id}
+    statement = (
+        update(ApprovalMappingRow)
+        .where(
+            ApprovalMappingRow.id == row.id,
+            ApprovalMappingRow.status == "confirmed",
+            ApprovalMappingRow.user_decision == "approve",
+            ApprovalMappingRow.native_confirmed.is_(True),
+            ApprovalMappingRow.expires_at > clock,
+            ApprovalMappingRow.mapping_json["revokedAt"].astext.is_(None),
+            ApprovalMappingRow.mapping_json["consumedAt"].astext.is_(None),
         )
-        if result.rowcount:  # type: ignore[attr-defined]
-            session.refresh(row)
-            return True
-        # Re-read for idempotent same-operation case after lost race.
-        fresh = session.get(ApprovalMappingRow, row.id)
-        if fresh is None:
-            return False
-        fresh_meta = _mapping_payload(fresh)
-        if fresh_meta.get("consumedByOperationId") == operation_id:
-            row.mapping_json = fresh_meta
-            row.status = fresh.status
-            return True
-        return False
-    except Exception:
-        # MemSession / non-PG: optimistic single-threaded update with version token.
-        fresh = session.get(ApprovalMappingRow, row.id)
-        if fresh is None:
-            return False
-        fresh_meta = _mapping_payload(fresh)
-        if fresh_meta.get("consumedByOperationId") == operation_id:
-            return True
-        if fresh_meta.get("consumedAt"):
-            return False
-        if not grant_record_looks_valid(fresh):
-            return False
-        version = int(fresh_meta.get("grantVersion") or 1)
-        fresh_meta.update(patch)
-        fresh_meta["grantVersion"] = version + 1
-        fresh.mapping_json = fresh_meta
-        fresh.status = "consumed"
-        fresh.updated_at = _now()
-        session.flush()
-        row.mapping_json = fresh_meta
-        row.status = "consumed"
-        row.updated_at = fresh.updated_at
+        .values(mapping_json=metadata.op("||")(patch), status="consumed", updated_at=clock)
+        .returning(ApprovalMappingRow.id)
+        .execution_options(synchronize_session=False)
+    )
+    consumed_id = session.execute(statement).scalar_one_or_none()
+    session.refresh(row)
+    if consumed_id is not None:
         return True
+    fresh_meta = _mapping_payload(row)
+    return (
+        row.status == "consumed"
+        and fresh_meta.get("consumedByOperationId") == operation_id
+        and not fresh_meta.get("revokedAt")
+        and row.expires_at > _now()
+    )
 
 
-def revoke_grant(session: Session, *, approval_id: str, reason: str | None = None) -> ApprovalSummary:
-    row = session.get(ApprovalMappingRow, approval_id)
+def revoke_grant(
+    session: Session, *, approval_id: str, reason: str | None = None
+) -> ApprovalSummary:
+    row = session.get(ApprovalMappingRow, approval_id, with_for_update=True, populate_existing=True)
     if row is None:
         raise ApprovalError("approval_not_found", "Approval not found")
     meta = _mapping_payload(row)
@@ -261,7 +234,10 @@ def revoke_grant(session: Session, *, approval_id: str, reason: str | None = Non
 
 def _expire_if_needed(row: ApprovalMappingRow, *, at: datetime | None = None) -> bool:
     when = at or _now()
-    if row.status in {"pending", "user_decided", "forwarding", "delivery_unknown"} and row.expires_at <= when:
+    if (
+        row.status in {"pending", "user_decided", "forwarding", "delivery_unknown"}
+        and row.expires_at <= when
+    ):
         row.status = "expired"
         row.updated_at = when
         return True
@@ -308,7 +284,9 @@ def record_native_request(
     )
     digest = action_descriptor_digest(descriptor)
     if body.action_digest is not None and body.action_digest != digest:
-        raise ApprovalError("action_digest_mismatch", "Client actionDigest does not match canonical digest")
+        raise ApprovalError(
+            "action_digest_mismatch", "Client actionDigest does not match canonical digest"
+        )
 
     if body.expires_at <= _now():
         raise ApprovalError("already_expired", "expiresAt is not in the future")
@@ -384,7 +362,7 @@ def list_approvals(
 
 
 def get_approval(session: Session, approval_id: str) -> ApprovalSummary:
-    row = session.get(ApprovalMappingRow, approval_id)
+    row = session.get(ApprovalMappingRow, approval_id, with_for_update=True, populate_existing=True)
     if row is None:
         raise ApprovalError("approval_not_found", "Approval not found")
     _expire_if_needed(row)
@@ -402,16 +380,24 @@ def decide(
     forward: bool = True,
 ) -> ApprovalSummary:
     """Record user decision; optionally forward to native via adapter."""
-    row = session.get(ApprovalMappingRow, approval_id)
+    row = session.get(ApprovalMappingRow, approval_id, with_for_update=True, populate_existing=True)
     if row is None:
         raise ApprovalError("approval_not_found", "Approval not found")
     _expire_if_needed(row)
     if row.status == "expired":
-        raise ApprovalError("expired", "Approval expired; late decisions cannot unlock new attempts")
+        raise ApprovalError(
+            "expired", "Approval expired; late decisions cannot unlock new attempts"
+        )
     if row.action_digest != action_digest:
         raise ApprovalError("action_digest_mismatch", "actionDigest does not match ledger")
 
-    if row.status in {"confirmed", "rejected", "mapping_unsupported", "manual_required", "consumed"}:
+    if row.status in {
+        "confirmed",
+        "rejected",
+        "mapping_unsupported",
+        "manual_required",
+        "consumed",
+    }:
         # Idempotent only when same decision already recorded and terminal.
         if row.user_decision == decision and row.status == "confirmed":
             return _to_summary(row)
@@ -442,6 +428,12 @@ def decide(
 def _queue_forward_intent(session: Session, row: ApprovalMappingRow) -> ApprovalSummary:
     """Short-txn: bridge + persist forward intent / outbox. Does NOT call native adapter."""
     meta = _mapping_payload(row)
+    if row.status == "forwarding" and meta.get("forwardPending"):
+        return _to_summary(row)
+    if row.status == "delivery_unknown":
+        raise ApprovalError(
+            "reconcile_required", "Native delivery is unknown; inspect before retry"
+        )
     semantic = str(meta.get("semantic") or "once")
     bridge = map_user_decision(
         user_decision=row.user_decision,  # type: ignore[arg-type]
@@ -491,8 +483,8 @@ def _queue_forward_intent(session: Session, row: ApprovalMappingRow) -> Approval
             event_id=None,
             intent_type=INTENT_APPROVAL_FORWARD,
             target="approval:forward",
-            payload={"approvalId": row.id, "adapterId": adapter_id},
-            idempotency_key=f"approval-forward:{row.id}:{meta.get('decisionId')}",
+            payload={"operationId": outbox_id, "approvalId": row.id, "adapterId": adapter_id},
+            idempotency_key=f"approval-forward:{row.id}:{outbox_id}",
             delivery_status="pending",
             attempt_count=0,
         )
@@ -501,85 +493,163 @@ def _queue_forward_intent(session: Session, row: ApprovalMappingRow) -> Approval
     return _to_summary(row)
 
 
-def process_pending_forward(session: Session, approval_id: str) -> ApprovalSummary:
-    """Post-commit: call native adapter and persist trusted result in a new short txn."""
-    row = session.get(ApprovalMappingRow, approval_id)
+@dataclass(frozen=True)
+class ForwardDispatch:
+    approval_id: str
+    token: str
+    adapter_id: str
+    session_ref: str
+    native_request_id: str
+    decision: str
+    semantic: str
+    mapped_options: dict[str, Any]
+
+
+def claim_pending_forward(
+    session: Session, approval_id: str, *, operation_id: str | None = None
+) -> ForwardDispatch | ApprovalSummary:
+    """Commit this claim before touching a native service. A lost claim stays unknown."""
+    row = session.get(ApprovalMappingRow, approval_id, with_for_update=True, populate_existing=True)
     if row is None:
         raise ApprovalError("approval_not_found", "Approval not found")
     meta = _mapping_payload(row)
-    if row.status in {"confirmed", "rejected", "mapping_unsupported", "manual_required", "consumed"}:
+    if operation_id is not None and meta.get("forwardOutboxId") != operation_id:
+        return _to_summary(row)
+    if row.expires_at <= _now():
+        row.status = "expired"
+        row.native_confirmed = False
+        meta["forwardPending"] = False
+        row.mapping_json = meta
+        session.flush()
+        return _to_summary(row)
+    if meta.get("revokedAt"):
+        meta["forwardPending"] = False
+        row.mapping_json = meta
+        row.status = "rejected"
+        row.native_confirmed = False
+        session.flush()
         return _to_summary(row)
     if row.status != "forwarding" or not meta.get("forwardPending"):
-        raise ApprovalError("invalid_state", "No pending forward intent to process")
-
-    semantic = str(meta.get("semantic") or "once")
-    native_decision = str(meta.get("bridgeNativeDecision") or "")
-    mapped_options = meta.get("bridgeMappedOptions")
-    adapter_id = str(meta.get("adapterId") or "")
-    try:
-        adapter = get_adapter(adapter_id)
-    except KeyError as exc:
-        raise ApprovalError("adapter_not_found", str(exc)) from exc
-
-    meta["forwardState"] = "forwarding"
-    row.mapping_json = meta
-    session.flush()
-
-    result = adapter.respond_approval(
-        session_ref=str(meta.get("sessionRef") or ""),
-        native_request_id=str(row.native_request_id or ""),
-        decision=native_decision,
-        semantic=semantic,
-        mapped_options=mapped_options if isinstance(mapped_options, dict) else None,
+        return _to_summary(row)
+    _assert_forward_binding(session, row, meta)
+    token = uuid.uuid4().hex
+    meta.update(
+        forwardPending=False,
+        forwardState="delivery_unknown",
+        dispatchToken=token,
+        dispatchStartedAt=_now().isoformat(),
     )
-    status = str(result.get("status") or "unknown")
+    row.mapping_json = meta
+    row.status = "delivery_unknown"
+    row.updated_at = _now()
+    session.flush()
+    return ForwardDispatch(
+        row.id,
+        token,
+        str(meta.get("adapterId") or ""),
+        str(meta.get("sessionRef") or ""),
+        str(row.native_request_id or ""),
+        str(meta.get("bridgeNativeDecision") or ""),
+        str(meta.get("semantic") or "once"),
+        dict(meta.get("bridgeMappedOptions") or {}),
+    )
+
+
+def _assert_forward_binding(
+    session: Session, row: ApprovalMappingRow, meta: dict[str, Any]
+) -> None:
+    from agentforge.storage.models import AgentInstanceRow, Run, TaskAttempt
+
+    if row.attempt_id:
+        attempt = session.get(TaskAttempt, row.attempt_id)
+        if (
+            attempt is None
+            or attempt.status not in {"leased", "running"}
+            or attempt.lease_until <= _now()
+        ):
+            raise ApprovalError("attempt_mismatch", "Approval attempt is no longer active")
+        run = session.get(Run, attempt.run_id)
+        if run is None or run.active_generation != attempt.run_generation:
+            raise ApprovalError("attempt_mismatch", "Approval execution generation changed")
+        if row.run_id and row.run_id != attempt.run_id:
+            raise ApprovalError("attempt_mismatch", "Approval run differs from attempt")
+    if row.instance_id:
+        instance = session.get(AgentInstanceRow, row.instance_id)
+        if (
+            instance is None
+            or instance.session_ref != meta.get("sessionRef")
+            or instance.status in {"stopped", "closed", "failed", "unknown"}
+        ):
+            raise ApprovalError(
+                "session_mismatch", "Approval no longer matches the active native session"
+            )
+
+
+def apply_forward_result(
+    session: Session, dispatch: ForwardDispatch, result: dict[str, Any]
+) -> ApprovalSummary:
+    row = session.get(
+        ApprovalMappingRow, dispatch.approval_id, with_for_update=True, populate_existing=True
+    )
+    if row is None:
+        raise ApprovalError("approval_not_found", "Approval not found")
+    meta = _mapping_payload(row)
+    if meta.get("dispatchToken") != dispatch.token:
+        raise ApprovalError("stale_dispatch", "Native result belongs to an older dispatch")
+    meta["lastDispatchResult"] = str(result.get("status") or "unknown")
     meta["forwardPending"] = False
+    row.mapping_json = meta
+    if row.expires_at <= _now() or meta.get("revokedAt"):
+        row.status = "expired" if row.expires_at <= _now() else "rejected"
+        row.native_confirmed = False
+        session.flush()
+        return _to_summary(row)
+    status = str(result.get("status") or "unknown")
     if status == "unsupported":
         row.status = "mapping_unsupported"
         meta["forwardState"] = "mapping_unsupported"
-        meta["adapterDetail"] = result.get("detail")
+    elif status in {"acked", "confirmed"} and result.get("confirmationRef"):
+        _assert_forward_binding(session, row, meta)
         row.mapping_json = meta
-        row.updated_at = _now()
-        session.flush()
-        return _to_summary(row)
-    if status in {"failed", "unknown", "supported"}:
-        row.status = "delivery_unknown"
-        meta["forwardState"] = "delivery_unknown"
-        meta["adapterDetail"] = result.get("detail") or (
-            "supported≠acked; waiting for native confirmationRef"
-            if status == "supported"
-            else result.get("detail")
-        )
-        row.mapping_json = meta
-        row.updated_at = _now()
-        session.flush()
-        return _to_summary(row)
-    if status in {"acked", "confirmed"}:
-        conf = result.get("confirmationRef")
-        if not conf:
-            row.status = "delivery_unknown"
-            meta["forwardState"] = "delivery_unknown"
-            meta["adapterDetail"] = "acked/confirmed without confirmationRef"
-            row.mapping_json = meta
-            row.updated_at = _now()
-            session.flush()
-            return _to_summary(row)
-        row.mapping_json = meta
-        session.flush()
         return confirm_native(
             session,
             approval_id=row.id,
-            native_request_id=str(row.native_request_id or ""),
-            confirmation_ref=str(conf),
+            native_request_id=dispatch.native_request_id,
+            confirmation_ref=str(result["confirmationRef"]),
             source="adapter_host",
         )
-    row.status = "delivery_unknown"
-    meta["forwardState"] = "delivery_unknown"
-    meta["adapterDetail"] = f"unexpected adapter status={status}"
+    else:
+        row.status = "delivery_unknown"
+        meta["forwardState"] = "delivery_unknown"
     row.mapping_json = meta
     row.updated_at = _now()
     session.flush()
     return _to_summary(row)
+
+
+def process_pending_forward(
+    engine: Any, approval_id: str, *, operation_id: str | None = None
+) -> ApprovalSummary:
+    """Native I/O never runs inside a SQLAlchemy transaction."""
+    from agentforge.storage.uow import unit_of_work_connection
+
+    with unit_of_work_connection(engine) as uow:
+        claim = claim_pending_forward(uow.session, approval_id, operation_id=operation_id)
+    if isinstance(claim, ApprovalSummary):
+        return claim
+    try:
+        result = get_adapter(claim.adapter_id).respond_approval(
+            session_ref=claim.session_ref,
+            native_request_id=claim.native_request_id,
+            decision=claim.decision,
+            semantic=claim.semantic,
+            mapped_options=claim.mapped_options,
+        )
+    except Exception:
+        # Dispatch may have reached the product. Persist unknown, never resend on retry.
+        result = {"status": "unknown"}
+    with unit_of_work_connection(engine) as uow:
+        return apply_forward_result(uow.session, claim, result)
 
 
 def confirm_native(
@@ -596,7 +666,7 @@ def confirm_native(
     receipt may elevate ``forwarding`` / ``delivery_unknown`` to an effective grant.
     ``mapping_unsupported`` / ``manual_required`` stay non-effective.
     """
-    row = session.get(ApprovalMappingRow, approval_id)
+    row = session.get(ApprovalMappingRow, approval_id, with_for_update=True, populate_existing=True)
     if row is None:
         raise ApprovalError("approval_not_found", "Approval not found")
     _expire_if_needed(row)
@@ -645,7 +715,7 @@ def retry_forward(
     reconcile_token: str | None = None,
 ) -> ApprovalSummary:
     """Retry forward only after reconcile proves unsent — unknown ≠ unsent."""
-    row = session.get(ApprovalMappingRow, approval_id)
+    row = session.get(ApprovalMappingRow, approval_id, with_for_update=True, populate_existing=True)
     if row is None:
         raise ApprovalError("approval_not_found", "Approval not found")
     _expire_if_needed(row)
@@ -670,6 +740,7 @@ def retry_forward(
     # One-shot token
     meta.pop("reconcileToken", None)
     row.mapping_json = meta
+    row.status = "user_decided"
     session.flush()
     return _queue_forward_intent(session, row)
 
@@ -682,7 +753,7 @@ def mark_forward_reconciled(
     inspect_ref: str,
 ) -> ApprovalSummary:
     """Record native inspect outcome. Only unsent=True mints a one-shot reconcileToken."""
-    row = session.get(ApprovalMappingRow, approval_id)
+    row = session.get(ApprovalMappingRow, approval_id, with_for_update=True, populate_existing=True)
     if row is None:
         raise ApprovalError("approval_not_found", "Approval not found")
     if row.status != "delivery_unknown":

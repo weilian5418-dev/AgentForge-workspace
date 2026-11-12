@@ -71,3 +71,5 @@ AGENTFORGE_QUEUE_DATABASE_URL=postgresql+psycopg://agentforge_driver:YOUR_PASSWO
 - `deploy` — Postgres 授权等部署片段  
 - `docs/reviews` — 实现审核记录（非产品规格）  
 - `environment` — 本机同步与运行 helper  
+
+本次权限、派发、Runner 与停止证明修复的接口变化和验证边界见 [专项修复记录](docs/reviews/D04-D07-fixes-and-validation.md)。

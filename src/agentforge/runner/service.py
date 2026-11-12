@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import uuid
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
@@ -20,7 +23,12 @@ from agentforge.permissions.service import (
     try_consume_once,
 )
 from agentforge.runner.paths import RunnerPathError, resolve_workspace_root
-from agentforge.runner.profiles import execute_profile, get_profile
+from agentforge.runner.profiles import get_profile
+from agentforge.runner.quiescence import (
+    WorkspaceBusyError,
+    assert_workspace_quiescent,
+    lock_workspace,
+)
 from agentforge.runner.tickets import compute_runner_digest
 from agentforge.storage.models import ApprovalMappingRow, RunnerOperationRow
 
@@ -58,12 +66,21 @@ def _to_ticket(row: RunnerOperationRow) -> RunnerTicket:
 
 
 def _expire_if_needed(row: RunnerOperationRow) -> bool:
-    if row.status in {"issued", "running"} and row.expires_at <= _now():
+    if row.status == "issued" and row.expires_at <= _now():
         row.status = "expired"
         row.message = "Ticket expired"
         row.updated_at = _now()
         return True
     return False
+
+
+@dataclass(frozen=True)
+class RunnerDispatch:
+    operation_id: str
+    token: str
+    profile_id: str
+    workspace_root: str
+    params: dict[str, Any]
 
 
 class RunnerService:
@@ -77,6 +94,18 @@ class RunnerService:
             raise RunnerError("unknown_profile", f"Unknown profileId: {body.profile_id}") from exc
         if body.expires_at <= _now():
             raise RunnerError("already_expired", "expiresAt must be in the future")
+        if any(str(key).startswith("__") for key in body.params):
+            raise RunnerError("invalid_params", "Reserved Runner parameter name")
+        workspace = lock_workspace(self.session, body.workspace_id)
+        if workspace is not None:
+            if str(resolve_workspace_root(body.workspace_root)) != str(
+                resolve_workspace_root(workspace.worktree_path)
+            ):
+                raise RunnerError(
+                    "workspace_mismatch", "Ticket root differs from registered workspace"
+                )
+            if get_profile(body.profile_id).writes and workspace.status != "active":
+                raise RunnerError("workspace_frozen", "Workspace is not open for writes")
         # Validate workspace exists up-front.
         try:
             resolve_workspace_root(body.workspace_root)
@@ -100,6 +129,9 @@ class RunnerService:
             params=dict(body.params),
             attempt_id=body.attempt_id,
             generation=body.generation,
+            environment_id=body.environment_id,
+            instance_id=body.instance_id,
+            session_ref=body.session_ref,
         )
         execution_digest = action_descriptor_digest(execution_desc)
         if body.approval_id:
@@ -113,6 +145,11 @@ class RunnerService:
                 )
         params = dict(body.params)
         params["__executionDigest"] = execution_digest
+        params["__executionContext"] = {
+            "environmentId": body.environment_id,
+            "instanceId": body.instance_id,
+            "sessionRef": body.session_ref,
+        }
         row = RunnerOperationRow(
             id=f"rop_{uuid.uuid4().hex[:20]}",
             profile_id=body.profile_id,
@@ -146,10 +183,15 @@ class RunnerService:
             self.session.flush()
         return _to_ticket(row)
 
-    def execute(self, body: RunnerExecuteRequest) -> RunnerTicket:
+    def claim_execution(self, body: RunnerExecuteRequest) -> RunnerDispatch | RunnerTicket:
         row = self.session.get(RunnerOperationRow, body.operation_id)
         if row is None:
             raise RunnerError("operation_not_found", "Runner operation not found")
+        workspace = lock_workspace(self.session, row.workspace_id)
+        row = self.session.get(
+            RunnerOperationRow, body.operation_id, with_for_update=True, populate_existing=True
+        )
+        assert row is not None
         _expire_if_needed(row)
         if row.status == "expired":
             raise RunnerError("expired", "Ticket expired")
@@ -169,15 +211,17 @@ class RunnerService:
             )
         if row.status == "running":
             # Crash window: do not blind-retry.
-            row.status = "needs_reconciliation"
-            row.message = "Execute re-entered while running; reconcile"
-            row.updated_at = _now()
-            self.session.flush()
             raise RunnerError(
                 "needs_reconciliation",
                 "Prior execution may have started; refusing blind retry",
             )
 
+        if (
+            workspace is not None
+            and get_profile(row.profile_id).writes
+            and workspace.status != "active"
+        ):
+            raise RunnerError("workspace_frozen", "Workspace is not open for writes")
         spec = get_profile(row.profile_id)
         if spec.docker_required:
             row.status = "blocked"
@@ -202,6 +246,7 @@ class RunnerService:
                 )
             params = dict(row.params_json or {})
             exec_digest = str(params.get("__executionDigest") or "")
+            context = params.get("__executionContext") or {}
             descriptor = descriptor_from_runner(
                 profile_id=row.profile_id,
                 workspace_id=row.workspace_id,
@@ -210,6 +255,9 @@ class RunnerService:
                 params={k: v for k, v in params.items() if not str(k).startswith("__")},
                 attempt_id=row.attempt_id,
                 generation=row.generation,
+                environment_id=context.get("environmentId"),
+                instance_id=context.get("instanceId"),
+                session_ref=context.get("sessionRef"),
             )
             live = action_descriptor_digest(descriptor)
             if not exec_digest or exec_digest != live or approval.action_digest != live:
@@ -232,64 +280,99 @@ class RunnerService:
                     "Once-scoped grant already consumed by another operation",
                 )
 
+        token = uuid.uuid4().hex
         row.status = "running"
         row.process_ref = f"host:{row.id}"
+        row.result_json = {"dispatchToken": token, "dispatchStartedAt": _now().isoformat()}
         row.updated_at = _now()
         self.session.flush()
+        return RunnerDispatch(
+            row.id,
+            token,
+            row.profile_id,
+            row.workspace_root,
+            {k: v for k, v in dict(row.params_json or {}).items() if not str(k).startswith("__")},
+        )
 
-        try:
-            root = resolve_workspace_root(row.workspace_root)
-            raw_params = dict(row.params_json or {})
-            result = execute_profile(
-                row.profile_id,
-                workspace_root=root,
-                params={k: v for k, v in raw_params.items() if not str(k).startswith("__")},
-            )
-        except RunnerPathError as exc:
-            row.status = "failed"
-            row.result_json = {"status": "failed", "code": exc.code, "detail": exc.message}
-            row.message = f"{exc.code}: {exc.message}"
-            row.updated_at = _now()
-            self.session.flush()
-            return _to_ticket(row)
-        except Exception as exc:  # noqa: BLE001 — unknown host failure → reconcile
-            row.status = "needs_reconciliation"
-            row.result_json = {"status": "unknown", "detail": type(exc).__name__}
-            row.message = "Unexpected failure after start; reconcile"
-            row.updated_at = _now()
-            self.session.flush()
-            raise RunnerError("needs_reconciliation", str(exc)) from exc
-
-        status = str(result.get("status") or "failed")
-        if status == "succeeded":
-            row.status = "succeeded"
-        elif status == "blocked":
-            row.status = "blocked"
-        else:
-            row.status = "failed"
-        row.result_json = result
+    def finish_execution(self, dispatch: RunnerDispatch, result: dict[str, Any]) -> RunnerTicket:
+        row = self.session.get(
+            RunnerOperationRow, dispatch.operation_id, with_for_update=True, populate_existing=True
+        )
+        if (
+            row is None
+            or row.status != "running"
+            or (row.result_json or {}).get("dispatchToken") != dispatch.token
+        ):
+            raise RunnerError("stale_execution", "Result belongs to an inactive dispatch")
+        status = str(result.get("status") or "unknown")
+        row.status = (
+            status if status in {"succeeded", "failed", "blocked"} else "needs_reconciliation"
+        )
+        row.result_json = {
+            **result,
+            "executionReceipt": {
+                "dispatchToken": dispatch.token,
+                "operationId": row.id,
+                "profileId": row.profile_id,
+                "workspaceId": row.workspace_id,
+                "attemptId": row.attempt_id,
+                "generation": row.generation,
+                "finishedAt": _now().isoformat(),
+                "runnerSynchronousOnly": row.status in {"succeeded", "failed"},
+            },
+        }
         row.message = f"profile={row.profile_id} status={row.status}"
         row.updated_at = _now()
         self.session.flush()
         return _to_ticket(row)
 
     def record_stop_evidence(self, operation_id: str, *, reason: str | None = None) -> RunnerTicket:
-        """Run close_task-style evidence write for an existing succeeded/failed op workspace."""
+        """Persist an authoritative proof for known synchronous Runner work only.
+
+        No native-process stop guarantee is inferred from a terminal job or marker file.
+        """
         row = self.session.get(RunnerOperationRow, operation_id)
         if row is None:
             raise RunnerError("operation_not_found", "Runner operation not found")
+        lock_workspace(self.session, row.workspace_id)
+        row = self.session.get(
+            RunnerOperationRow, operation_id, with_for_update=True, populate_existing=True
+        )
+        assert row is not None
+        receipt = (row.result_json or {}).get("executionReceipt")
+        if (
+            row.status not in {"succeeded", "failed"}
+            or not isinstance(receipt, dict)
+            or not receipt.get("runnerSynchronousOnly")
+            or receipt.get("operationId") != row.id
+        ):
+            raise RunnerError("stop_unconfirmed", "No trusted synchronous execution receipt")
         try:
-            root = resolve_workspace_root(row.workspace_root)
-            evidence = execute_profile(
-                "close_task",
-                workspace_root=root,
-                params={"reason": reason or f"stop:{row.status}", "evidencePath": "_agentforge/stop_evidence.json"},
-            )
-        except RunnerPathError as exc:
-            raise RunnerError(exc.code, exc.message) from exc
-        meta = dict(row.result_json or {})
-        meta["stopEvidence"] = evidence
-        row.result_json = meta
+            assert_workspace_quiescent(self.session, row.workspace_id, except_operation=row.id)
+        except WorkspaceBusyError as exc:
+            raise RunnerError("stop_unconfirmed", str(exc)) from exc
+        if not row.attempt_id:
+            raise RunnerError("stop_unconfirmed", "Stop proof requires an attempt binding")
+        proof = {
+            "source": "runner",
+            "operationId": row.id,
+            "workspaceId": row.workspace_id,
+            "workspaceRoot": str(resolve_workspace_root(row.workspace_root)),
+            "attemptId": row.attempt_id,
+            "generation": row.generation,
+            "writableScope": row.scope,
+            "writesQuiesced": True,
+            "checkedAt": _now().isoformat(),
+            "receiptToken": receipt["dispatchToken"],
+            "coverage": "runner_synchronous_only",
+            "reason": reason,
+        }
+        digest = hashlib.sha256(
+            json.dumps(proof, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+        metadata = dict(row.result_json or {})
+        metadata["stopEvidence"] = {**proof, "evidenceSha256": digest}
+        row.result_json = metadata
         row.updated_at = _now()
         self.session.flush()
         return _to_ticket(row)

@@ -32,3 +32,20 @@ def execute_model_operation(
         task_version=task_version,
         provider_config_version=provider_config_version,
     )
+
+
+@blueprint.task(name="agentforge.forward_approval", queue=DEFAULT_QUEUE_NAME, pass_context=False)
+def forward_approval(approval_id: str, operation_id: str, task_version: int = 1) -> str:
+    from agentforge.core.config import Settings
+    from agentforge.permissions.service import process_pending_forward
+    from agentforge.storage.database import create_database_engine
+
+    if task_version != 1 or not operation_id:
+        raise ValueError("Invalid approval dispatch version or operationId")
+    engine = create_database_engine(Settings())
+    if engine is None:
+        raise RuntimeError("Database is not configured")
+    try:
+        return process_pending_forward(engine, approval_id, operation_id=operation_id).status
+    finally:
+        engine.dispose()

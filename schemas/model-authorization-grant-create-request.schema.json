@@ -1,0 +1,88 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "allowedBaselineIds": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9._:-]+$",
+        "type": "string"
+      },
+      "maxItems": 16,
+      "title": "Allowedbaselineids",
+      "type": "array"
+    },
+    "allowedInputIds": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9._:-]+$",
+        "type": "string"
+      },
+      "maxItems": 64,
+      "title": "Allowedinputids",
+      "type": "array"
+    },
+    "budgetAccountId": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Budgetaccountid"
+    },
+    "expiresAt": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Expiresat"
+    },
+    "maxCalls": {
+      "maximum": 10000,
+      "minimum": 1,
+      "title": "Maxcalls",
+      "type": "integer"
+    },
+    "maxOutputTokens": {
+      "default": 2048,
+      "maximum": 128000,
+      "minimum": 1,
+      "title": "Maxoutputtokens",
+      "type": "integer"
+    },
+    "providerId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Providerid",
+      "type": "string"
+    },
+    "purpose": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Purpose",
+      "type": "string"
+    }
+  },
+  "required": [
+    "providerId",
+    "purpose",
+    "maxCalls"
+  ],
+  "title": "ModelAuthorizationGrantCreateRequest",
+  "type": "object"
+}

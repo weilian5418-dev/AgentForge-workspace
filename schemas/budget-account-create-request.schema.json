@@ -1,0 +1,92 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "currency": {
+      "maxLength": 8,
+      "minLength": 3,
+      "title": "Currency",
+      "type": "string"
+    },
+    "hardCostEnabled": {
+      "default": false,
+      "title": "Hardcostenabled",
+      "type": "boolean"
+    },
+    "hardLimit": {
+      "anyOf": [
+        {
+          "pattern": "^(0|[1-9]\\d*)(\\.\\d{1,8})?$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Hardlimit"
+    },
+    "priceVersion": {
+      "anyOf": [
+        {
+          "maxLength": 64,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Priceversion"
+    },
+    "scopeId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Scopeid",
+      "type": "string"
+    },
+    "scopeType": {
+      "enum": [
+        "run",
+        "provider",
+        "global",
+        "call"
+      ],
+      "title": "Scopetype",
+      "type": "string"
+    },
+    "softLimit": {
+      "anyOf": [
+        {
+          "pattern": "^(0|[1-9]\\d*)(\\.\\d{1,8})?$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Softlimit"
+    },
+    "tokenLimit": {
+      "anyOf": [
+        {
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Tokenlimit"
+    }
+  },
+  "required": [
+    "scopeType",
+    "scopeId",
+    "currency"
+  ],
+  "title": "BudgetAccountCreateRequest",
+  "type": "object"
+}

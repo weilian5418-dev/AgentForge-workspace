@@ -67,6 +67,9 @@ def test_once_consume_only_once() -> None:
         def flush(self) -> None:
             return None
 
+        def refresh(self, _row: Any) -> None:
+            return None
+
     now = datetime.now(UTC)
     row = ApprovalMappingRow(
         id="appr_once",
@@ -86,9 +89,20 @@ def test_once_consume_only_once() -> None:
         created_at=now,
         updated_at=now,
     )
+
     class _S2(_S):
         def execute(self, *_a: Any, **_k: Any) -> Any:
-            raise RuntimeError("mem")
+            from types import SimpleNamespace
+
+            if not grant_record_looks_valid(self.row):
+                return SimpleNamespace(scalar_one_or_none=lambda: None)
+            self.row.mapping_json = {
+                **self.row.mapping_json,
+                "consumedAt": datetime.now(UTC).isoformat(),
+                "consumedByOperationId": "rop_1",
+            }
+            self.row.status = "consumed"
+            return SimpleNamespace(scalar_one_or_none=lambda: self.row.id)
 
     session = _S2(row)
     assert grant_record_looks_valid(row) is True

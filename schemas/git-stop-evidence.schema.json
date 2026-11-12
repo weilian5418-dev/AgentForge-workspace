@@ -1,0 +1,78 @@
+{
+  "additionalProperties": false,
+  "description": "Trusted stop proof for workspace freeze — not a generic Runner terminal status.",
+  "properties": {
+    "attemptId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Attemptid",
+      "type": "string"
+    },
+    "checkedAt": {
+      "format": "date-time",
+      "title": "Checkedat",
+      "type": "string"
+    },
+    "evidencePath": {
+      "default": "_agentforge/stop_evidence.json",
+      "deprecated": true,
+      "description": "Legacy display field; trust is established by the Runner ledger, never this file",
+      "title": "Evidencepath",
+      "type": "string"
+    },
+    "evidenceSha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Evidencesha256",
+      "type": "string"
+    },
+    "generation": {
+      "minimum": 1,
+      "title": "Generation",
+      "type": "integer"
+    },
+    "operationId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Operationid",
+      "type": "string"
+    },
+    "source": {
+      "const": "runner",
+      "default": "runner",
+      "title": "Source",
+      "type": "string"
+    },
+    "workspaceId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Workspaceid",
+      "type": "string"
+    },
+    "writableScope": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Writablescope",
+      "type": "string"
+    },
+    "writesQuiesced": {
+      "description": "Must be true: no child/writable execution remains for the scope",
+      "title": "Writesquiesced",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "operationId",
+    "workspaceId",
+    "attemptId",
+    "generation",
+    "evidenceSha256",
+    "writableScope",
+    "writesQuiesced",
+    "checkedAt"
+  ],
+  "title": "GitStopEvidence",
+  "type": "object"
+}

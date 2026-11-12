@@ -1,0 +1,26 @@
+{
+  "additionalProperties": false,
+  "description": "Locks a specific frozen snapshot — integrate must not follow 'latest'.",
+  "properties": {
+    "snapshotId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Snapshotid",
+      "type": "string"
+    },
+    "workspaceId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Workspaceid",
+      "type": "string"
+    }
+  },
+  "required": [
+    "workspaceId",
+    "snapshotId"
+  ],
+  "title": "CandidateSnapshotRef",
+  "type": "object"
+}

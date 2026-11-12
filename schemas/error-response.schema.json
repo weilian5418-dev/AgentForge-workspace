@@ -26,7 +26,12 @@
         "CANDIDATE_STALE",
         "STAGE_GATE_NOT_MET",
         "ASSIGNMENT_STALE",
-        "BUDGET_EXHAUSTED"
+        "BUDGET_EXHAUSTED",
+        "PROVIDER_AUTH_FAILED",
+        "PROVIDER_UNAVAILABLE",
+        "MODEL_AUTHORIZATION_DENIED",
+        "CONTEXT_MANIFEST_MISMATCH",
+        "MODEL_CALL_UNKNOWN"
       ],
       "title": "ErrorCode",
       "type": "string"

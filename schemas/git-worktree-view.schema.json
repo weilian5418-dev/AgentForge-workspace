@@ -1,0 +1,112 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "baselineId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Baselineid",
+      "type": "string"
+    },
+    "createdAt": {
+      "format": "date-time",
+      "title": "Createdat",
+      "type": "string"
+    },
+    "dirtyIncluded": {
+      "title": "Dirtyincluded",
+      "type": "boolean"
+    },
+    "headCommit": {
+      "anyOf": [
+        {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Headcommit"
+    },
+    "message": {
+      "anyOf": [
+        {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Message"
+    },
+    "projectId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Projectid",
+      "type": "string"
+    },
+    "restrictions": {
+      "items": {
+        "maxLength": 512,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 32,
+      "title": "Restrictions",
+      "type": "array"
+    },
+    "status": {
+      "enum": [
+        "active",
+        "blocked",
+        "restricted",
+        "snapshot_frozen",
+        "conflicted",
+        "closed"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "strategy": {
+      "enum": [
+        "commit_only",
+        "managed_dirty_snapshot",
+        "blocked"
+      ],
+      "title": "Strategy",
+      "type": "string"
+    },
+    "workspaceId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Workspaceid",
+      "type": "string"
+    },
+    "worktreePath": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Worktreepath",
+      "type": "string"
+    }
+  },
+  "required": [
+    "workspaceId",
+    "projectId",
+    "baselineId",
+    "strategy",
+    "status",
+    "worktreePath",
+    "dirtyIncluded",
+    "createdAt"
+  ],
+  "title": "WorktreeView",
+  "type": "object"
+}

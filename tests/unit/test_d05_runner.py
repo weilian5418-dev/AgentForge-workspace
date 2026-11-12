@@ -9,9 +9,10 @@ from typing import Any
 import pytest
 
 from agentforge.contracts.runner import RunnerExecuteRequest, RunnerTicketIssueRequest
+from agentforge.runner.executor import perform_runner_dispatch
 from agentforge.runner.paths import RunnerPathError, resolve_under_workspace, resolve_workspace_root
 from agentforge.runner.profiles import execute_profile, list_profiles
-from agentforge.runner.service import RunnerError, RunnerService
+from agentforge.runner.service import RunnerDispatch, RunnerError, RunnerService
 from agentforge.runner.tickets import compute_runner_digest
 from agentforge.storage.models import RunnerOperationRow
 
@@ -29,14 +30,22 @@ class _MemSession:
     def flush(self) -> None:
         return None
 
-    def get(self, model: type, key: str) -> Any | None:
+    def get(self, model: type, key: str, **_kwargs: Any) -> Any | None:
         return self.store.get((model, key))
 
     def refresh(self, row: Any) -> None:
         return None
 
     def execute(self, *_a: Any, **_k: Any) -> Any:
-        raise RuntimeError("mem session has no SQL")
+        assert "pg_advisory_xact_lock" in str(_a[0])
+        return None
+
+
+def _execute(service: RunnerService, request: RunnerExecuteRequest):
+    claim = service.claim_execution(request)
+    if isinstance(claim, RunnerDispatch):
+        return service.finish_execution(claim, perform_runner_dispatch(claim))
+    return claim
 
 
 def _issue(
@@ -80,10 +89,11 @@ def test_prepare_render_read_roundtrip(tmp_path: Path) -> None:
     session = _MemSession()
     svc = RunnerService(session)  # type: ignore[arg-type]
     ticket = _issue(svc, tmp_path, profile_id="prepare_dir", params={"path": "build"})
-    done = svc.execute(
+    done = _execute(
+        svc,
         RunnerExecuteRequest.model_validate(
             {"operationId": ticket.operation_id, "actionDigest": ticket.action_digest}
-        )
+        ),
     )
     assert done.status == "succeeded"
     assert (tmp_path / "build").is_dir()
@@ -94,10 +104,11 @@ def test_prepare_render_read_roundtrip(tmp_path: Path) -> None:
         profile_id="render",
         params={"path": "build/hello.txt", "content": "hi"},
     )
-    rendered = svc.execute(
+    rendered = _execute(
+        svc,
         RunnerExecuteRequest.model_validate(
             {"operationId": render.operation_id, "actionDigest": render.action_digest}
-        )
+        ),
     )
     assert rendered.status == "succeeded"
     assert (tmp_path / "build" / "hello.txt").read_text(encoding="utf-8") == "hi"
@@ -108,10 +119,11 @@ def test_prepare_render_read_roundtrip(tmp_path: Path) -> None:
         profile_id="read_snippet",
         params={"path": "build/hello.txt"},
     )
-    got = svc.execute(
+    got = _execute(
+        svc,
         RunnerExecuteRequest.model_validate(
             {"operationId": read.operation_id, "actionDigest": read.action_digest}
-        )
+        ),
     )
     assert got.status == "succeeded"
     assert got.result.get("content") == "hi"
@@ -124,8 +136,8 @@ def test_replay_returns_same_result(tmp_path: Path) -> None:
     req = RunnerExecuteRequest.model_validate(
         {"operationId": ticket.operation_id, "actionDigest": ticket.action_digest}
     )
-    first = svc.execute(req)
-    second = svc.execute(req)
+    first = _execute(svc, req)
+    second = _execute(svc, req)
     assert first.status == second.status == "succeeded"
     assert first.result == second.result
 
@@ -135,10 +147,11 @@ def test_digest_mismatch_rejected(tmp_path: Path) -> None:
     svc = RunnerService(session)  # type: ignore[arg-type]
     ticket = _issue(svc, tmp_path)
     with pytest.raises(RunnerError) as exc:
-        svc.execute(
+        _execute(
+            svc,
             RunnerExecuteRequest.model_validate(
                 {"operationId": ticket.operation_id, "actionDigest": "0" * 64}
-            )
+            ),
         )
     assert exc.value.code == "action_digest_mismatch"
 
@@ -155,13 +168,14 @@ def test_expired_ticket(tmp_path: Path) -> None:
     assert row is not None
     row.expires_at = datetime(2020, 1, 1, tzinfo=UTC)
     with pytest.raises(RunnerError) as exc:
-        svc.execute(
+        _execute(
+            svc,
             RunnerExecuteRequest.model_validate(
                 {
                     "operationId": ticket.operation_id,
                     "actionDigest": ticket.action_digest,
                 }
-            )
+            ),
         )
     assert exc.value.code == "expired"
 
@@ -170,10 +184,11 @@ def test_container_profile_blocked(tmp_path: Path) -> None:
     session = _MemSession()
     svc = RunnerService(session)  # type: ignore[arg-type]
     ticket = _issue(svc, tmp_path, profile_id="run_in_container", params={})
-    done = svc.execute(
+    done = _execute(
+        svc,
         RunnerExecuteRequest.model_validate(
             {"operationId": ticket.operation_id, "actionDigest": ticket.action_digest}
-        )
+        ),
     )
     assert done.status == "blocked"
 
@@ -186,13 +201,14 @@ def test_running_reentry_needs_reconciliation(tmp_path: Path) -> None:
     assert row is not None
     row.status = "running"
     with pytest.raises(RunnerError) as exc:
-        svc.execute(
+        _execute(
+            svc,
             RunnerExecuteRequest.model_validate(
                 {
                     "operationId": ticket.operation_id,
                     "actionDigest": ticket.action_digest,
                 }
-            )
+            ),
         )
     assert exc.value.code == "needs_reconciliation"
 

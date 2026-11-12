@@ -6,7 +6,6 @@ import hashlib
 import json
 import uuid
 from datetime import UTC, datetime, timedelta
-from pathlib import Path
 from typing import Any
 
 from sqlalchemy import select
@@ -26,6 +25,7 @@ from agentforge.contracts.artifact_bus import (
     VerifyCandidateRequest,
 )
 from agentforge.runner.paths import RunnerPathError, resolve_under_workspace, resolve_workspace_root
+from agentforge.runner.quiescence import StopProofError, lock_workspace, validate_stop_proof
 from agentforge.storage.models import (
     ArtifactCandidateRow,
     ArtifactPublicationRow,
@@ -34,7 +34,6 @@ from agentforge.storage.models import (
     GitDirtySnapshotRow,
     GitIntegrationRow,
     GitWorkspaceSnapshotRow,
-    RunnerOperationRow,
 )
 
 
@@ -67,6 +66,7 @@ class ArtifactService:
 
     def freeze_candidate(self, body: FreezeCandidateRequest) -> CandidateView:
         """Copy live file into immutable store AFTER stop evidence is trusted — then bind hashes."""
+        lock_workspace(self.session, body.workspace_id)
         self._assert_stop_evidence(body)
         try:
             root = resolve_workspace_root(body.workspace_root)
@@ -75,21 +75,6 @@ class ArtifactService:
             raise ArtifactBusError(exc.code, exc.message) from exc
         if not src.is_file():
             raise ArtifactBusError("not_a_file", "Freeze source is not a file")
-
-        # Evidence file must exist and match claimed hash (covers writable scope path).
-        try:
-            evidence_path = resolve_under_workspace(root, body.stop_evidence.evidence_path)
-        except RunnerPathError as exc:
-            raise ArtifactBusError(exc.code, exc.message) from exc
-        if not evidence_path.is_file():
-            raise ArtifactBusError("stop_evidence_missing", "Stop evidence file missing")
-        evidence_bytes = evidence_path.read_bytes()
-        evidence_digest = hashlib.sha256(evidence_bytes).hexdigest()
-        if evidence_digest != body.stop_evidence.evidence_sha256:
-            raise ArtifactBusError(
-                "stop_evidence_mismatch",
-                "Stop evidence sha256 does not match trusted claim",
-            )
 
         try:
             content_hash = self.store.put_file(src)
@@ -383,33 +368,16 @@ class ArtifactService:
     # --- helpers ---
 
     def _assert_stop_evidence(self, body: FreezeCandidateRequest) -> None:
-        claim = body.stop_evidence
-        if claim.source != "runner":
-            raise ArtifactBusError(
-                "untrusted_stop_source",
-                "Stop evidence source must be trusted runner",
+        try:
+            validate_stop_proof(
+                self.session,
+                workspace_id=body.workspace_id,
+                workspace_root=body.workspace_root,
+                expected_attempt_id=body.stop_evidence.attempt_id,
+                claim=body.stop_evidence,
             )
-        op = self.session.get(RunnerOperationRow, claim.operation_id)
-        if op is None:
-            raise ArtifactBusError(
-                "untrusted_stop_source",
-                "Stop evidence operationId not found in runner ledger",
-            )
-        if op.status not in {"succeeded", "failed", "blocked"}:
-            raise ArtifactBusError(
-                "stop_not_terminal",
-                "Runner operation is not terminal; freeze refused",
-            )
-        if op.generation != claim.generation:
-            raise ArtifactBusError(
-                "generation_mismatch",
-                "Stop evidence generation does not match runner operation",
-            )
-        if claim.attempt_id and op.attempt_id and claim.attempt_id != op.attempt_id:
-            raise ArtifactBusError(
-                "attempt_mismatch",
-                "Stop evidence attemptId does not match runner operation",
-            )
+        except StopProofError as exc:
+            raise ArtifactBusError(exc.code, exc.message) from exc
 
     def _upsert_content_object(self, content_hash: str, *, size: int, protect_hours: int) -> None:
         existing = self.session.get(ContentObjectRow, content_hash)
@@ -435,17 +403,17 @@ class ArtifactService:
 
     def _referenced_hashes(self) -> set[str]:
         hashes: set[str] = set()
-        for row in self.session.scalars(select(ArtifactCandidateRow)).all():
-            hashes.add(row.content_hash)
-        for row in self.session.scalars(select(ArtifactPublicationRow)).all():
-            hashes.add(row.content_hash)
-        for row in self.session.scalars(select(GitDirtySnapshotRow)).all():
-            hashes.add(row.content_hash)
-        for row in self.session.scalars(select(GitWorkspaceSnapshotRow)).all():
-            hashes.add(row.content_hash)
-        for row in self.session.scalars(select(GitIntegrationRow)).all():
-            if row.content_hash:
-                hashes.add(row.content_hash)
+        for candidate in self.session.scalars(select(ArtifactCandidateRow)).all():
+            hashes.add(candidate.content_hash)
+        for publication in self.session.scalars(select(ArtifactPublicationRow)).all():
+            hashes.add(publication.content_hash)
+        for dirty in self.session.scalars(select(GitDirtySnapshotRow)).all():
+            hashes.add(dirty.content_hash)
+        for snapshot in self.session.scalars(select(GitWorkspaceSnapshotRow)).all():
+            hashes.add(snapshot.content_hash)
+        for integration in self.session.scalars(select(GitIntegrationRow)).all():
+            if integration.content_hash:
+                hashes.add(integration.content_hash)
         return hashes
 
     def _next_version(self, artifact_id: str) -> int:

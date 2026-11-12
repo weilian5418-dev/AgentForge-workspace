@@ -1,0 +1,185 @@
+{
+  "$defs": {
+    "NetworkPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "allowRedirects": {
+          "default": false,
+          "title": "Allowredirects",
+          "type": "boolean"
+        },
+        "connectTimeoutSeconds": {
+          "default": 10,
+          "maximum": 120,
+          "minimum": 1,
+          "title": "Connecttimeoutseconds",
+          "type": "integer"
+        },
+        "networkClass": {
+          "default": "remote",
+          "enum": [
+            "local",
+            "private",
+            "remote"
+          ],
+          "title": "Networkclass",
+          "type": "string"
+        },
+        "proxyUrl": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Proxyurl"
+        },
+        "tlsCaBundleRef": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tlscabundleref"
+        },
+        "totalTimeoutSeconds": {
+          "default": 120,
+          "maximum": 3600,
+          "minimum": 1,
+          "title": "Totaltimeoutseconds",
+          "type": "integer"
+        }
+      },
+      "title": "NetworkPolicy",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "adapterType": {
+      "enum": [
+        "openai_compatible",
+        "ollama"
+      ],
+      "title": "Adaptertype",
+      "type": "string"
+    },
+    "authMode": {
+      "enum": [
+        "none",
+        "bearer",
+        "api_key_header"
+      ],
+      "title": "Authmode",
+      "type": "string"
+    },
+    "baseUrl": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Baseurl",
+      "type": "string"
+    },
+    "configVersion": {
+      "minimum": 1,
+      "title": "Configversion",
+      "type": "integer"
+    },
+    "createdAt": {
+      "format": "date-time",
+      "title": "Createdat",
+      "type": "string"
+    },
+    "credentialRef": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Credentialref"
+    },
+    "credentialStatus": {
+      "enum": [
+        "configured",
+        "missing",
+        "revoked",
+        "not_required"
+      ],
+      "title": "Credentialstatus",
+      "type": "string"
+    },
+    "label": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Label"
+    },
+    "modelId": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Modelid",
+      "type": "string"
+    },
+    "networkPolicy": {
+      "$ref": "#/$defs/NetworkPolicy"
+    },
+    "providerId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Providerid",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "enabled",
+        "disabled"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "updatedAt": {
+      "format": "date-time",
+      "title": "Updatedat",
+      "type": "string"
+    }
+  },
+  "required": [
+    "providerId",
+    "adapterType",
+    "baseUrl",
+    "modelId",
+    "authMode",
+    "credentialStatus",
+    "configVersion",
+    "networkPolicy",
+    "status",
+    "createdAt",
+    "updatedAt"
+  ],
+  "title": "ProviderProfile",
+  "type": "object"
+}

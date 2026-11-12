@@ -6,7 +6,7 @@ import json
 import signal
 import time
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any
 
 import httpx
 import typer
@@ -521,7 +521,9 @@ def auth_revoke(
 
 @grant_app.command("create")
 def grant_create(
-    root_path: Path = typer.Argument(..., exists=True, file_okay=False, dir_okay=True, readable=True),
+    root_path: Annotated[
+        Path, typer.Argument(exists=True, file_okay=False, dir_okay=True, readable=True)
+    ],
     json_out: bool = typer.Option(False, "--json"),
 ) -> None:
     """Create a directory grant from an explicit local path confirmation (not via public API)."""
@@ -539,9 +541,7 @@ def grant_create(
         with unit_of_work_connection(engine) as uow:
             grant = create_directory_grant(
                 uow.session,
-                DirectoryGrantCreateRequest.model_validate(
-                    {"rootPath": str(root_path.resolve())}
-                ),
+                DirectoryGrantCreateRequest.model_validate({"rootPath": str(root_path.resolve())}),
             )
             payload = grant.model_dump(mode="json", by_alias=True)
     except GrantError as exc:
@@ -776,7 +776,11 @@ def provider_call(
     except ModelGatewayError as exc:
         typer.echo(f"{exc.code}: {exc.message}", err=True)
         raise typer.Exit(FAILURE) from None
-    emit(payload, as_json=json_out, human=f"Call {payload.get('callId')} status={payload.get('status')}")
+    emit(
+        payload,
+        as_json=json_out,
+        human=f"Call {payload.get('callId')} status={payload.get('status')}",
+    )
 
 
 @queue_app.command("dispatch")
@@ -802,8 +806,7 @@ def queue_dispatch(
         result,
         as_json=json_out,
         human=(
-            f"claimed={result['claimed']} enqueued={result['enqueued']} "
-            f"failed={result['failed']}"
+            f"claimed={result['claimed']} enqueued={result['enqueued']} failed={result['failed']}"
         ),
     )
 
@@ -1108,9 +1111,9 @@ def runner_execute(
 ) -> None:
     """Execute a previously issued Runner ticket."""
     from agentforge.contracts.runner import RunnerExecuteRequest
-    from agentforge.runner.service import RunnerError, RunnerService
+    from agentforge.runner.executor import execute_runner
+    from agentforge.runner.service import RunnerError
     from agentforge.storage.database import create_database_engine
-    from agentforge.storage.uow import unit_of_work_connection
 
     settings = load_settings()
     engine = create_database_engine(settings)
@@ -1118,16 +1121,16 @@ def runner_execute(
         typer.echo("Database is not configured", err=True)
         raise typer.Exit(DEPENDENCY_UNAVAILABLE)
     try:
-        with unit_of_work_connection(engine) as uow:
-            ticket = RunnerService(uow.session).execute(
-                RunnerExecuteRequest.model_validate(
-                    {
-                        "operationId": operation_id,
-                        "actionDigest": action_digest,
-                    }
-                )
-            )
-            payload = ticket.model_dump(mode="json", by_alias=True)
+        ticket = execute_runner(
+            engine,
+            RunnerExecuteRequest.model_validate(
+                {
+                    "operationId": operation_id,
+                    "actionDigest": action_digest,
+                }
+            ),
+        )
+        payload = ticket.model_dump(mode="json", by_alias=True)
     except RunnerError as exc:
         typer.echo(f"{exc.code}: {exc.message}", err=True)
         raise typer.Exit(FAILURE) from None
@@ -1172,7 +1175,6 @@ def _git_service():
     from pathlib import Path
 
     from agentforge.artifacts.store import ArtifactStore
-    from agentforge.git.service import GitWorkspaceService
     from agentforge.storage.database import create_database_engine
     from agentforge.storage.uow import unit_of_work_connection
 
@@ -1285,7 +1287,10 @@ def git_freeze_snapshot(
             )
             payload = view.model_dump(mode="json", by_alias=True)
     except (GitWorkspaceError, json.JSONDecodeError) as exc:
-        typer.echo(str(exc) if not isinstance(exc, GitWorkspaceError) else f"{exc.code}: {exc.message}", err=True)
+        typer.echo(
+            str(exc) if not isinstance(exc, GitWorkspaceError) else f"{exc.code}: {exc.message}",
+            err=True,
+        )
         raise typer.Exit(FAILURE) from None
     emit(
         payload,
@@ -1357,9 +1362,7 @@ def git_cleanup(
     try:
         with uow_fn(engine) as uow:
             view = GitWorkspaceService(uow.session, store, state_dir).cleanup(
-                CleanupWorktreeRequest.model_validate(
-                    {"workspaceId": workspace_id, "force": force}
-                )
+                CleanupWorktreeRequest.model_validate({"workspaceId": workspace_id, "force": force})
             )
             payload = view.model_dump(mode="json", by_alias=True)
     except GitWorkspaceError as exc:

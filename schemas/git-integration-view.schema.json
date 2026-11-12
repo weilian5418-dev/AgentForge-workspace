@@ -1,0 +1,132 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "baselineId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Baselineid",
+      "type": "string"
+    },
+    "conflictPaths": {
+      "items": {
+        "maxLength": 512,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 500,
+      "title": "Conflictpaths",
+      "type": "array"
+    },
+    "contentHash": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Contenthash"
+    },
+    "createdAt": {
+      "format": "date-time",
+      "title": "Createdat",
+      "type": "string"
+    },
+    "inputWorkspaceIds": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9._:-]+$",
+        "type": "string"
+      },
+      "maxItems": 16,
+      "title": "Inputworkspaceids",
+      "type": "array"
+    },
+    "integrationId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Integrationid",
+      "type": "string"
+    },
+    "manifestHash": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Manifesthash"
+    },
+    "message": {
+      "anyOf": [
+        {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Message"
+    },
+    "projectId": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "title": "Projectid",
+      "type": "string"
+    },
+    "stageReleased": {
+      "default": false,
+      "description": "Always false until D10",
+      "title": "Stagereleased",
+      "type": "boolean"
+    },
+    "status": {
+      "enum": [
+        "pending",
+        "merging",
+        "conflicted",
+        "ready",
+        "failed"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "worktreePath": {
+      "anyOf": [
+        {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Worktreepath"
+    }
+  },
+  "required": [
+    "integrationId",
+    "projectId",
+    "baselineId",
+    "status",
+    "createdAt"
+  ],
+  "title": "IntegrationView",
+  "type": "object"
+}
