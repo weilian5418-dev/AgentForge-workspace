@@ -40,6 +40,20 @@ def now() -> Any:
     return datetime.now(UTC)
 
 
+def _wake_instance_operation(session: Any, run_id: str, op: InstanceOperationRow) -> None:
+    from agentforge.driver.signals import record_wake_signal
+
+    version = op.completed_at.isoformat() if op.completed_at else op.status
+    record_wake_signal(
+        session,
+        run_id=run_id,
+        source_kind="instance_operation",
+        source_ref=f"{op.id}:{version}",
+        binding={"operationId": op.id, "kind": op.kind, "status": op.status},
+        priority=60,
+    )
+
+
 def process_instance_operation(
     engine: Any, operation_id: str, *, adapter_factory: Any = None
 ) -> Any:
@@ -165,6 +179,7 @@ def _process_instance_operation(
             or run.active_generation != ctx.generation
         ):
             op.error_code = "stale_native_result"
+            _wake_instance_operation(session, run.id, op)
             return {"status": "unknown"}
         support = result.get("status") or result.get("support")
         if kind == "create_session":
@@ -176,6 +191,7 @@ def _process_instance_operation(
                 or result.get("cwd") != ctx.workspace_root
             ):
                 op.error_code = "native_session_unverified"
+                _wake_instance_operation(session, run.id, op)
                 return {"status": "unknown"}
             native = NativeSessionRow(
                 id="ns_" + uuid.uuid4().hex,
@@ -222,6 +238,7 @@ def _process_instance_operation(
             instance.status = "closed"
         else:
             op.error_code = "native_outcome_unknown"
+            _wake_instance_operation(session, run.id, op)
             return {"status": "unknown"}
         if kind == "create_session" and op.payload_json.get("executionRequestId"):
             from agentforge.storage.models import ExecutionRequestRow
@@ -259,6 +276,7 @@ def _process_instance_operation(
                     "sessionRef": instance.session_ref,
                 },
             )
+        _wake_instance_operation(session, run.id, op)
         return {"status": "succeeded", "operationId": op.id}
 
 
@@ -493,5 +511,16 @@ def _process_delivery(engine: Any, delivery_id: str, *, adapter_factory: Any = N
                 "transmissionStatus": d.transmission_status,
                 "replyStatus": d.reply_status,
             },
+        )
+        from agentforge.driver.signals import record_wake_signal
+
+        result_version = d.transmission_status or d.status or "unknown"
+        record_wake_signal(
+            uow.session,
+            run_id=message.run_id,
+            source_kind="delivery",
+            source_ref=f"{d.id}:{result_version}",
+            binding={"deliveryId": d.id, "status": result_version},
+            priority=70,
         )
         return {"status": d.transmission_status, "deliveryId": d.id}

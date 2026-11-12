@@ -115,6 +115,31 @@ def _enqueue(app: App, snap: ClaimSnapshot) -> None:
     if not operation_id:
         raise ValueError("outbox payload missing operationId")
 
+    from agentforge.queue.constants import (
+        DRIVER_QUEUE_NAME,
+        INTENT_DRIVER_WAKE,
+        INTENT_RECOVERY_INSPECT,
+        INTENT_WORKSPACE_PREPARE,
+    )
+
+    if snap.intent_type == INTENT_DRIVER_WAKE:
+        app.tasks["agentforge.driver_step"].configure(
+            queue=DRIVER_QUEUE_NAME,
+            lock=f"driver:{payload.get('runId') or operation_id}",
+        ).defer(
+            run_id=str(payload.get("runId") or ""),
+            wake_signal_id=str(payload.get("wakeSignalId") or operation_id),
+            task_version=1,
+        )
+        return
+
+    if snap.intent_type in {INTENT_WORKSPACE_PREPARE, INTENT_RECOVERY_INSPECT}:
+        app.tasks["agentforge.collaboration_operation"].configure(
+            queue=CONTROL_QUEUE_NAME,
+            lock=f"collaboration:{operation_id}",
+        ).defer(intent_type=snap.intent_type, payload=payload, task_version=1)
+        return
+
     collaboration = {
         "instance.create_session",
         "instance.request_stop",

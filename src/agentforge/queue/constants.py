@@ -14,3 +14,8 @@ QUEUE_SCHEMA = "queue"
 DEFAULT_QUEUE_NAME = "agentforge"
 
 CONTROL_QUEUE_NAME = "agentforge-control"
+DRIVER_QUEUE_NAME = "agentforge-driver"
+
+INTENT_DRIVER_WAKE = "driver.wake"
+INTENT_WORKSPACE_PREPARE = "workspace.prepare"
+INTENT_RECOVERY_INSPECT = "recovery.inspect"

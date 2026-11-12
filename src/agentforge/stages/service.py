@@ -897,6 +897,16 @@ class StageService:
                 attempt_count=0,
             )
         )
+        from agentforge.driver.signals import record_wake_signal
+
+        record_wake_signal(
+            self.session,
+            run_id=stage.run_id,
+            source_kind="stage_gate",
+            source_ref=decision.id,
+            binding={"stageId": stage.id, "releaseId": release.id},
+            priority=40,
+        )
         self.session.flush()
         return self._to_gate(decision)
 

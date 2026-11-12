@@ -66,6 +66,7 @@ WakeSourceKind = Literal[
     "authorization",
     "timer",
     "sweep",
+    "native_event",
 ]
 
 WakeSignalStatus = Literal["pending", "claimed", "completed", "obsolete"]

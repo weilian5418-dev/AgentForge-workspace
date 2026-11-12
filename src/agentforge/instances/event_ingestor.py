@@ -114,6 +114,21 @@ class NativeEventIngestor:
             instance.status = combine_instance_status_facets("unknown", "idle")
             instance.updated_at = _now()
 
+        from agentforge.driver.signals import record_wake_signal
+
+        record_wake_signal(
+            self.session,
+            run_id=instance.run_id,
+            source_kind="native_event",
+            source_ref=receipt.id,
+            binding={
+                "receiptId": receipt.id,
+                "eventType": event_type,
+                "instanceId": instance_id,
+            },
+            priority=90,
+        )
+
         return {
             "receiptId": receipt.id,
             "duplicate": False,
