@@ -1598,6 +1598,89 @@ def run_select_integration(
     )
 
 
+@run_app.command("delivery")
+def run_delivery(
+    run_id: str = typer.Option(..., "--run-id"),
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """Show current delivery pointer (technical vs acceptance status)."""
+    from agentforge.delivery.acceptance import get_delivery_pointer
+
+    _settings, engine, uow_fn = _run_service()
+    with uow_fn(engine) as uow:
+        view = get_delivery_pointer(uow.session, run_id=run_id)
+        payload = view.model_dump(mode="json", by_alias=True)
+    human = (
+        f"delivery revision={view.delivery_revision} "
+        f"technical={view.technical_status} acceptance={view.acceptance_status}"
+    )
+    emit(payload, as_json=json_out, human=human)
+
+
+@run_app.command("accept")
+def run_accept(
+    run_id: str = typer.Option(..., "--run-id"),
+    version_id: str = typer.Option(..., "--version-id"),
+    manifest_hash: str = typer.Option(..., "--manifest-hash"),
+    delivery_revision: int = typer.Option(..., "--delivery-revision"),
+    expected_status_version: int = typer.Option(..., "--expected-status-version"),
+    idempotency_key: str = typer.Option(..., "--idempotency-key"),
+    decision: str = typer.Option("accept", "--decision"),
+    member_id: list[str] | None = typer.Option(None, "--member-id"),
+    rejected_member_id: list[str] | None = typer.Option(None, "--rejected-member-id"),
+    manifest_revision: int = typer.Option(1, "--manifest-revision"),
+    note: str | None = typer.Option(None, "--note"),
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """Record user acceptance of a fixed manifest. Does not push or deploy."""
+    from agentforge.artifacts.store import ArtifactStore
+    from agentforge.contracts.delivery import AcceptanceDecisionRequest
+    from agentforge.delivery.acceptance import AcceptanceError, decide_acceptance
+    from agentforge.queries.authorization import api_principal
+
+    settings, engine, _uow_fn = _run_service()
+    accepted_ids = list(member_id or [])
+    rejected_ids = list(rejected_member_id or [])
+    try:
+        body = AcceptanceDecisionRequest.model_validate(
+            {
+                "integrationVersion": version_id,
+                "manifestHash": manifest_hash,
+                "manifestRevision": manifest_revision,
+                "expectedStatusVersion": expected_status_version,
+                "decision": decision,
+                "acceptedMemberIds": accepted_ids,
+                "rejectedMemberIds": rejected_ids,
+                "note": note,
+            }
+        )
+        result = decide_acceptance(
+            engine,
+            ArtifactStore(settings.state_dir / "artifact_store"),
+            principal=api_principal(),
+            run_id=run_id,
+            expected_delivery_revision=delivery_revision,
+            idempotency_key=idempotency_key,
+            body=body,
+        )
+        payload = result.model_dump(mode="json", by_alias=True)
+    except AcceptanceError as exc:
+        typer.echo(f"{exc.code}: {exc.message}", err=True)
+        raise typer.Exit(FAILURE) from None
+    except Exception as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(FAILURE) from None
+    emit(
+        payload,
+        as_json=json_out,
+        human=(
+            f"decision={result.decision} acceptance={result.acceptance_status} "
+            f"technical={result.technical_status} current={result.is_current} "
+            f"run={result.run_status}"
+        ),
+    )
+
+
 @run_app.command("events")
 def run_events(
     run_id: str = typer.Option(..., "--run-id"),
