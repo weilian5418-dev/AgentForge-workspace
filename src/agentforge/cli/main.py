@@ -1513,6 +1513,50 @@ def run_get(
     emit(payload, as_json=json_out, human=f"run={view.id} status={view.status}")
 
 
+@run_app.command("integrate")
+def run_integrate(
+    run_id: str = typer.Option(..., "--run-id"),
+    selection_id: str = typer.Option(..., "--selection-id"),
+    selection_hash: str = typer.Option(..., "--selection-hash"),
+    idempotency_key: str = typer.Option(..., "--idempotency-key"),
+    json_out: bool = typer.Option(False, "--json"),
+) -> None:
+    """Request + process an integration build from a fixed selection. Not acceptance."""
+    from agentforge.contracts.integrations import IntegrationBuildRequest
+    from agentforge.integration.coordinator import (
+        IntegrationError,
+        process_integration_build,
+        request_integration_build,
+    )
+    from agentforge.queries.authorization import api_principal
+
+    settings, engine, _uow_fn = _run_service()
+    try:
+        accepted = request_integration_build(
+            engine,
+            principal=api_principal(),
+            run_id=run_id,
+            body=IntegrationBuildRequest.model_validate(
+                {
+                    "selectionId": selection_id,
+                    "selectionHash": selection_hash,
+                    "idempotencyKey": idempotency_key,
+                }
+            ),
+            settings=settings,
+        )
+        view = process_integration_build(engine, settings, build_id=accepted.build_id)
+        payload = view.model_dump(mode="json", by_alias=True)
+    except IntegrationError as exc:
+        typer.echo(f"{exc.code}: {exc.message}", err=True)
+        raise typer.Exit(FAILURE) from None
+    emit(
+        payload,
+        as_json=json_out,
+        human=f"build={view.build_id} status={view.status} version={view.result_version_id}",
+    )
+
+
 @run_app.command("select-integration")
 def run_select_integration(
     run_id: str = typer.Option(..., "--run-id"),

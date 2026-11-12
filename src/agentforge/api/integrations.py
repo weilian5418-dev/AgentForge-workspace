@@ -5,13 +5,26 @@ from __future__ import annotations
 from typing import Annotated, Any, cast
 
 from fastapi import APIRouter, Depends, Request
+from sqlalchemy import select
 from starlette.exceptions import HTTPException
 
-from agentforge.contracts.integrations import IntegrationSelection, IntegrationSelectionRequest
+from agentforge.contracts.integrations import (
+    IntegrationBuildRequest,
+    IntegrationBuildView,
+    IntegrationSelection,
+    IntegrationSelectionRequest,
+)
 from agentforge.core.config import Settings
+from agentforge.integration.coordinator import (
+    IntegrationError,
+    process_integration_build,
+    reconcile_integration_build,
+    request_integration_build,
+)
 from agentforge.integration.selection import SelectionError, create_selection
 from agentforge.queries.authorization import AuthenticatedPrincipal, api_principal
 from agentforge.storage.database import create_database_engine
+from agentforge.storage.models import IntegrationBuildRow
 from agentforge.storage.uow import unit_of_work_connection
 
 router = APIRouter(prefix="/api/v1", tags=["integrations"])
@@ -35,7 +48,7 @@ def _principal(request: Request) -> AuthenticatedPrincipal:
     return api_principal()
 
 
-def _map(exc: SelectionError) -> HTTPException:
+def _map_selection(exc: SelectionError) -> HTTPException:
     status = {
         "run_not_found": 404,
         "unauthorized": 401,
@@ -43,6 +56,18 @@ def _map(exc: SelectionError) -> HTTPException:
         "selection_stale": 409,
         "release_scope_mismatch": 409,
         "integration_conflict": 409,
+    }.get(exc.code, 400)
+    return HTTPException(status, f"{exc.code}: {exc.message}")
+
+
+def _map_build(exc: IntegrationError) -> HTTPException:
+    status = {
+        "run_not_found": 404,
+        "build_not_found": 404,
+        "unauthorized": 401,
+        "selection_stale": 409,
+        "integration_conflict": 409,
+        "invalid_state": 409,
     }.get(exc.code, 400)
     return HTTPException(status, f"{exc.code}: {exc.message}")
 
@@ -68,4 +93,67 @@ def post_integration_selection(
                 request=body,
             )
     except SelectionError as exc:
-        raise _map(exc) from exc
+        raise _map_selection(exc) from exc
+
+
+@router.post(
+    "/runs/{run_id}/integrations",
+    response_model=IntegrationBuildView,
+    status_code=202,
+)
+def post_integration_build(
+    request: Request,
+    run_id: str,
+    body: IntegrationBuildRequest,
+    settings: Annotated[Settings, Depends(_settings)],
+) -> IntegrationBuildView:
+    """Accept integration build intent — does not claim already integrated/passed."""
+    engine = _require_engine(request, settings)
+    try:
+        view = request_integration_build(
+            engine,
+            principal=_principal(request),
+            run_id=run_id,
+            body=body,
+            settings=settings,
+        )
+        # Local single-tenant: process immediately after accept (outbox also recorded).
+        return process_integration_build(engine, settings, build_id=view.build_id)
+    except IntegrationError as exc:
+        raise _map_build(exc) from exc
+
+
+@router.get("/runs/{run_id}/integrations", response_model=list[IntegrationBuildView])
+def list_integration_builds(
+    request: Request,
+    run_id: str,
+    settings: Annotated[Settings, Depends(_settings)],
+) -> list[IntegrationBuildView]:
+    engine = _require_engine(request, settings)
+    with unit_of_work_connection(engine) as uow:
+        rows = list(
+            uow.session.scalars(
+                select(IntegrationBuildRow)
+                .where(IntegrationBuildRow.run_id == run_id)
+                .order_by(IntegrationBuildRow.created_at.asc())
+            ).all()
+        )
+        from agentforge.integration.coordinator import _to_view
+
+        return [_to_view(r) for r in rows]
+
+
+@router.post(
+    "/integration-builds/{build_id}/reconcile",
+    response_model=IntegrationBuildView,
+)
+def reconcile_build(
+    request: Request,
+    build_id: str,
+    settings: Annotated[Settings, Depends(_settings)],
+) -> IntegrationBuildView:
+    engine = _require_engine(request, settings)
+    try:
+        return reconcile_integration_build(engine, settings, build_id=build_id)
+    except IntegrationError as exc:
+        raise _map_build(exc) from exc
