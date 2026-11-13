@@ -54,7 +54,7 @@ def parse_junit_summary(path: Path) -> dict[str, Any]:
     if b"<!ENTITY" in raw.upper():
         raise ReportError("report_unsafe", "XML entities refused")
     try:
-        import defusedxml.ElementTree as ET  # type: ignore[import-not-found]
+        import defusedxml.ElementTree as ET  # type: ignore[import-untyped]
     except ImportError:
         import xml.etree.ElementTree as ET  # noqa: N812
 
@@ -64,37 +64,20 @@ def parse_junit_summary(path: Path) -> dict[str, Any]:
         raise ReportError("report_invalid", "junit parse failed") from exc
 
     tests = failures = errors = skipped = 0
+    stack = [(root, 0)]
     elements = 0
-
-    def walk(node: Any) -> None:
-        nonlocal tests, failures, errors, skipped, elements
+    while stack:
+        node, depth = stack.pop()
         elements += 1
-        if elements > MAX_JUNIT_ELEMENTS:
-            raise ReportError("report_too_large", "too many XML elements")
-        tag = str(getattr(node, "tag", "")).rsplit("}", 1)[-1]
-        if tag in {"testsuite", "testsuites"}:
-            tests += int(node.attrib.get("tests") or 0)
-            failures += int(node.attrib.get("failures") or 0)
-            errors += int(node.attrib.get("errors") or 0)
-            skipped += int(node.attrib.get("skipped") or 0)
-        for child in list(node):
-            walk(child)
-
-    walk(root)
-    # If suite attrs missing, count testcase nodes
-    if tests == 0:
-        for node in root.iter():
-            tag = str(getattr(node, "tag", "")).rsplit("}", 1)[-1]
-            if tag == "testcase":
-                tests += 1
-                if node.find("failure") is not None or node.find(
-                    "{http://www.w3.org/XML/1998/namespace}failure"
-                ):
-                    failures += 1
-                if node.find("error") is not None:
-                    errors += 1
-                if node.find("skipped") is not None:
-                    skipped += 1
+        if elements > MAX_JUNIT_ELEMENTS or depth > 64:
+            raise ReportError("report_too_large", "XML limits exceeded")
+        if str(node.tag).rsplit("}", 1)[-1] == "testcase":
+            tests += 1
+            tags = {str(c.tag).rsplit("}", 1)[-1] for c in node}
+            failures += int("failure" in tags)
+            errors += int("error" in tags)
+            skipped += int("skipped" in tags)
+        stack.extend((child, depth + 1) for child in node)
     passed = max(0, tests - failures - errors - skipped)
     return {
         "collected": tests,

@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import uuid
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy import select
@@ -19,7 +20,11 @@ from agentforge.contracts.delivery import (
     DeliveryPointerView,
 )
 from agentforge.delivery.repository import get_manifest_by_hash, get_or_create_delivery
-from agentforge.queries.authorization import AuthenticatedPrincipal, QueryAuthError, authorize_run_read
+from agentforge.queries.authorization import (
+    AuthenticatedPrincipal,
+    QueryAuthError,
+    authorize_run_read,
+)
 from agentforge.storage.models import (
     AcceptanceDecisionRow,
     DeliveryManifestRow,
@@ -42,13 +47,13 @@ def _id(prefix: str) -> str:
     return f"{prefix}_{uuid.uuid4().hex}"
 
 
-def _now(session: Session):
+def _now(session: Session) -> datetime:
     from datetime import UTC, datetime
 
     try:
         value = db_now(session)
         if getattr(value, "tzinfo", None) is None:
-            return value.replace(tzinfo=UTC)  # type: ignore[union-attr]
+            return value.replace(tzinfo=UTC)
         return value
     except Exception:
         return datetime.now(UTC)
@@ -112,26 +117,30 @@ def validate_member_dependency_closure(
                 )
             pending.add(dep)
 
-    # Shared overall check failures cannot accept dependent code_tree members
-    failed_checks = {
-        c.check_id
-        for c in payload.checks
-        if c.outcome in {"failed", "timeout", "blocked", "unknown", "not_run"}
-    }
+    checks = {c.check_id: c for c in payload.checks}
+    reviews = {r.request_id: r for r in payload.reviews}
     for mid in accepted_ids:
         member = by_id[mid]
-        if member.kind == "code_tree" and set(member.applicable_check_ids) & failed_checks:
+        if member.member_technical_status != "passed":
             raise AcceptanceError(
-                "required_check_not_passed",
-                f"member {mid} depends on failed overall checks",
+                "required_check_not_passed", f"Member {mid} is not technically passed"
             )
-        # Member-local applicable checks must not be failed when accepting
         for cid in member.applicable_check_ids:
-            entry = next((c for c in payload.checks if c.check_id == cid), None)
-            if entry is not None and entry.outcome in {"failed", "timeout"}:
+            entry = checks.get(cid)
+            if (
+                entry is None
+                or entry.outcome != "passed"
+                or not entry.report_id
+                or not entry.report_hash
+            ):
                 raise AcceptanceError(
-                    "required_check_not_passed",
-                    f"member {mid} applicable check {cid} failed",
+                    "required_check_not_passed", f"Missing valid report for {mid}/{cid}"
+                )
+        for rid in member.applicable_review_request_ids:
+            review = reviews.get(rid)
+            if review is None or review.verdict != "approve" or not review.report_id:
+                raise AcceptanceError(
+                    "required_check_not_passed", f"Missing final review for {mid}"
                 )
 
 
@@ -229,7 +238,7 @@ def decide_acceptance(
     with unit_of_work_connection(engine) as uow:
         session = uow.session
         try:
-            run = authorize_run_read(session, principal, run_id)
+            authorize_run_read(session, principal, run_id)
         except QueryAuthError as exc:
             raise AcceptanceError(exc.code, exc.message) from exc
 
@@ -259,10 +268,10 @@ def decide_acceptance(
                 cm = session.get(DeliveryManifestRow, delivery.current_manifest_id)
                 current_hash = cm.manifest_hash if cm else None
             is_current = (
-                prior.manifest_hash == current_hash
+                prior.delivery_revision + 1 == delivery.delivery_revision
+                and prior.manifest_hash == current_hash
                 and prior.version_id == delivery.current_version_id
-                and delivery.acceptance_status
-                in {"accepted", "rejected", "partially_accepted"}
+                and delivery.acceptance_status in {"accepted", "rejected", "partially_accepted"}
             )
             return _to_result(prior, run=run, delivery=delivery, is_current=is_current)
 
@@ -291,6 +300,44 @@ def decide_acceptance(
         if row.version_id != body.integration_version:
             raise AcceptanceError("manifest_stale", "manifest version mismatch")
 
+        from agentforge.integration.authority import (
+            assert_run_deliverable,
+            assert_selection_current,
+        )
+        from agentforge.integration.objects import load_tree
+        from agentforge.integration.reviews import (
+            assemble_integration_facts,
+            evaluate_integration_facts,
+        )
+        from agentforge.storage.models import IntegrationSelectionRow, IntegrationVersionRow
+
+        try:
+            assert_run_deliverable(session, run)
+            version = session.get(IntegrationVersionRow, row.version_id)
+            if version is None or version.run_id != run.id:
+                raise ValueError("version_missing")
+            assert_selection_current(
+                session, run, session.get(IntegrationSelectionRow, version.selection_id)
+            )
+            load_tree(store, version.content_hash, version.tree_manifest_hash or "")
+            if (payload.plan_version, payload.assignment_version, payload.gate_policy_version) != (
+                run.plan_version,
+                run.assignment_version,
+                run.gate_policy_version,
+            ):
+                raise ValueError("stale_plan_binding")
+            if (
+                delivery.invalidated_reason
+                or payload.tree_manifest_hash != version.tree_manifest_hash
+            ):
+                raise ValueError("delivery_invalidated")
+            evaluation = evaluate_integration_facts(
+                assemble_integration_facts(session, cycle_id=row.cycle_id)
+            )
+            if body.decision == "accept" and evaluation.status != "passed":
+                raise ValueError("required_check_not_passed")
+        except (ValueError, KeyError) as exc:
+            raise AcceptanceError("manifest_stale", str(exc)) from exc
         # Reject forged technical claims — technical_status comes from stored manifest only
         technical_status = row.technical_status
 
@@ -361,13 +408,20 @@ def decide_acceptance(
         run.status_version = int(run.status_version) + 1
         if run_status_target == "completed":
             # Only complete when no conflicting active cancel/replan markers
-            if run.status not in {"cancelled", "failed", "completed"}:
+            if run.status not in {
+                "canceled",
+                "cancel_requested",
+                "pause_requested",
+                "paused",
+                "failed",
+                "completed",
+            }:
                 run.status = "completed"
         elif run_status_target == "blocked":
-            if run.status not in {"completed", "cancelled"}:
+            if run.status not in {"completed", "canceled", "cancel_requested"}:
                 run.status = "blocked"
         elif run_status_target == "awaiting_acceptance":
-            if run.status not in {"completed", "cancelled", "failed"}:
+            if run.status not in {"completed", "canceled", "cancel_requested", "failed"}:
                 run.status = "awaiting_acceptance"
 
         append_domain_fact(
@@ -459,9 +513,7 @@ def list_acceptance_decisions(session: Session, *, run_id: str) -> list[Acceptan
                     "integrationVersion": r.version_id,
                     "manifestHash": r.manifest_hash,
                     "deliveryRevision": delivery.delivery_revision,
-                    "acceptanceStatus": delivery.acceptance_status
-                    if is_current
-                    else "none",
+                    "acceptanceStatus": delivery.acceptance_status if is_current else "none",
                     "technicalStatus": delivery.technical_status,
                     "isCurrent": is_current,
                     "runStatus": run.status if run else None,

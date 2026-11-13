@@ -34,6 +34,8 @@ def _facts(**kwargs: object) -> IntegrationFacts:
             {
                 "checkId": "python_pytest",
                 "outcome": "passed",
+                "configHash": H,
+                "checkVersion": "v1",
                 "treeHash": H,
                 "policyHash": H,
                 "environmentHash": H,
@@ -74,9 +76,7 @@ def test_happy_path_passed() -> None:
 
 
 def test_empty_required_checks_cannot_pass() -> None:
-    ev = evaluate_integration_facts(
-        _facts(required_checks=[], check_reports=[])
-    )
+    ev = evaluate_integration_facts(_facts(required_checks=[], check_reports=[]))
     assert ev.status == "blocked"
     assert "required_check_not_passed" in ev.blocker_codes
     # Contract also forbids constructing passed with zero checks
@@ -99,9 +99,7 @@ def test_empty_required_checks_cannot_pass() -> None:
 
 
 def test_missing_required_review_request_waits() -> None:
-    ev = evaluate_integration_facts(
-        _facts(review_requests=[], review_reports=[])
-    )
+    ev = evaluate_integration_facts(_facts(review_requests=[], review_reports=[]))
     assert ev.status == "waiting"
     assert "review_binding_mismatch" in ev.blocker_codes
     assert ev.required_reviews_satisfied == 0
@@ -133,6 +131,8 @@ def test_check_evidence_mismatch_from_other_version() -> None:
                 {
                     "checkId": "python_pytest",
                     "outcome": "passed",
+                    "configHash": H,
+                    "checkVersion": "v1",
                     "treeHash": H2,
                     "policyHash": H,
                     "environmentHash": H,
@@ -142,7 +142,10 @@ def test_check_evidence_mismatch_from_other_version() -> None:
         )
     )
     assert ev.status != "passed"
-    assert "check_evidence_mismatch" in ev.blocker_codes or "required_check_not_passed" in ev.blocker_codes
+    assert (
+        "check_evidence_mismatch" in ev.blocker_codes
+        or "required_check_not_passed" in ev.blocker_codes
+    )
 
 
 def test_reject_verdict_fails() -> None:

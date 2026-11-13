@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from agentforge.driver.binding import canonical_json, sha256_hex
 
@@ -77,4 +77,4 @@ def canonicalize_binding(binding: dict[str, Any]) -> dict[str, Any]:
 def json_loads_dumps(payload: dict[str, Any]) -> dict[str, Any]:
     import json
 
-    return json.loads(canonical_json(payload))
+    return cast(dict[str, Any], json.loads(canonical_json(payload)))

@@ -8,7 +8,11 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from agentforge.core.config import Settings
-from agentforge.queries.authorization import AuthenticatedPrincipal, QueryAuthError, authorize_run_read
+from agentforge.queries.authorization import (
+    AuthenticatedPrincipal,
+    QueryAuthError,
+    authorize_run_read,
+)
 from agentforge.queries.snapshots import (
     SnapshotError,
     build_bounded_snapshot,
@@ -159,9 +163,7 @@ def test_list_run_details_rejects_filter_change() -> None:
     run.status_version = 1
     run.last_sequence = 2
     session = MagicMock()
-    with patch(
-        "agentforge.queries.details.authorize_run_read", return_value=run
-    ):
+    with patch("agentforge.queries.details.authorize_run_read", return_value=run):
         foreign = make_page_cursor(
             run_id="run_1",
             resource="instances",

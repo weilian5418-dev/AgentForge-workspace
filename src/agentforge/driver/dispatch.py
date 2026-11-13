@@ -36,8 +36,8 @@ def _now(session: Session | None = None) -> datetime:
         try:
             value = db_now(session)
             if getattr(value, "tzinfo", None) is None:
-                return value.replace(tzinfo=UTC)  # type: ignore[union-attr]
-            return value  # type: ignore[return-value]
+                return value.replace(tzinfo=UTC)
+            return value
         except Exception:
             pass
     return datetime.now(UTC)
@@ -96,12 +96,15 @@ class DispatchService:
             repair_round=repair_round,
         )
         instance = self._select_instance(run, owner_role_id=wp.owner_role_id)
+        op_key += f":workspace:{instance.workspace_id}"
         stage = self.session.get(StageRow, physical_stage)
         if stage is None:
             raise InstanceError("stage_not_found", physical_stage)
 
         upstream_stage_ids = self._upstream_stage_ids(run, spec, wp, physical_stage)
-        release_ids = find_release_ids_for_upstream(self.session, upstream_stage_ids=upstream_stage_ids)
+        release_ids = find_release_ids_for_upstream(
+            self.session, upstream_stage_ids=upstream_stage_ids
+        )
         required_upstream_wps = set(wp.depends_on or [])
         bundle = self.inputs.resolve(
             run_id=run.id,
@@ -258,9 +261,7 @@ class DispatchService:
         from agentforge.runtime.control import admits_new_work, read_admission_db
 
         if not run_admits_new_development(run):
-            raise InstanceError(
-                "execution_blocked", f"run status {run.status} refuses dispatch"
-            )
+            raise InstanceError("execution_blocked", f"run status {run.status} refuses dispatch")
         if not admits_new_work(read_admission_db(self.session)):
             raise InstanceError("admission_blocked", "platform admission refuses new dispatch")
 
@@ -311,9 +312,7 @@ class DispatchService:
         raise InstanceError("instance_busy", "all role instances hold an active attempt")
 
     @staticmethod
-    def _upstream_stage_ids(
-        run: Run, spec: PlanSpec, wp: Any, physical_stage: str
-    ) -> list[str]:
+    def _upstream_stage_ids(run: Run, spec: PlanSpec, wp: Any, physical_stage: str) -> list[str]:
         def physical(logical: str) -> str:
             return f"{run.id}:p{run.plan_version}:{logical}"
 

@@ -112,9 +112,7 @@ def get_manifest(
     store = _store(settings)
     try:
         with unit_of_work_connection(engine) as uow:
-            row, payload = load_manifest_payload(
-                uow.session, store, manifest_hash=manifest_hash
-            )
+            row, payload = load_manifest_payload(uow.session, store, manifest_hash=manifest_hash)
             if row.run_id != run_id:
                 raise AcceptanceError("manifest_stale", "manifest not in this run")
             view = DeliveryManifestView.model_validate(
@@ -155,9 +153,7 @@ def publish_delivery_manifest(
     engine = _require_engine(request, settings)
     store = _store(settings)
     try:
-        return build_and_publish_manifest(
-            engine, store, version_id=version_id, cycle_id=cycle_id
-        )
+        return build_and_publish_manifest(engine, store, version_id=version_id, cycle_id=cycle_id)
     except ManifestError as exc:
         status = {
             "version_not_found": 404,
@@ -179,9 +175,7 @@ def post_acceptance(
     """User acceptance — ordinary bearer only; integration-review tickets cannot call this."""
     ticket = request.headers.get("X-Agent-Ticket") or ""
     if ticket:
-        raise HTTPException(
-            403, "forbidden: internal reviewer tickets cannot call user acceptance"
-        )
+        raise HTTPException(403, "forbidden: internal reviewer tickets cannot call user acceptance")
     idem = request.headers.get("Idempotency-Key") or ""
     if not idem:
         raise HTTPException(400, "invalid_request: Idempotency-Key required")

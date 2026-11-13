@@ -131,7 +131,31 @@ def project_public_event(
             reason="redacted" if event_type != "state.invalidated" else "redacted",
         )
 
-    scrubbed = _scrub(dict(payload or {}))
+    from agentforge.contracts.events import _PAYLOAD_BY_TYPE
+
+    schema = _PAYLOAD_BY_TYPE.get(event_type)
+    allowed = (
+        {field.alias or name for name, field in schema.model_fields.items()} if schema else set()
+    )
+    selected = {key: value for key, value in (payload or {}).items() if key in allowed}
+
+    def redact_strings(value: Any) -> Any:
+        import re
+
+        if isinstance(value, str):
+            if re.search(
+                r"(?i)(bearer\s+|(?:api[_-]?key|token|password|secret)\s*[:=]|[A-Z]:[\\/]|/(?:home|users|root)/)",
+                value,
+            ):
+                return "[redacted]"
+            return value
+        if isinstance(value, dict):
+            return {k: redact_strings(v) for k, v in value.items()}
+        if isinstance(value, list):
+            return [redact_strings(v) for v in value]
+        return value
+
+    scrubbed = redact_strings(_scrub(selected))
     # Rough size guard — oversized → invalidated continuity frame
     import json
 

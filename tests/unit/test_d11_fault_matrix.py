@@ -60,9 +60,7 @@ def test_matrix_pause_blocks_new_dispatch_without_claiming_paused() -> None:
     assert action.kind == "coordinate_stop"
 
     session = MagicMock()
-    session.get.return_value = MagicMock(
-        id="run_1", status="pause_requested", status_version=2
-    )
+    session.get.return_value = MagicMock(id="run_1", status="pause_requested", status_version=2)
     ctrl = RunControlService(session)
     with (
         patch.object(ctrl, "_ensure_stop_requests", return_value=["iop_1"]),
@@ -81,9 +79,7 @@ def test_matrix_pause_blocks_new_dispatch_without_claiming_paused() -> None:
 
 def test_matrix_cancel_stays_requested_when_children_running() -> None:
     session = MagicMock()
-    session.get.return_value = MagicMock(
-        id="run_1", status="cancel_requested", status_version=3
-    )
+    session.get.return_value = MagicMock(id="run_1", status="cancel_requested", status_version=3)
     ctrl = RunControlService(session)
     with (
         patch.object(ctrl, "_revoke_unstarted_intents", return_value=[]),
@@ -191,9 +187,7 @@ def test_matrix_unknown_attempt_blocks_redispatch() -> None:
             attempts=(AttemptSnap("ia_1", "wp_a", "inst_1", "unknown", "stage_a"),),
             work_packages=(WorkPackageSnap("wp_a", "stage_a", "role_dev"),),
             stages=(StageSnap("stage_a", "executing", "none", False),),
-            instances=(
-                InstanceSnap("inst_1", "role_dev", "active", "idle", "ws_1", "ns_1"),
-            ),
+            instances=(InstanceSnap("inst_1", "role_dev", "active", "idle", "ws_1", "ns_1"),),
         )
     )
     assert action.kind == "open_recovery"
@@ -207,9 +201,7 @@ def test_matrix_busy_capacity_blocks_second_package() -> None:
                 WorkPackageSnap("wp_a", "stage_a", "role_dev"),
                 WorkPackageSnap("wp_b", "stage_a", "role_dev"),
             ),
-            instances=(
-                InstanceSnap("inst_1", "role_dev", "active", "busy", "ws_1", "ns_1"),
-            ),
+            instances=(InstanceSnap("inst_1", "role_dev", "active", "busy", "ws_1", "ns_1"),),
             attempts=(AttemptSnap("ia_1", "wp_a", "inst_1", "running", "stage_a"),),
         )
     )

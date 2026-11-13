@@ -8,9 +8,7 @@ from pydantic import Field, model_validator
 
 from agentforge.contracts.base import ApiInputModel, ContractModel
 from agentforge.contracts.common import (
-    AssignmentVersion,
     OpaqueId,
-    PlanVersion,
     Sha256Hex,
     ShortText,
     UtcDateTime,
@@ -88,9 +86,7 @@ class IntegrationSelectionRequest(ApiInputModel):
         }
         for key in data:
             if key in forbidden:
-                raise ValueError(
-                    f"clients cannot declare integration selection authority ({key})"
-                )
+                raise ValueError(f"clients cannot declare integration selection authority ({key})")
         return data
 
 
@@ -275,9 +271,7 @@ class FinalReviewResponseRequest(ApiInputModel):
         }
         for key in data:
             if key in forbidden:
-                raise ValueError(
-                    f"review responses cannot declare platform authority ({key})"
-                )
+                raise ValueError(f"review responses cannot declare platform authority ({key})")
         return data
 
 

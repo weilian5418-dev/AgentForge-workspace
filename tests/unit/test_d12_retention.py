@@ -8,8 +8,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from agentforge.streaming.retention import (
-    RetentionError,
     ReplayWindow,
+    RetentionError,
     advance_replay_floor,
     archive_event_range,
     get_replay_window,
@@ -26,9 +26,7 @@ def test_read_after_expired_gap_ahead_caught_up() -> None:
         retention_version=1,
         latest_sequence=10,
     )
-    with patch(
-        "agentforge.streaming.retention.get_replay_window", return_value=base
-    ):
+    with patch("agentforge.streaming.retention.get_replay_window", return_value=base):
         assert (
             read_after_in_window(session, run_id="run_1", after_sequence=2).status
             == "cursor_expired"
@@ -38,15 +36,13 @@ def test_read_after_expired_gap_ahead_caught_up() -> None:
             == "cursor_ahead"
         )
         assert (
-            read_after_in_window(session, run_id="run_1", after_sequence=10).status
-            == "caught_up"
+            read_after_in_window(session, run_id="run_1", after_sequence=10).status == "caught_up"
         )
         result = MagicMock()
         result.all.return_value = []
         session.scalars.return_value = result
         assert (
-            read_after_in_window(session, run_id="run_1", after_sequence=5).status
-            == "gap_detected"
+            read_after_in_window(session, run_id="run_1", after_sequence=5).status == "gap_detected"
         )
 
 
@@ -64,9 +60,7 @@ def test_read_after_contiguous_ok() -> None:
     result = MagicMock()
     result.all.return_value = [e1, e2]
     session.scalars.return_value = result
-    with patch(
-        "agentforge.streaming.retention.get_replay_window", return_value=base
-    ):
+    with patch("agentforge.streaming.retention.get_replay_window", return_value=base):
         out = read_after_in_window(session, run_id="run_1", after_sequence=0)
     assert out.status == "ok"
     assert out.next_after_sequence == 2
@@ -89,14 +83,10 @@ def test_advance_floor_refuses_delete_without_archive() -> None:
         return window
 
     session.get.side_effect = _get
-    with patch(
-        "agentforge.streaming.retention.ensure_replay_window", return_value=window
-    ):
+    with patch("agentforge.streaming.retention.ensure_replay_window", return_value=window):
         with patch("agentforge.streaming.retention.db_now", return_value=MagicMock()):
             with pytest.raises(RetentionError) as exc:
-                advance_replay_floor(
-                    session, run_id="run_1", new_floor=5, delete_online=True
-                )
+                advance_replay_floor(session, run_id="run_1", new_floor=5, delete_online=True)
             assert exc.value.code == "archive_required"
 
             with patch(
@@ -150,9 +140,7 @@ def test_archive_failure_does_not_raise_watermark(tmp_path: Path) -> None:
     result.all.return_value = [e1, e2]
     session.scalars.return_value = result
 
-    with patch(
-        "agentforge.streaming.retention.ensure_replay_window", return_value=window
-    ):
+    with patch("agentforge.streaming.retention.ensure_replay_window", return_value=window):
         with patch("agentforge.streaming.retention.db_now", return_value=MagicMock()):
             with patch.object(Path, "read_bytes", return_value=b"corrupt"):
                 with pytest.raises(RetentionError) as exc:
@@ -177,9 +165,7 @@ def test_get_replay_window_rejects_floor_past_latest() -> None:
         retention_version=1,
     )
     session.get.return_value = run
-    with patch(
-        "agentforge.streaming.retention.ensure_replay_window", return_value=window
-    ):
+    with patch("agentforge.streaming.retention.ensure_replay_window", return_value=window):
         with pytest.raises(RetentionError) as exc:
             get_replay_window(session, "run_1")
         assert exc.value.code == "storage_integrity"

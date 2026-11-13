@@ -18,7 +18,6 @@ from agentforge.integration.reviews import (
     submit_final_review,
 )
 from agentforge.storage.models import IntegrationValidationCycleRow, RunDeliveryRow
-from agentforge.storage.uow import db_now
 
 
 def evaluate_integration_cycle(session: Session, *, cycle_id: str) -> IntegrationEvaluation:
@@ -40,20 +39,30 @@ def evaluate_integration_cycle(session: Session, *, cycle_id: str) -> Integratio
         if cycle.status not in {"awaiting_review", "checking"}:
             cycle.status = "awaiting_review"
 
+    # A historical evaluation may update its own cycle, never a newer delivery projection.
     delivery = session.get(RunDeliveryRow, facts.run_id)
-    if delivery is not None:
-        if evaluation.status == "passed":
-            delivery.technical_status = "passed"
-        elif evaluation.status == "failed":
-            delivery.technical_status = "failed"
-        elif evaluation.status == "blocked":
-            delivery.technical_status = "blocked"
-        elif evaluation.status == "waiting":
-            delivery.technical_status = "waiting_review"
-        try:
-            delivery.updated_at = db_now(session)
-        except Exception:
-            pass
+    if delivery is not None and delivery.current_version_id == facts.version_id:
+        target = {
+            "passed": "passed",
+            "failed": "failed",
+            "blocked": "blocked",
+            "waiting": "waiting_review",
+        }[evaluation.status]
+        if delivery.technical_status != target:
+            from agentforge.storage.repositories.events import append_domain_fact
+
+            delivery.technical_status = target
+            delivery.delivery_revision += 1
+            append_domain_fact(
+                session,
+                facts.run_id,
+                "integration.validated",
+                {
+                    "integrationVersion": facts.version_id,
+                    "manifestHash": facts.tree_hash,
+                    "passed": evaluation.status == "passed",
+                },
+            )
     session.flush()
     return evaluation
 

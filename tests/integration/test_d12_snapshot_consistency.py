@@ -75,9 +75,7 @@ def test_uncommitted_event_invisible_until_commit(engine) -> None:
         ReaderSession = sessionmaker(bind=engine, expire_on_commit=False, class_=Session)
         reader = ReaderSession()
         try:
-            visible = list(
-                reader.scalars(select(Event).where(Event.run_id == run_id)).all()
-            )
+            visible = list(reader.scalars(select(Event).where(Event.run_id == run_id)).all())
             assert visible == []
         finally:
             reader.close()
@@ -89,7 +87,5 @@ def test_uncommitted_event_invisible_until_commit(engine) -> None:
 
     # After rollback, still empty
     with unit_of_work(factory) as uow:
-        leftover = list(
-            uow.session.scalars(select(Event).where(Event.run_id == run_id)).all()
-        )
+        leftover = list(uow.session.scalars(select(Event).where(Event.run_id == run_id)).all())
         assert leftover == []

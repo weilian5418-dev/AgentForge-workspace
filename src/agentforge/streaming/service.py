@@ -79,7 +79,7 @@ def read_bounded_batch(
 ) -> EventBatch:
     """Short sync read — caller must not hold Session across await."""
     max_batch = max(1, min(int(max_batch), MAX_BATCH_EVENTS))
-    with engine.connect() as conn:
+    with engine.connect().execution_options(isolation_level="REPEATABLE READ") as conn:
         with Session(bind=conn, autoflush=False, expire_on_commit=False) as session:
             authorize_run_read(session, principal, run_id)
             window_read = read_after_in_window(

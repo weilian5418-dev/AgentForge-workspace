@@ -34,8 +34,8 @@ def _now(session: Session | None = None) -> datetime:
         try:
             value = db_now(session)
             if getattr(value, "tzinfo", None) is None:
-                return value.replace(tzinfo=UTC)  # type: ignore[union-attr]
-            return value  # type: ignore[return-value]
+                return value.replace(tzinfo=UTC)
+            return value
         except Exception:
             pass
     return datetime.now(UTC)
@@ -54,6 +54,7 @@ def ensure_workspace_operation(
     fence: LeaseFence,
     *,
     role_id: str,
+    purpose: str = "initial",
     strategy: str = "commit_only",
     dirty_snapshot_id: str | None = None,
     attempt_id: str | None = None,
@@ -84,7 +85,7 @@ def ensure_workspace_operation(
         plan_version=int(run.plan_version),
         assignment_version=int(run.assignment_version),
         generation=generation,
-        work_package_id=role_id,
+        work_package_id=f"{role_id}:{purpose}",
     )
     repo = DriverRepository(session)
     existing = repo.find_operation(run.id, op_key)
@@ -97,7 +98,7 @@ def ensure_workspace_operation(
             "binding": existing.binding_json,
         }
 
-    workspace_id = f"gwt_{sha256_hex({'run': run.id, 'role': role_id, 'g': generation})[:16]}"
+    workspace_id = f"gwt_{sha256_hex({'run': run.id, 'role': role_id, 'g': generation, 'purpose': purpose})[:16]}"
     path = expected_worktree_path(state_dir, project.id, workspace_id)
     request_body = {
         "projectId": project.id,
@@ -263,11 +264,7 @@ def reconcile_existing_workspace(
             "recordedPath": row.worktree_path,
             "expectedPath": str(expected_path),
         }
-    if (
-        expected_baseline_commit
-        and row.head_commit
-        and row.head_commit != expected_baseline_commit
-    ):
+    if expected_baseline_commit and row.head_commit and row.head_commit != expected_baseline_commit:
         return {
             "status": "head_mismatch",
             "workspaceId": workspace_id,

@@ -7,7 +7,7 @@ from typing import Any, Protocol
 
 from agentforge.driver.binding import sha256_hex
 
-SUPPORTED_CAPABILITIES_HOST = frozenset({"host_process", "filesystem_read"})
+SUPPORTED_CAPABILITIES_HOST = frozenset({"host_process", "filesystem_read", "python_interpreter"})
 
 
 class CheckError(Exception):
@@ -172,6 +172,11 @@ class PythonPytestV1:
             argv=tuple(argv),
             cwd=cwd,
             env_whitelist={
+                **{
+                    k: v
+                    for k, v in __import__("os").environ.items()
+                    if k in {"SYSTEMROOT", "WINDIR", "TEMP", "TMP"}
+                },
                 "PYTHONUTF8": "1",
                 "PYTHONDONTWRITEBYTECODE": "1",
                 "PYTEST_ADDOPTS": "",
@@ -189,9 +194,9 @@ class PythonPytestV1:
         execution: CheckExecutionReceipt,
         structured_report: dict[str, Any] | None,
     ) -> CheckOutcomeResult:
-        if execution.argv_definition_hash != (
-            structured_report or {}
-        ).get("argvDefinitionHash", execution.argv_definition_hash):
+        if execution.argv_definition_hash != (structured_report or {}).get(
+            "argvDefinitionHash", execution.argv_definition_hash
+        ):
             # Prefer receipt; mismatch with agent-supplied report → invalid
             if structured_report and structured_report.get("argvDefinitionHash") not in {
                 None,
@@ -334,7 +339,11 @@ def compile_integration_policy(
     non_software_waiver: str | None = None,
 ) -> CompiledIntegrationPolicy:
     reg = registry or default_registry()
-    caps = environment_capabilities or SUPPORTED_CAPABILITIES_HOST
+    caps = (
+        environment_capabilities
+        if environment_capabilities is not None
+        else SUPPORTED_CAPABILITIES_HOST
+    )
     if not check_specs:
         if not non_software_waiver:
             raise CheckError(
@@ -348,15 +357,10 @@ def compile_integration_policy(
         adapter = reg.get(check_id, version)
         cfg = adapter.validate_config(dict(spec.get("config") or {}))
         needed = adapter.required_capabilities(cfg)
-        # Host mode satisfies host_process; python_interpreter assumed present for pytest
-        effective = set(caps) | {"python_interpreter"}
-        if not needed <= effective and "container" not in effective:
-            # Host authorized path may still run with honest labeling
-            if "host_process" not in effective:
-                raise CheckError(
-                    "check_capability_unverified",
-                    f"missing capabilities {sorted(needed - effective)}",
-                )
+        if not needed <= caps:
+            raise CheckError(
+                "check_capability_unverified", f"missing capabilities {sorted(needed - caps)}"
+            )
         compiled.append(cfg)
     body = {
         "policyRef": policy_ref,

@@ -173,9 +173,7 @@ def test_log_slice_bounded(tmp_path: Path) -> None:
     log = tmp_path / "abc.log"
     log.write_text("hello world", encoding="utf-8")
     principal = AuthenticatedPrincipal("c", 1, "user:api")
-    slice_ = read_log_slice(
-        log_root=tmp_path, log_id="abc", offset=0, limit=5, principal=principal
-    )
+    slice_ = read_log_slice(log_root=tmp_path, log_id="abc", offset=0, limit=5, principal=principal)
     assert slice_["content"] == "hello"
     assert slice_["truncated"] is True
     with pytest.raises(LogQueryError):

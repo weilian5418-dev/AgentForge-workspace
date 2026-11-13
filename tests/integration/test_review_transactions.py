@@ -41,6 +41,7 @@ def isolated_engine():
         "runs",
         "instance_attempts",
         "stages",
+        "platform_admission",
     ]
     try:
         with base.begin() as conn:

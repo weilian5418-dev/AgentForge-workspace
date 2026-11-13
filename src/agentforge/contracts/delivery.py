@@ -170,9 +170,7 @@ class AcceptanceDecisionRequest(ApiInputModel):
         }
         for key in data:
             if key in forbidden:
-                raise ValueError(
-                    f"acceptance request cannot declare platform authority ({key})"
-                )
+                raise ValueError(f"acceptance request cannot declare platform authority ({key})")
         return data
 
     @model_validator(mode="after")

@@ -36,9 +36,9 @@ def route_action(state: CollaborationState) -> str:
 
 def build_collaboration_graph(*, checkpointer: Any = None) -> Any:
     """Build and optionally compile the collaboration graph."""
-    builder: StateGraph[CollaborationState, DriverContext, CollaborationState, CollaborationState] = (
-        StateGraph(CollaborationState, context_schema=DriverContext)
-    )
+    builder: StateGraph[
+        CollaborationState, DriverContext, CollaborationState, CollaborationState
+    ] = StateGraph(CollaborationState, context_schema=DriverContext)
     builder.add_node("refresh", N.refresh_snapshot)
     builder.add_node("decide", N.decide_next_action)
     builder.add_node("ensure_workspaces", N.node_ensure_workspaces)
@@ -55,7 +55,7 @@ def build_collaboration_graph(*, checkpointer: Any = None) -> Any:
 
     builder.add_edge(START, "refresh")
     builder.add_edge("refresh", "decide")
-    builder.add_conditional_edges("decide", route_action, ACTION_TO_NODE)
+    builder.add_conditional_edges("decide", route_action, list(ACTION_TO_NODE.values()))
 
     # Short domain intents re-read facts; waits interrupt; terminal nodes end.
     for name in (
@@ -85,7 +85,9 @@ def build_collaboration_graph(*, checkpointer: Any = None) -> Any:
     return builder.compile(checkpointer=checkpointer)
 
 
-def route_action_name(kind: str) -> Literal[
+def route_action_name(
+    kind: str,
+) -> Literal[
     "register_wait",
     "ensure_workspaces",
     "ensure_instances",

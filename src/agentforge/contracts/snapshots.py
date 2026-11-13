@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import Field, model_validator
+from pydantic import Field
 
 from agentforge.contracts.base import ApiInputModel, ContractModel
 from agentforge.contracts.collaboration import CollaborationProgress
@@ -164,7 +164,7 @@ class WaitSummary(ContractModel):
 class RunSnapshot(ContractModel):
     """Single-transaction bounded snapshot — not a dump of ORM graphs."""
 
-    schema_version: Literal["1"] = SNAPSHOT_SCHEMA_VERSION
+    schema_version: Literal["1"] = "1"
     run: RunOverview
     binding: ExecutionBindingOverview
     agent_counts: AgentCounts

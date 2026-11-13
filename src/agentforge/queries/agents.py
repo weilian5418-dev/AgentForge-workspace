@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from typing import Any, Literal
+from typing import Literal
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -58,8 +58,8 @@ def _as_of(session: Session, as_of: datetime | None) -> datetime:
     try:
         value = db_now(session)
         if getattr(value, "tzinfo", None) is None:
-            return value.replace(tzinfo=UTC)  # type: ignore[union-attr]
-        return value  # type: ignore[return-value]
+            return value.replace(tzinfo=UTC)
+        return value
     except Exception:
         return datetime.now(UTC)
 
@@ -85,9 +85,7 @@ def explain_profile_schedulability(
 
     installation = session.get(AgentInstallationRow, profile.installation_id)
     if installation is None:
-        return SchedulabilityExplanation(
-            profile.id, "not_schedulable", ("installation_missing",)
-        )
+        return SchedulabilityExplanation(profile.id, "not_schedulable", ("installation_missing",))
 
     check = (
         session.get(CapabilityCheckRow, profile.last_validation_id)
@@ -113,17 +111,11 @@ def explain_profile_schedulability(
             profile.id, "not_schedulable", ("capability_checked_at_invalid",)
         )
     if now - check.checked_at > timedelta(hours=24):
-        return SchedulabilityExplanation(
-            profile.id, "not_schedulable", ("capability_stale",)
-        )
+        return SchedulabilityExplanation(profile.id, "not_schedulable", ("capability_stale",))
     if check.valid_until is not None and check.valid_until <= now:
-        return SchedulabilityExplanation(
-            profile.id, "not_schedulable", ("capability_expired",)
-        )
+        return SchedulabilityExplanation(profile.id, "not_schedulable", ("capability_expired",))
     if f"config:{profile.config_hash}" not in (check.evidence_refs or []):
-        return SchedulabilityExplanation(
-            profile.id, "not_schedulable", ("config_hash_unbound",)
-        )
+        return SchedulabilityExplanation(profile.id, "not_schedulable", ("config_hash_unbound",))
 
     results = list(check.results or [])
     supported = {r.get("capability") for r in results if r.get("support") == "supported"}
@@ -147,9 +139,7 @@ def explain_profile_schedulability(
         )
 
     if busy_profile_ids and profile.id in busy_profile_ids:
-        return SchedulabilityExplanation(
-            profile.id, "verified_but_busy", ("instance_busy",)
-        )
+        return SchedulabilityExplanation(profile.id, "verified_but_busy", ("instance_busy",))
 
     access = profile.access_level
     if access == "manual_assisted":
@@ -158,9 +148,7 @@ def explain_profile_schedulability(
         return SchedulabilityExplanation(profile.id, "limited_auto", ("access_limited",))
     if access == "controlled_auto":
         return SchedulabilityExplanation(profile.id, "schedulable", tuple(reasons) or ("ok",))
-    return SchedulabilityExplanation(
-        profile.id, "unknown", (f"access_level_unknown:{access}",)
-    )
+    return SchedulabilityExplanation(profile.id, "unknown", (f"access_level_unknown:{access}",))
 
 
 def summarize_agent_counts(
@@ -194,9 +182,7 @@ def summarize_agent_counts(
     instances: list[AgentInstanceRow] = []
     if run_id is not None:
         instances = list(
-            session.scalars(
-                select(AgentInstanceRow).where(AgentInstanceRow.run_id == run_id)
-            ).all()
+            session.scalars(select(AgentInstanceRow).where(AgentInstanceRow.run_id == run_id)).all()
         )
 
     busy_profile_ids = {
@@ -291,7 +277,11 @@ def summarize_progress(session: Session, run: Run) -> ProgressSummary:
         session.scalars(
             select(ReleaseRecordRow)
             .join(StageRow, StageRow.id == ReleaseRecordRow.stage_id)
-            .where(StageRow.run_id == run.id)
+            .where(
+                StageRow.run_id == run.id,
+                StageRow.plan_version == run.plan_version,
+                StageRow.assignment_version == run.assignment_version,
+            )
         ).all()
     )
     released_wp: set[str] = set()
@@ -306,17 +296,15 @@ def summarize_progress(session: Session, run: Run) -> ProgressSummary:
             from agentforge.contracts.plans import PlanSpec
 
             spec = PlanSpec.model_validate(plan.spec_json)
-            required_ids = {w.id for w in spec.work_packages if w.required}
+            required_ids = {
+                w.id for w in spec.work_packages if any(d.required for d in w.deliverables)
+            }
         elif packages:
             required_ids = {p.id for p in packages if p.required}
 
     # Prefer ReleaseRecord for "released"; fall back to published WP status.
-    released_count = len(released_wp) if released_wp else _count("published")
-    required_released = (
-        len(required_ids & released_wp)
-        if released_wp
-        else sum(1 for p in packages if p.required and p.status == "published")
-    )
+    released_count = len(released_wp)
+    required_released = len(required_ids & released_wp) if released_wp else 0
 
     delivery = session.get(RunDeliveryRow, run.id)
     acceptance = delivery.acceptance_status if delivery is not None else "none"
@@ -333,9 +321,7 @@ def summarize_progress(session: Session, run: Run) -> ProgressSummary:
     if delivery is not None and delivery.current_version_id:
         cycle = session.scalar(
             select(IntegrationValidationCycleRow)
-            .where(
-                IntegrationValidationCycleRow.version_id == delivery.current_version_id
-            )
+            .where(IntegrationValidationCycleRow.version_id == delivery.current_version_id)
             .order_by(IntegrationValidationCycleRow.created_at.desc())
             .limit(1)
         )
@@ -356,7 +342,7 @@ def summarize_progress(session: Session, run: Run) -> ProgressSummary:
                 if prev is None or int(row.attempt_no) >= int(prev.attempt_no):
                     latest[row.check_id] = row
             seen = set(latest)
-            for check_id, row in latest.items():
+            for _check_id, row in latest.items():
                 status = row.status
                 if status == "passed":
                     checks_passed += 1

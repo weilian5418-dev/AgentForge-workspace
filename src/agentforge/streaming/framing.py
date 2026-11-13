@@ -27,11 +27,7 @@ def encode_business_event(envelope: PublicEventEnvelope) -> bytes:
         ensure_ascii=False,
         separators=(",", ":"),
     )
-    frame = (
-        f"id: {envelope.event_id}\n"
-        f"event: {envelope.type}\n"
-        f"{_sse_data_lines(body)}\n"
-    )
+    frame = f"id: {envelope.event_id}\nevent: {envelope.type}\n{_sse_data_lines(body)}\n"
     return frame.encode("utf-8")
 
 

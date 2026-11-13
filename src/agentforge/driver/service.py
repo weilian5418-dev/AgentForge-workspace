@@ -31,8 +31,8 @@ from agentforge.driver.repository import DriverRepository
 from agentforge.driver.signals import claim_pending_signals, complete_observed_signals
 from agentforge.driver.state import DriverContext
 from agentforge.driver.waits import WaitService
-from agentforge.storage.models import DriverThreadRow, Run
 from agentforge.storage.exceptions import LeaseConflictError
+from agentforge.storage.models import DriverThreadRow, Run, RunWakeSignalRow
 from agentforge.storage.repositories.leases import LeaseRepository
 from agentforge.storage.uow import db_now, unit_of_work_connection
 
@@ -46,8 +46,8 @@ HEARTBEAT_INTERVAL_SEC = 25
 def _now(session: Session) -> datetime:
     value = db_now(session)
     if getattr(value, "tzinfo", None) is None:
-        return value.replace(tzinfo=UTC)  # type: ignore[union-attr]
-    return value  # type: ignore[return-value]
+        return value.replace(tzinfo=UTC)
+    return value
 
 
 def sqlalchemy_url_to_psycopg_dsn(url: str) -> str:
@@ -203,9 +203,7 @@ def drive_once(
                 thread_id=thread.thread_id,
                 binding_hash=thread.binding_hash,
             )
-            claimed = claim_pending_signals(
-                uow.session, run_id=run_id, owner=owner_id, limit=16
-            )
+            claimed = claim_pending_signals(uow.session, run_id=run_id, owner=owner_id, limit=16)
             claimed_ids = [s.wake_signal_id for s in claimed]
             if wake_signal_id and wake_signal_id not in claimed_ids:
                 claimed_ids.append(wake_signal_id)
@@ -237,7 +235,9 @@ def drive_once(
             claimed_wake_ids=list(claimed_ids),
         )
 
-        resume_cmd = None
+        from langgraph.types import Command
+
+        resume_cmd: Command[Any] | None = None
         try:
             snapshot = graph.get_state(config)
             if snapshot and snapshot.tasks:
@@ -249,10 +249,20 @@ def drive_once(
                         if not wait_id:
                             continue
                         with unit_of_work_connection(eng) as uow:
-                            outcome = WaitService(uow.session).recheck_open_wait(str(wait_id))
-                        if outcome.status == "satisfied":
-                            from langgraph.types import Command
-
+                            wait_service = WaitService(uow.session)
+                            wait_outcome = wait_service.recheck_open_wait(str(wait_id))
+                            for signal_id in claimed_ids:
+                                signal = uow.session.get(RunWakeSignalRow, signal_id)
+                                if (
+                                    signal
+                                    and signal.run_id == run_id
+                                    and signal.source_kind in {"control", "driver_continue"}
+                                ):
+                                    wait_service.resolve_wait(
+                                        str(wait_id), resolved_by_ref=signal.id
+                                    )
+                                    wait_outcome = wait_service.recheck_open_wait(str(wait_id))
+                        if wait_outcome.status == "satisfied":
                             resume_cmd = Command(
                                 resume={
                                     "waitId": wait_id,
@@ -268,12 +278,20 @@ def drive_once(
                                 thread_id=fence.thread_id,
                                 outcome="interrupted",
                                 wait_id=str(wait_id),
-                                wait_reason=outcome.wait.reason if outcome.wait else None,
+                                wait_reason=wait_outcome.wait.reason if wait_outcome.wait else None,
                                 observed_sequence=None,
                                 message="wait still open",
                             )
-        except Exception:
-            logger.debug("get_state/resume probe failed; starting fresh invoke", exc_info=True)
+        except DriverFenceLost:
+            raise
+        except Exception as exc:
+            return DriverResult(
+                run_id=run_id,
+                thread_id=fence.thread_id,
+                outcome="blocked",
+                error_code="checkpoint_incompatible",
+                message=f"Checkpoint inspection failed: {type(exc).__name__}",
+            )
 
         initial: dict[str, Any] = {
             "run_id": run_id,
@@ -284,9 +302,11 @@ def drive_once(
         }
         try:
             if resume_cmd is not None:
-                result_state = graph.invoke(resume_cmd, config=config, context=ctx)
+                result_state = graph.invoke(
+                    resume_cmd, config=config, context=ctx, durability="sync"
+                )
             else:
-                result_state = graph.invoke(initial, config=config, context=ctx)
+                result_state = graph.invoke(initial, config=config, context=ctx, durability="sync")
         except DriverFenceLost as exc:
             return DriverResult(
                 run_id=run_id,
@@ -338,9 +358,9 @@ def drive_once(
                 run_id=run_id,
                 thread_id=fence.thread_id,
                 outcome=outcome,  # type: ignore[arg-type]
-                next_action=result_state.get("next_action"),  # type: ignore[arg-type]
+                next_action=result_state.get("next_action"),
                 wait_id=wait_id,
-                wait_reason=wait_reason,  # type: ignore[arg-type]
+                wait_reason=wait_reason,
                 operation_ref=result_state.get("operation_ref"),
                 recovery_case_ref=result_state.get("recovery_case_ref"),
                 handoff_ref=result_state.get("handoff_ref"),

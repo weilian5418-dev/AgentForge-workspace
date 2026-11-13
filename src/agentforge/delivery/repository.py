@@ -19,8 +19,8 @@ def _now(session: Session) -> datetime:
     try:
         value = db_now(session)
         if getattr(value, "tzinfo", None) is None:
-            return value.replace(tzinfo=UTC)  # type: ignore[union-attr]
-        return value  # type: ignore[return-value]
+            return value.replace(tzinfo=UTC)
+        return value
     except Exception:
         return datetime.now(UTC)
 

@@ -11,8 +11,8 @@ from sqlalchemy import select
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
-from agentforge.driver.signals import record_wake_signal
 from agentforge.driver.repository import DriverRepository
+from agentforge.driver.signals import record_wake_signal
 from agentforge.storage.models import InstanceOperationRow, Outbox, RunWakeSignalRow
 from agentforge.storage.uow import db_now, unit_of_work_connection
 
@@ -27,8 +27,8 @@ class SweepReport:
 def _now(session: Session) -> datetime:
     value = db_now(session)
     if getattr(value, "tzinfo", None) is None:
-        return value.replace(tzinfo=UTC)  # type: ignore[union-attr]
-    return value  # type: ignore[return-value]
+        return value.replace(tzinfo=UTC)
+    return value
 
 
 def _requeue_wake_outbox(session: Session, wake: RunWakeSignalRow) -> bool:
@@ -97,9 +97,7 @@ def sweep_once(
             session.scalars(
                 select(InstanceOperationRow)
                 .where(
-                    InstanceOperationRow.status.in_(
-                        ("succeeded", "failed", "unknown", "canceled")
-                    )
+                    InstanceOperationRow.status.in_(("succeeded", "failed", "unknown", "canceled"))
                 )
                 .order_by(InstanceOperationRow.prepared_at.desc())
                 .limit(limit)

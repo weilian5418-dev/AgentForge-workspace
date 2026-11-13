@@ -86,7 +86,9 @@ def list_stages(
                     settings=settings,
                 )
         except SnapshotError as exc:
-            status = 409 if exc.code == "snapshot_stale" else 404 if "not_found" in exc.code else 400
+            status = (
+                409 if exc.code == "snapshot_stale" else 404 if "not_found" in exc.code else 400
+            )
             raise HTTPException(status, f"{exc.code}: {exc.message}") from exc
     with unit_of_work_connection(engine) as uow:
         return StageListResponse(

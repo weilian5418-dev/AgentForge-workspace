@@ -107,7 +107,10 @@ class ReleasedInputResolver:
                 raise InstanceError("release_not_found", release_id)
             for raw in release.candidate_versions or []:
                 member = self._member_from_release(release, raw, project_id=project.id)
-                if required_work_package_ids and member.work_package_id not in required_work_package_ids:
+                if (
+                    required_work_package_ids
+                    and member.work_package_id not in required_work_package_ids
+                ):
                     continue
                 members.append(member)
                 candidate_refs.append(member.candidate_id)
@@ -189,9 +192,7 @@ class ReleasedInputResolver:
         return False
 
 
-def find_release_ids_for_upstream(
-    session: Session, *, upstream_stage_ids: list[str]
-) -> list[str]:
+def find_release_ids_for_upstream(session: Session, *, upstream_stage_ids: list[str]) -> list[str]:
     """Collect ReleaseRecord ids for upstream stages (latest facts; eligibility already gated)."""
     if not upstream_stage_ids:
         return []

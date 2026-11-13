@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from agentforge.contracts.collaboration import ACTIVE_INSTANCE_ATTEMPT_STATUSES, NextAction
+from agentforge.contracts.collaboration import NextAction
 from agentforge.driver.snapshots import CollaborationSnapshot
 
 
@@ -29,6 +29,12 @@ def choose_next_action(snapshot: CollaborationSnapshot) -> NextAction:
             detail="run is blocked",
         )
 
+    if snapshot.run_status in {"completed", "failed"}:
+        return NextAction(kind="end", detail=f"terminal:{snapshot.run_status}")
+    if snapshot.pending_submissions:
+        return NextAction(
+            kind="accept_submissions", detail=f"message:{snapshot.pending_submissions[0]}"
+        )
     # 2) Unknown attempts occupy write slots — never re-dispatch the same WP.
     for attempt in snapshot.attempts:
         if attempt.status == "unknown":
@@ -91,15 +97,19 @@ def choose_next_action(snapshot: CollaborationSnapshot) -> NextAction:
         )
 
     # 5) Integration handoff when all required packages released.
-    required_ids = [
-        wp.work_package_id for wp in snapshot.work_packages if wp.required
-    ]
+    required_ids = [wp.work_package_id for wp in snapshot.work_packages if wp.required]
     released = snapshot.released_work_packages()
     if required_ids and all(wp_id in released for wp_id in required_ids):
         if snapshot.collaboration_state != "ready_for_integration":
             return NextAction(kind="prepare_handoff", detail="all required released")
         return NextAction(kind="end", detail="ready_for_integration")
 
+    if snapshot.prepared_roles is not None:
+        required_roles = {wp.role_id for wp in snapshot.work_packages if wp.role_id}
+        if not required_roles <= set(snapshot.prepared_roles):
+            return NextAction(
+                kind="ensure_workspaces", detail="prepare missing confirmed role workspaces"
+            )
     # 6) Missing instances / workspaces before dispatch.
     if snapshot.work_packages and not snapshot.instances:
         return NextAction(kind="ensure_instances", detail="no instances yet")
@@ -125,25 +135,27 @@ def choose_next_action(snapshot: CollaborationSnapshot) -> NextAction:
             continue
         # Upstream gate: if stage listed and not ready/executing/released, wait.
         if wp.stage_id:
-            stage = next((s for s in snapshot.stages if s.stage_id == wp.stage_id), None)
-            if stage is not None and stage.status in ("pending", "blocked"):
+            stage_for_wp = next((s for s in snapshot.stages if s.stage_id == wp.stage_id), None)
+            if stage_for_wp is not None and stage_for_wp.status in ("pending", "blocked"):
                 return NextAction(
                     kind="register_wait",
                     stage_id=wp.stage_id,
                     work_package_id=wp.work_package_id,
                     wait_reason="dependency",
                     wait_key=f"dep:{wp.stage_id}",
-                    detail=f"stage {stage.status}",
+                    detail=f"stage {stage_for_wp.status}",
                 )
-            if stage is not None and stage.write_access_closed and stage.status == "executing":
+            if (
+                stage_for_wp is not None
+                and stage_for_wp.write_access_closed
+                and stage_for_wp.status == "executing"
+            ):
                 # Write closed without submission path — wait rather than force.
                 continue
         # Capacity: find idle instance for role if specified.
         if wp.role_id:
             candidates = [
-                i
-                for i in snapshot.instances
-                if i.role_id == wp.role_id and i.lifecycle == "active"
+                i for i in snapshot.instances if i.role_id == wp.role_id and i.lifecycle == "active"
             ]
             if not candidates:
                 return NextAction(
@@ -167,6 +179,15 @@ def choose_next_action(snapshot: CollaborationSnapshot) -> NextAction:
             detail="ready to reserve attempt",
         )
 
+    for attempt in snapshot.attempts:
+        if attempt.status in {"scheduled", "dispatching", "running"}:
+            return NextAction(
+                kind="register_wait",
+                wait_reason="task_submission",
+                wait_key=f"attempt:{attempt.attempt_id}",
+                work_package_id=attempt.work_package_id,
+                stage_id=attempt.stage_id,
+            )
     # 8) Nothing actionable — wait / yield.
     if snapshot.open_waits:
         w = snapshot.open_waits[0]

@@ -7,17 +7,15 @@ Time is always read with ``clock_timestamp()`` after locks are held.
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import TypeVar
+from datetime import datetime
 
-from sqlalchemy import select, text
+from sqlalchemy import select
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
 from agentforge.contracts.collaboration import LeaseFence
 from agentforge.storage.models import DriverThreadRow, Run, RunLease
 from agentforge.storage.uow import unit_of_work_connection
-
-T = TypeVar("T")
 
 
 class DriverFenceLost(Exception):
@@ -30,8 +28,10 @@ class DriverFenceLost(Exception):
         self.message = message
 
 
-def _clock_after_locks(session: Session):
-    return session.execute(text("SELECT clock_timestamp()")).scalar_one()
+def _clock_after_locks(session: Session) -> datetime:
+    from agentforge.storage.uow import db_now
+
+    return db_now(session)
 
 
 def assert_driver_fence(
@@ -94,7 +94,7 @@ def assert_driver_fence(
     return lease
 
 
-def run_fenced_transaction(
+def run_fenced_transaction[T](
     engine: Engine,
     fence: LeaseFence,
     apply: Callable[[Session], T],
@@ -104,11 +104,7 @@ def run_fenced_transaction(
     """Short bounded UOW: assert fence, apply domain intent, re-check expiry."""
 
     with unit_of_work_connection(engine) as uow:
-        assert_driver_fence(
-            uow.session, fence, require_active_thread=require_active_thread
-        )
+        assert_driver_fence(uow.session, fence, require_active_thread=require_active_thread)
         result = apply(uow.session)
-        assert_driver_fence(
-            uow.session, fence, require_active_thread=require_active_thread
-        )
+        assert_driver_fence(uow.session, fence, require_active_thread=require_active_thread)
         return result

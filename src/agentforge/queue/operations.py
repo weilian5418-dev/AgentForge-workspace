@@ -86,11 +86,11 @@ def get_operation(session: Session, operation_id: str) -> OperationStatusRespons
         from agentforge.storage.models import (
             ExecutionRequestRow,
             InstanceOperationRow,
+            RecoveryCaseRow,
+            RecoveryDecisionRow,
             StageRow,
             StageSubmissionRow,
         )
-
-        from agentforge.storage.models import RecoveryCaseRow, RecoveryDecisionRow
 
         native = session.get(InstanceOperationRow, operation_id)
         if native:

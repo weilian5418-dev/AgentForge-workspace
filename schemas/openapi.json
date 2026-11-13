@@ -1,6 +1,357 @@
 {
   "components": {
     "schemas": {
+      "AcceptanceDecisionListResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AcceptanceResult"
+            },
+            "maxItems": 100,
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "title": "AcceptanceDecisionListResponse",
+        "type": "object"
+      },
+      "AcceptanceDecisionRequest": {
+        "additionalProperties": false,
+        "description": "User acceptance of a fixed manifest — never declares technicalPassed.",
+        "properties": {
+          "acceptedMemberIds": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            "maxItems": 128,
+            "title": "Acceptedmemberids",
+            "type": "array"
+          },
+          "decision": {
+            "enum": [
+              "accept",
+              "reject",
+              "partial_accept"
+            ],
+            "title": "Decision",
+            "type": "string"
+          },
+          "expectedStatusVersion": {
+            "minimum": 1.0,
+            "title": "Expectedstatusversion",
+            "type": "integer"
+          },
+          "integrationVersion": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Integrationversion",
+            "type": "string"
+          },
+          "manifestHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Manifesthash",
+            "type": "string"
+          },
+          "manifestRevision": {
+            "minimum": 1.0,
+            "title": "Manifestrevision",
+            "type": "integer"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 4096,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "rejectedMemberIds": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            "maxItems": 128,
+            "title": "Rejectedmemberids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "integrationVersion",
+          "manifestHash",
+          "manifestRevision",
+          "expectedStatusVersion",
+          "decision"
+        ],
+        "title": "AcceptanceDecisionRequest",
+        "type": "object"
+      },
+      "AcceptanceResult": {
+        "additionalProperties": false,
+        "properties": {
+          "acceptanceStatus": {
+            "enum": [
+              "none",
+              "awaiting_acceptance",
+              "accepted",
+              "rejected",
+              "partially_accepted",
+              "invalidated"
+            ],
+            "title": "Acceptancestatus",
+            "type": "string"
+          },
+          "acceptedMemberIds": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            "maxItems": 128,
+            "title": "Acceptedmemberids",
+            "type": "array"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "decision": {
+            "enum": [
+              "accept",
+              "reject",
+              "partial_accept"
+            ],
+            "title": "Decision",
+            "type": "string"
+          },
+          "decisionId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Decisionid",
+            "type": "string"
+          },
+          "deliveryRevision": {
+            "minimum": 1.0,
+            "title": "Deliveryrevision",
+            "type": "integer"
+          },
+          "integrationVersion": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Integrationversion",
+            "type": "string"
+          },
+          "isCurrent": {
+            "title": "Iscurrent",
+            "type": "boolean"
+          },
+          "manifestHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Manifesthash",
+            "type": "string"
+          },
+          "rejectedMemberIds": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            "maxItems": 128,
+            "title": "Rejectedmemberids",
+            "type": "array"
+          },
+          "runId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Runid",
+            "type": "string"
+          },
+          "runStatus": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Runstatus"
+          },
+          "technicalStatus": {
+            "enum": [
+              "not_started",
+              "building",
+              "conflicted",
+              "checking",
+              "waiting_review",
+              "passed",
+              "failed",
+              "blocked",
+              "unknown"
+            ],
+            "title": "Technicalstatus",
+            "type": "string"
+          },
+          "undecidedMemberIds": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            "maxItems": 128,
+            "title": "Undecidedmemberids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "decisionId",
+          "runId",
+          "decision",
+          "integrationVersion",
+          "manifestHash",
+          "deliveryRevision",
+          "acceptanceStatus",
+          "technicalStatus",
+          "isCurrent",
+          "createdAt"
+        ],
+        "title": "AcceptanceResult",
+        "type": "object"
+      },
+      "AgentCounts": {
+        "additionalProperties": false,
+        "description": "Three inventory counts — never collapse products/profiles/instances.",
+        "properties": {
+          "activeInstanceCount": {
+            "minimum": 0.0,
+            "title": "Activeinstancecount",
+            "type": "integer"
+          },
+          "asOf": {
+            "format": "date-time",
+            "title": "Asof",
+            "type": "string"
+          },
+          "busyInstanceCount": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Busyinstancecount",
+            "type": "integer"
+          },
+          "discoveredProductCount": {
+            "minimum": 0.0,
+            "title": "Discoveredproductcount",
+            "type": "integer"
+          },
+          "environmentId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Environmentid",
+            "type": "string"
+          },
+          "inventoryRevision": {
+            "minimum": 1.0,
+            "title": "Inventoryrevision",
+            "type": "integer"
+          },
+          "limitedAutoProfileCount": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Limitedautoprofilecount",
+            "type": "integer"
+          },
+          "manualAssistedProfileCount": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Manualassistedprofilecount",
+            "type": "integer"
+          },
+          "needsReconciliationInstanceCount": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Needsreconciliationinstancecount",
+            "type": "integer"
+          },
+          "schedulableProfileCount": {
+            "minimum": 0.0,
+            "title": "Schedulableprofilecount",
+            "type": "integer"
+          },
+          "scopeNote": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scopenote"
+          },
+          "stoppedInstanceCount": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Stoppedinstancecount",
+            "type": "integer"
+          },
+          "unknownInstanceCount": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Unknowninstancecount",
+            "type": "integer"
+          },
+          "unknownProfileCount": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Unknownprofilecount",
+            "type": "integer"
+          },
+          "verifiedButBusyProfileCount": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Verifiedbutbusyprofilecount",
+            "type": "integer"
+          },
+          "waitingApprovalInstanceCount": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Waitingapprovalinstancecount",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "environmentId",
+          "discoveredProductCount",
+          "schedulableProfileCount",
+          "activeInstanceCount",
+          "inventoryRevision",
+          "asOf"
+        ],
+        "title": "AgentCounts",
+        "type": "object"
+      },
       "AgentInstance": {
         "additionalProperties": false,
         "description": "Platform-managed role execution instance (not the API process instance).\n\nOne instance may have many historical native sessions; only one active binding\nis valid at a time. Do not overwrite old sessionRef and lose history.",
@@ -387,6 +738,29 @@
           "accessLevel"
         ],
         "title": "AgentProfile",
+        "type": "object"
+      },
+      "AgentSummaryResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "counts": {
+            "$ref": "#/components/schemas/AgentCounts"
+          },
+          "requiredCapabilities": {
+            "items": {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 64,
+            "title": "Requiredcapabilities",
+            "type": "array"
+          }
+        },
+        "required": [
+          "counts"
+        ],
+        "title": "AgentSummaryResponse",
         "type": "object"
       },
       "ApprovalConfirmRequest": {
@@ -1502,6 +1876,54 @@
         "title": "CaptureDirtySnapshotRequest",
         "type": "object"
       },
+      "CheckPolicyItem": {
+        "additionalProperties": false,
+        "properties": {
+          "checkId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Checkid",
+            "type": "string"
+          },
+          "checkVersion": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Checkversion",
+            "type": "string"
+          },
+          "configHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Confighash",
+            "type": "string"
+          },
+          "notApplicableReason": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notapplicablereason"
+          },
+          "required": {
+            "title": "Required",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "checkId",
+          "checkVersion",
+          "required",
+          "configHash"
+        ],
+        "title": "CheckPolicyItem",
+        "type": "object"
+      },
       "ClarificationRequestPayload": {
         "additionalProperties": false,
         "properties": {
@@ -2223,6 +2645,461 @@
         "title": "CurrentExecutionRef",
         "type": "object"
       },
+      "DeliveryManifestPayload": {
+        "additionalProperties": false,
+        "description": "Immutable hashed subject — manifestHash itself is not part of the hash input.",
+        "properties": {
+          "assignmentVersion": {
+            "minimum": 1.0,
+            "title": "Assignmentversion",
+            "type": "integer"
+          },
+          "baselineHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Baselinehash",
+            "type": "string"
+          },
+          "checks": {
+            "items": {
+              "$ref": "#/components/schemas/ManifestCheckEntry"
+            },
+            "maxItems": 64,
+            "title": "Checks",
+            "type": "array"
+          },
+          "contractHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Contracthash",
+            "type": "string"
+          },
+          "environmentFingerprint": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Environmentfingerprint",
+            "type": "string"
+          },
+          "gatePolicyVersion": {
+            "minimum": 1.0,
+            "title": "Gatepolicyversion",
+            "type": "integer"
+          },
+          "integrationPolicyHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Integrationpolicyhash",
+            "type": "string"
+          },
+          "integrationVersion": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Integrationversion",
+            "type": "string"
+          },
+          "knownRisks": {
+            "items": {
+              "$ref": "#/components/schemas/ManifestRisk"
+            },
+            "maxItems": 32,
+            "title": "Knownrisks",
+            "type": "array"
+          },
+          "manifestRevision": {
+            "minimum": 1.0,
+            "title": "Manifestrevision",
+            "type": "integer"
+          },
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/ManifestMember"
+            },
+            "maxItems": 128,
+            "title": "Members",
+            "type": "array"
+          },
+          "planVersion": {
+            "minimum": 1.0,
+            "title": "Planversion",
+            "type": "integer"
+          },
+          "reviews": {
+            "items": {
+              "$ref": "#/components/schemas/ManifestReviewEntry"
+            },
+            "maxItems": 32,
+            "title": "Reviews",
+            "type": "array"
+          },
+          "runId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Runid",
+            "type": "string"
+          },
+          "schemaVersion": {
+            "const": "1",
+            "default": "1",
+            "title": "Schemaversion",
+            "type": "string"
+          },
+          "selectionHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Selectionhash",
+            "type": "string"
+          },
+          "technicalStatus": {
+            "enum": [
+              "not_started",
+              "building",
+              "conflicted",
+              "checking",
+              "waiting_review",
+              "passed",
+              "failed",
+              "blocked",
+              "unknown"
+            ],
+            "title": "Technicalstatus",
+            "type": "string"
+          },
+          "treeManifestHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Treemanifesthash",
+            "type": "string"
+          },
+          "validationCycleId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Validationcycleid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "runId",
+          "integrationVersion",
+          "validationCycleId",
+          "manifestRevision",
+          "planVersion",
+          "assignmentVersion",
+          "gatePolicyVersion",
+          "selectionHash",
+          "baselineHash",
+          "treeManifestHash",
+          "contractHash",
+          "integrationPolicyHash",
+          "environmentFingerprint",
+          "technicalStatus"
+        ],
+        "title": "DeliveryManifestPayload",
+        "type": "object"
+      },
+      "DeliveryManifestView": {
+        "additionalProperties": false,
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "cycleId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Cycleid",
+            "type": "string"
+          },
+          "etag": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Etag",
+            "type": "string"
+          },
+          "manifestHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Manifesthash",
+            "type": "string"
+          },
+          "manifestId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Manifestid",
+            "type": "string"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/DeliveryManifestPayload"
+          },
+          "revision": {
+            "minimum": 1.0,
+            "title": "Revision",
+            "type": "integer"
+          },
+          "runId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Runid",
+            "type": "string"
+          },
+          "technicalStatus": {
+            "enum": [
+              "not_started",
+              "building",
+              "conflicted",
+              "checking",
+              "waiting_review",
+              "passed",
+              "failed",
+              "blocked",
+              "unknown"
+            ],
+            "title": "Technicalstatus",
+            "type": "string"
+          },
+          "versionId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Versionid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "manifestId",
+          "runId",
+          "versionId",
+          "cycleId",
+          "revision",
+          "manifestHash",
+          "payload",
+          "technicalStatus",
+          "createdAt",
+          "etag"
+        ],
+        "title": "DeliveryManifestView",
+        "type": "object"
+      },
+      "DeliveryOverview": {
+        "additionalProperties": false,
+        "properties": {
+          "acceptanceStatus": {
+            "default": "none",
+            "enum": [
+              "none",
+              "awaiting_acceptance",
+              "accepted",
+              "rejected",
+              "partially_accepted",
+              "invalidated"
+            ],
+            "title": "Acceptancestatus",
+            "type": "string"
+          },
+          "currentIntegrationVersion": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currentintegrationversion"
+          },
+          "currentManifestId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currentmanifestid"
+          },
+          "deliveryRevision": {
+            "minimum": 1.0,
+            "title": "Deliveryrevision",
+            "type": "integer"
+          },
+          "invalidatedReason": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invalidatedreason"
+          },
+          "manifestHash": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manifesthash"
+          },
+          "manifestRevision": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manifestrevision"
+          },
+          "technicalStatus": {
+            "default": "not_started",
+            "enum": [
+              "not_started",
+              "building",
+              "conflicted",
+              "checking",
+              "waiting_review",
+              "passed",
+              "failed",
+              "blocked",
+              "unknown"
+            ],
+            "title": "Technicalstatus",
+            "type": "string"
+          }
+        },
+        "required": [
+          "deliveryRevision"
+        ],
+        "title": "DeliveryOverview",
+        "type": "object"
+      },
+      "DeliveryPointerView": {
+        "additionalProperties": false,
+        "properties": {
+          "acceptanceStatus": {
+            "enum": [
+              "none",
+              "awaiting_acceptance",
+              "accepted",
+              "rejected",
+              "partially_accepted",
+              "invalidated"
+            ],
+            "title": "Acceptancestatus",
+            "type": "string"
+          },
+          "currentManifestId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currentmanifestid"
+          },
+          "currentVersionId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currentversionid"
+          },
+          "deliveryRevision": {
+            "minimum": 1.0,
+            "title": "Deliveryrevision",
+            "type": "integer"
+          },
+          "etag": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Etag",
+            "type": "string"
+          },
+          "invalidatedReason": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invalidatedreason"
+          },
+          "manifestHash": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manifesthash"
+          },
+          "runId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Runid",
+            "type": "string"
+          },
+          "technicalStatus": {
+            "enum": [
+              "not_started",
+              "building",
+              "conflicted",
+              "checking",
+              "waiting_review",
+              "passed",
+              "failed",
+              "blocked",
+              "unknown"
+            ],
+            "title": "Technicalstatus",
+            "type": "string"
+          }
+        },
+        "required": [
+          "runId",
+          "deliveryRevision",
+          "technicalStatus",
+          "acceptanceStatus",
+          "etag"
+        ],
+        "title": "DeliveryPointerView",
+        "type": "object"
+      },
       "DependencyStatus": {
         "additionalProperties": false,
         "properties": {
@@ -2771,6 +3648,108 @@
         "title": "ErrorResponse",
         "type": "object"
       },
+      "ExecutionBindingOverview": {
+        "additionalProperties": false,
+        "properties": {
+          "activeGeneration": {
+            "minimum": 1.0,
+            "title": "Activegeneration",
+            "type": "integer"
+          },
+          "assignmentVersion": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assignmentversion"
+          },
+          "bindingHash": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bindinghash"
+          },
+          "gatePolicyVersion": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gatepolicyversion"
+          },
+          "graphVersion": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Graphversion"
+          },
+          "handoffHash": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Handoffhash"
+          },
+          "handoffRef": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Handoffref"
+          },
+          "planVersion": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Planversion"
+          }
+        },
+        "required": [
+          "activeGeneration"
+        ],
+        "title": "ExecutionBindingOverview",
+        "type": "object"
+      },
       "ExecutionRequest": {
         "additionalProperties": false,
         "description": "Idempotent request to prepare confirmed role instances. Does not approve a plan.\n\nBinding must include planHash + planVersion + assignmentVersion + gatePolicyVersion.\nDoes not start arbitrary stage tasks; D10 release still required for later stages.",
@@ -2803,6 +3782,216 @@
           "gatePolicyVersion"
         ],
         "title": "ExecutionRequest",
+        "type": "object"
+      },
+      "FinalReviewReportView": {
+        "additionalProperties": false,
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "cycleId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Cycleid",
+            "type": "string"
+          },
+          "evidenceRefs": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            "maxItems": 32,
+            "title": "Evidencerefs",
+            "type": "array"
+          },
+          "reportId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Reportid",
+            "type": "string"
+          },
+          "requestId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Requestid",
+            "type": "string"
+          },
+          "reviewerIdentityRef": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Revieweridentityref",
+            "type": "string"
+          },
+          "treeHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Treehash",
+            "type": "string"
+          },
+          "verdict": {
+            "enum": [
+              "approve",
+              "reject",
+              "needs_rework",
+              "abstain"
+            ],
+            "title": "Verdict",
+            "type": "string"
+          },
+          "versionId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Versionid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reportId",
+          "requestId",
+          "cycleId",
+          "versionId",
+          "treeHash",
+          "verdict",
+          "reviewerIdentityRef",
+          "createdAt"
+        ],
+        "title": "FinalReviewReportView",
+        "type": "object"
+      },
+      "FinalReviewRequestView": {
+        "additionalProperties": false,
+        "properties": {
+          "contractHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Contracthash",
+            "type": "string"
+          },
+          "cycleId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Cycleid",
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "title": "Expiresat",
+            "type": "string"
+          },
+          "policyHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Policyhash",
+            "type": "string"
+          },
+          "requestId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Requestid",
+            "type": "string"
+          },
+          "reviewerBinding": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Reviewerbinding",
+            "type": "string"
+          },
+          "selectionHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Selectionhash",
+            "type": "string"
+          },
+          "status": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Status",
+            "type": "string"
+          },
+          "treeHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Treehash",
+            "type": "string"
+          },
+          "versionId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Versionid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "requestId",
+          "cycleId",
+          "versionId",
+          "treeHash",
+          "selectionHash",
+          "contractHash",
+          "policyHash",
+          "reviewerBinding",
+          "expiresAt",
+          "status"
+        ],
+        "title": "FinalReviewRequestView",
+        "type": "object"
+      },
+      "FinalReviewResponseRequest": {
+        "additionalProperties": false,
+        "description": "Trusted reviewer response — ordinary user bearer cannot use this path.",
+        "properties": {
+          "evidenceRefs": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            "maxItems": 32,
+            "title": "Evidencerefs",
+            "type": "array"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 4096,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "responseKey": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Responsekey",
+            "type": "string"
+          },
+          "verdict": {
+            "enum": [
+              "approve",
+              "reject",
+              "needs_rework",
+              "abstain"
+            ],
+            "title": "Verdict",
+            "type": "string"
+          }
+        },
+        "required": [
+          "verdict",
+          "responseKey"
+        ],
+        "title": "FinalReviewResponseRequest",
         "type": "object"
       },
       "FreezeCandidateRequest": {
@@ -3307,6 +4496,510 @@
         "title": "IntegrateRequest",
         "type": "object"
       },
+      "IntegrationBuildRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "idempotencyKey": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Idempotencykey",
+            "type": "string"
+          },
+          "selectionHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Selectionhash",
+            "type": "string"
+          },
+          "selectionId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Selectionid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "selectionId",
+          "selectionHash",
+          "idempotencyKey"
+        ],
+        "title": "IntegrationBuildRequest",
+        "type": "object"
+      },
+      "IntegrationBuildView": {
+        "additionalProperties": false,
+        "properties": {
+          "buildId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Buildid",
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "errorCode": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Errorcode"
+          },
+          "operationId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Operationid",
+            "type": "string"
+          },
+          "resultVersionId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resultversionid"
+          },
+          "runId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Runid",
+            "type": "string"
+          },
+          "selectionId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Selectionid",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "accepted",
+              "running",
+              "succeeded",
+              "conflicted",
+              "failed",
+              "unknown",
+              "needs_reconciliation"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "title": "Updatedat",
+            "type": "string"
+          },
+          "workspaceRef": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workspaceref"
+          }
+        },
+        "required": [
+          "buildId",
+          "runId",
+          "selectionId",
+          "operationId",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ],
+        "title": "IntegrationBuildView",
+        "type": "object"
+      },
+      "IntegrationEvaluation": {
+        "additionalProperties": false,
+        "properties": {
+          "blockerCodes": {
+            "items": {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 32,
+            "title": "Blockercodes",
+            "type": "array"
+          },
+          "cycleId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Cycleid",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "requiredChecksSatisfied": {
+            "minimum": 0.0,
+            "title": "Requiredcheckssatisfied",
+            "type": "integer"
+          },
+          "requiredChecksTotal": {
+            "minimum": 0.0,
+            "title": "Requiredcheckstotal",
+            "type": "integer"
+          },
+          "requiredReviewsSatisfied": {
+            "minimum": 0.0,
+            "title": "Requiredreviewssatisfied",
+            "type": "integer"
+          },
+          "requiredReviewsTotal": {
+            "minimum": 0.0,
+            "title": "Requiredreviewstotal",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "passed",
+              "failed",
+              "blocked",
+              "waiting"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "versionId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Versionid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "cycleId",
+          "versionId",
+          "status",
+          "requiredChecksTotal",
+          "requiredChecksSatisfied",
+          "requiredReviewsTotal",
+          "requiredReviewsSatisfied"
+        ],
+        "title": "IntegrationEvaluation",
+        "type": "object"
+      },
+      "IntegrationPolicySpec": {
+        "additionalProperties": false,
+        "properties": {
+          "checks": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "maxItems": 32,
+            "minItems": 1,
+            "title": "Checks",
+            "type": "array"
+          },
+          "executionMode": {
+            "default": "container",
+            "enum": [
+              "container",
+              "host_authorized"
+            ],
+            "title": "Executionmode",
+            "type": "string"
+          },
+          "policyRef": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Policyref",
+            "type": "string"
+          },
+          "requiredReviewRoles": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            "maxItems": 16,
+            "title": "Requiredreviewroles",
+            "type": "array"
+          }
+        },
+        "required": [
+          "policyRef",
+          "checks"
+        ],
+        "title": "IntegrationPolicySpec",
+        "type": "object"
+      },
+      "IntegrationSelection": {
+        "additionalProperties": false,
+        "properties": {
+          "baselineRef": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Baselineref"
+          },
+          "baselineTreeHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Baselinetreehash",
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "createdBy": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Createdby",
+            "type": "string"
+          },
+          "handoffHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Handoffhash",
+            "type": "string"
+          },
+          "handoffRef": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Handoffref",
+            "type": "string"
+          },
+          "mergePolicyVersion": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Mergepolicyversion",
+            "type": "string"
+          },
+          "runId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Runid",
+            "type": "string"
+          },
+          "selectionHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Selectionhash",
+            "type": "string"
+          },
+          "selectionId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Selectionid",
+            "type": "string"
+          },
+          "sourceBindings": {
+            "items": {
+              "$ref": "#/components/schemas/IntegrationSourceBinding"
+            },
+            "maxItems": 64,
+            "minItems": 1,
+            "title": "Sourcebindings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "selectionId",
+          "runId",
+          "handoffRef",
+          "handoffHash",
+          "baselineTreeHash",
+          "sourceBindings",
+          "mergePolicyVersion",
+          "selectionHash",
+          "createdBy",
+          "createdAt"
+        ],
+        "title": "IntegrationSelection",
+        "type": "object"
+      },
+      "IntegrationSelectionRequest": {
+        "additionalProperties": false,
+        "description": "Fix released handoff inputs — clients cannot invent arbitrary snapshotIds.",
+        "properties": {
+          "handoffHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Handoffhash",
+            "type": "string"
+          },
+          "handoffRef": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Handoffref",
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Idempotencykey",
+            "type": "string"
+          },
+          "mergePolicyRef": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mergepolicyref"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 1024,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "required": [
+          "handoffRef",
+          "handoffHash",
+          "idempotencyKey"
+        ],
+        "title": "IntegrationSelectionRequest",
+        "type": "object"
+      },
+      "IntegrationSourceBinding": {
+        "additionalProperties": false,
+        "properties": {
+          "candidateId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Candidateid"
+          },
+          "contentHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Contenthash",
+            "type": "string"
+          },
+          "releaseId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Releaseid",
+            "type": "string"
+          },
+          "snapshotId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Snapshotid",
+            "type": "string"
+          },
+          "stageId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stageid"
+          },
+          "treeHash": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Treehash"
+          },
+          "workPackageId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workpackageid"
+          }
+        },
+        "required": [
+          "releaseId",
+          "snapshotId",
+          "contentHash"
+        ],
+        "title": "IntegrationSourceBinding",
+        "type": "object"
+      },
       "IntegrationView": {
         "additionalProperties": false,
         "properties": {
@@ -3433,6 +5126,347 @@
           "createdAt"
         ],
         "title": "IntegrationView",
+        "type": "object"
+      },
+      "ManifestCheckEntry": {
+        "additionalProperties": false,
+        "properties": {
+          "checkId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Checkid",
+            "type": "string"
+          },
+          "checkRunId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checkrunid"
+          },
+          "checkVersion": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Checkversion",
+            "type": "string"
+          },
+          "configHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Confighash",
+            "type": "string"
+          },
+          "environmentHash": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Environmenthash"
+          },
+          "inputFingerprint": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inputfingerprint"
+          },
+          "outcome": {
+            "enum": [
+              "passed",
+              "failed",
+              "blocked",
+              "not_run",
+              "unknown",
+              "not_applicable",
+              "skipped",
+              "timeout"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          },
+          "reportHash": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reporthash"
+          },
+          "reportId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reportid"
+          }
+        },
+        "required": [
+          "checkId",
+          "checkVersion",
+          "configHash",
+          "outcome"
+        ],
+        "title": "ManifestCheckEntry",
+        "type": "object"
+      },
+      "ManifestMember": {
+        "additionalProperties": false,
+        "properties": {
+          "applicableCheckIds": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            "maxItems": 32,
+            "title": "Applicablecheckids",
+            "type": "array"
+          },
+          "applicableReviewRequestIds": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            "maxItems": 16,
+            "title": "Applicablereviewrequestids",
+            "type": "array"
+          },
+          "dependsOnMemberIds": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            "maxItems": 32,
+            "title": "Dependsonmemberids",
+            "type": "array"
+          },
+          "kind": {
+            "enum": [
+              "code_tree",
+              "markdown",
+              "pptx",
+              "other_artifact",
+              "diagnostic"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "memberId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Memberid",
+            "type": "string"
+          },
+          "memberTechnicalStatus": {
+            "enum": [
+              "not_started",
+              "building",
+              "conflicted",
+              "checking",
+              "waiting_review",
+              "passed",
+              "failed",
+              "blocked",
+              "unknown"
+            ],
+            "title": "Membertechnicalstatus",
+            "type": "string"
+          },
+          "objectHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Objecthash",
+            "type": "string"
+          },
+          "required": {
+            "title": "Required",
+            "type": "boolean"
+          },
+          "safeRelativePath": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Saferelativepath",
+            "type": "string"
+          },
+          "sourceCandidateRef": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sourcecandidateref"
+          },
+          "sourceReleaseRef": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sourcereleaseref"
+          }
+        },
+        "required": [
+          "memberId",
+          "kind",
+          "required",
+          "safeRelativePath",
+          "objectHash",
+          "memberTechnicalStatus"
+        ],
+        "title": "ManifestMember",
+        "type": "object"
+      },
+      "ManifestReviewEntry": {
+        "additionalProperties": false,
+        "properties": {
+          "bindingFingerprint": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bindingfingerprint"
+          },
+          "reportId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reportid"
+          },
+          "requestId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Requestid",
+            "type": "string"
+          },
+          "reviewerIdentityRef": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revieweridentityref"
+          },
+          "verdict": {
+            "enum": [
+              "approve",
+              "reject",
+              "needs_rework",
+              "abstain",
+              "pending"
+            ],
+            "title": "Verdict",
+            "type": "string"
+          }
+        },
+        "required": [
+          "requestId",
+          "verdict"
+        ],
+        "title": "ManifestReviewEntry",
+        "type": "object"
+      },
+      "ManifestRisk": {
+        "additionalProperties": false,
+        "properties": {
+          "detail": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Detail",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "known_failure",
+              "unsupported",
+              "not_run",
+              "unknown_cost",
+              "manual_step",
+              "other"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "memberIds": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            "maxItems": 32,
+            "title": "Memberids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "kind",
+          "detail"
+        ],
+        "title": "ManifestRisk",
         "type": "object"
       },
       "ManualInstallationRegisterRequest": {
@@ -5007,6 +7041,60 @@
         "title": "OperationStatusResponse",
         "type": "object"
       },
+      "PageCursorResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "bindingRevision": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bindingrevision"
+          },
+          "exactSnapshotMatch": {
+            "title": "Exactsnapshotmatch",
+            "type": "boolean"
+          },
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "maxItems": 100,
+            "title": "Items",
+            "type": "array"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextcursor"
+          },
+          "pageAsOfSequence": {
+            "minimum": 0.0,
+            "title": "Pageasofsequence",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "pageAsOfSequence",
+          "exactSnapshotMatch"
+        ],
+        "title": "PageCursorResponse",
+        "type": "object"
+      },
       "PlanDecisionRequest": {
         "additionalProperties": false,
         "description": "Confirm or reject a concrete confirmation request binding.",
@@ -5469,7 +7557,6 @@
       },
       "PlanSpec": {
         "additionalProperties": false,
-        "description": "Immutable complete plan definition for one planVersion.",
         "properties": {
           "baselineId": {
             "maxLength": 128,
@@ -5516,6 +7603,16 @@
             "maxItems": 64,
             "title": "Inputids",
             "type": "array"
+          },
+          "integrationPolicy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IntegrationPolicySpec"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "resourceEstimate": {
             "anyOf": [
@@ -5875,6 +7972,145 @@
           "accessLevel"
         ],
         "title": "ProfileValidateResponse",
+        "type": "object"
+      },
+      "ProgressSummary": {
+        "additionalProperties": false,
+        "description": "Explicit counters — not a misleading single percentage of Run completion.",
+        "properties": {
+          "acceptanceStatus": {
+            "default": "none",
+            "enum": [
+              "none",
+              "awaiting_acceptance",
+              "accepted",
+              "rejected",
+              "partially_accepted",
+              "invalidated"
+            ],
+            "title": "Acceptancestatus",
+            "type": "string"
+          },
+          "collaborationProgressRatio": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "releasedRequiredPackages/totalRequiredPackages only; 1.0 ≠ Run completed",
+            "title": "Collaborationprogressratio"
+          },
+          "finalChecksFailed": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Finalchecksfailed",
+            "type": "integer"
+          },
+          "finalChecksNotRun": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Finalchecksnotrun",
+            "type": "integer"
+          },
+          "finalChecksPassed": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Finalcheckspassed",
+            "type": "integer"
+          },
+          "finalChecksRequired": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Finalchecksrequired",
+            "type": "integer"
+          },
+          "finalChecksUnknown": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Finalchecksunknown",
+            "type": "integer"
+          },
+          "finalReviewsPassed": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Finalreviewspassed",
+            "type": "integer"
+          },
+          "finalReviewsPending": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Finalreviewspending",
+            "type": "integer"
+          },
+          "finalReviewsRequired": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Finalreviewsrequired",
+            "type": "integer"
+          },
+          "requiredPackagesReleased": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Requiredpackagesreleased",
+            "type": "integer"
+          },
+          "requiredPackagesTotal": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Requiredpackagestotal",
+            "type": "integer"
+          },
+          "workPackagesBlocked": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Workpackagesblocked",
+            "type": "integer"
+          },
+          "workPackagesFailed": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Workpackagesfailed",
+            "type": "integer"
+          },
+          "workPackagesReady": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Workpackagesready",
+            "type": "integer"
+          },
+          "workPackagesReleased": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Workpackagesreleased",
+            "type": "integer"
+          },
+          "workPackagesRunning": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Workpackagesrunning",
+            "type": "integer"
+          },
+          "workPackagesSubmitted": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Workpackagessubmitted",
+            "type": "integer"
+          },
+          "workPackagesTotal": {
+            "minimum": 0.0,
+            "title": "Workpackagestotal",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "workPackagesTotal"
+        ],
+        "title": "ProgressSummary",
         "type": "object"
       },
       "ProjectBaseline": {
@@ -8650,6 +10886,342 @@
         "title": "RunCreateRequest",
         "type": "object"
       },
+      "RunOverview": {
+        "additionalProperties": false,
+        "properties": {
+          "activeGeneration": {
+            "minimum": 1.0,
+            "title": "Activegeneration",
+            "type": "integer"
+          },
+          "assignmentVersion": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assignmentversion"
+          },
+          "baselineId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Baselineid"
+          },
+          "budget": {
+            "$ref": "#/components/schemas/BudgetLimits"
+          },
+          "cancelRequestedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelrequestedat"
+          },
+          "collaborationReadyAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Collaborationreadyat"
+          },
+          "collaborationState": {
+            "anyOf": [
+              {
+                "enum": [
+                  "idle",
+                  "running",
+                  "waiting",
+                  "ready_for_integration",
+                  "blocked"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Collaborationstate"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "executionProfile": {
+            "enum": [
+              "container",
+              "host_authorized"
+            ],
+            "title": "Executionprofile",
+            "type": "string"
+          },
+          "failurePolicy": {
+            "enum": [
+              "dependency-aware",
+              "layer-atomic"
+            ],
+            "title": "Failurepolicy",
+            "type": "string"
+          },
+          "gatePolicyVersion": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gatepolicyversion"
+          },
+          "goal": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Goal",
+            "type": "string"
+          },
+          "id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Id",
+            "type": "string"
+          },
+          "inputRefs": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            },
+            "maxItems": 64,
+            "title": "Inputrefs",
+            "type": "array"
+          },
+          "mode": {
+            "enum": [
+              "auto",
+              "single",
+              "team"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "outputs": {
+            "items": {
+              "enum": [
+                "code",
+                "markdown",
+                "pptx"
+              ],
+              "type": "string"
+            },
+            "maxItems": 8,
+            "title": "Outputs",
+            "type": "array"
+          },
+          "planVersion": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Planversion"
+          },
+          "planningProviderProfileId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Planningproviderprofileid"
+          },
+          "projectId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Projectid",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "preflight",
+              "routing",
+              "planning",
+              "awaiting_approval",
+              "awaiting_confirmation",
+              "preparing",
+              "running",
+              "awaiting_acceptance",
+              "completed",
+              "pause_requested",
+              "paused",
+              "blocked",
+              "cancel_requested",
+              "canceled",
+              "failed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "statusVersion": {
+            "minimum": 1.0,
+            "title": "Statusversion",
+            "type": "integer"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "title": "Updatedat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "goal",
+          "mode",
+          "status",
+          "statusVersion",
+          "activeGeneration",
+          "executionProfile",
+          "failurePolicy",
+          "budget",
+          "createdAt",
+          "updatedAt"
+        ],
+        "title": "RunOverview",
+        "type": "object"
+      },
+      "RunSnapshot": {
+        "additionalProperties": false,
+        "description": "Single-transaction bounded snapshot — not a dump of ORM graphs.",
+        "properties": {
+          "agentCounts": {
+            "$ref": "#/components/schemas/AgentCounts"
+          },
+          "binding": {
+            "$ref": "#/components/schemas/ExecutionBindingOverview"
+          },
+          "currentDelivery": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DeliveryOverview"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "inventoryRevision": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inventoryrevision"
+          },
+          "latestEventId": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9._:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latesteventid"
+          },
+          "latestSequence": {
+            "minimum": 0.0,
+            "title": "Latestsequence",
+            "type": "integer"
+          },
+          "progress": {
+            "$ref": "#/components/schemas/ProgressSummary"
+          },
+          "replayFloorSequence": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Replayfloorsequence",
+            "type": "integer"
+          },
+          "run": {
+            "$ref": "#/components/schemas/RunOverview"
+          },
+          "schemaVersion": {
+            "const": "1",
+            "default": "1",
+            "title": "Schemaversion",
+            "type": "string"
+          },
+          "snapshotToken": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Snapshottoken",
+            "type": "string"
+          },
+          "stageSummary": {
+            "$ref": "#/components/schemas/StageSummary"
+          },
+          "waitSummary": {
+            "$ref": "#/components/schemas/WaitSummary"
+          }
+        },
+        "required": [
+          "run",
+          "binding",
+          "agentCounts",
+          "stageSummary",
+          "progress",
+          "waitSummary",
+          "latestSequence",
+          "snapshotToken"
+        ],
+        "title": "RunSnapshot",
+        "type": "object"
+      },
       "RunSnapshotResponse": {
         "additionalProperties": false,
         "properties": {
@@ -9962,6 +12534,63 @@
         "title": "StageSubmissionRequest",
         "type": "object"
       },
+      "StageSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "blocked": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Blocked",
+            "type": "integer"
+          },
+          "executing": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Executing",
+            "type": "integer"
+          },
+          "failed": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Failed",
+            "type": "integer"
+          },
+          "pending": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Pending",
+            "type": "integer"
+          },
+          "released": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Released",
+            "type": "integer"
+          },
+          "reviewing": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Reviewing",
+            "type": "integer"
+          },
+          "rework": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Rework",
+            "type": "integer"
+          },
+          "total": {
+            "minimum": 0.0,
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total"
+        ],
+        "title": "StageSummary",
+        "type": "object"
+      },
       "StageUserDecisionRequest": {
         "additionalProperties": false,
         "properties": {
@@ -10295,6 +12924,104 @@
         "title": "TrustPolicy",
         "type": "object"
       },
+      "ValidationCycleRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "idempotencyKey": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Idempotencykey",
+            "type": "string"
+          },
+          "policyRef": {
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Policyref",
+            "type": "string"
+          }
+        },
+        "required": [
+          "policyRef",
+          "idempotencyKey"
+        ],
+        "title": "ValidationCycleRequest",
+        "type": "object"
+      },
+      "ValidationCycleView": {
+        "additionalProperties": false,
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "cycleId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Cycleid",
+            "type": "string"
+          },
+          "environmentFingerprint": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Environmentfingerprint",
+            "type": "string"
+          },
+          "policyHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Policyhash",
+            "type": "string"
+          },
+          "requiredChecks": {
+            "items": {
+              "$ref": "#/components/schemas/CheckPolicyItem"
+            },
+            "maxItems": 64,
+            "title": "Requiredchecks",
+            "type": "array"
+          },
+          "requiredReviewRoles": {
+            "items": {
+              "maxLength": 512,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 16,
+            "title": "Requiredreviewroles",
+            "type": "array"
+          },
+          "status": {
+            "enum": [
+              "open",
+              "checking",
+              "awaiting_review",
+              "passed",
+              "failed",
+              "blocked",
+              "superseded"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "versionId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "title": "Versionid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "cycleId",
+          "versionId",
+          "policyHash",
+          "environmentFingerprint",
+          "status",
+          "createdAt"
+        ],
+        "title": "ValidationCycleView",
+        "type": "object"
+      },
       "ValidationReportView": {
         "additionalProperties": false,
         "properties": {
@@ -10457,6 +13184,29 @@
           "validatorId"
         ],
         "title": "VerifyCandidateRequest",
+        "type": "object"
+      },
+      "WaitSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "byReason": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "maxProperties": 32,
+            "title": "Byreason",
+            "type": "object"
+          },
+          "openCount": {
+            "minimum": 0.0,
+            "title": "Opencount",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "openCount"
+        ],
+        "title": "WaitSummary",
         "type": "object"
       },
       "WorkPackage": {
@@ -11239,6 +13989,140 @@
           }
         ],
         "summary": "Create And Validate Profile",
+        "tags": [
+          "discovery"
+        ]
+      }
+    },
+    "/api/v1/agents/summary": {
+      "get": {
+        "description": "Inventory counts with inventoryRevision — independent of Run.sequence.",
+        "operationId": "agents_summary_api_v1_agents_summary_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "environmentId",
+            "required": false,
+            "schema": {
+              "default": "local",
+              "title": "Environmentid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "runId",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Runid"
+            }
+          },
+          {
+            "in": "query",
+            "name": "requiredCapability",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Requiredcapability"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentSummaryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Agents Summary",
         "tags": [
           "discovery"
         ]
@@ -13478,6 +16362,319 @@
         "summary": "Health"
       }
     },
+    "/api/v1/integration-builds/{build_id}/reconcile": {
+      "post": {
+        "operationId": "reconcile_build_api_v1_integration_builds__build_id__reconcile_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "build_id",
+            "required": true,
+            "schema": {
+              "title": "Build Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationBuildView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Reconcile Build",
+        "tags": [
+          "integrations"
+        ]
+      }
+    },
+    "/api/v1/integration-review-requests/{request_id}/responses": {
+      "post": {
+        "description": "Trusted reviewer response — ordinary user bearer cannot satisfy ticket check.",
+        "operationId": "submit_final_review_api_api_v1_integration_review_requests__request_id__responses_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinalReviewResponseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinalReviewReportView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Submit Final Review Api",
+        "tags": [
+          "integrations"
+        ]
+      }
+    },
+    "/api/v1/integration-versions/{version_id}/validation-cycles": {
+      "post": {
+        "description": "Open a validation cycle from a confirmed policy — clients cannot pass outcomes.",
+        "operationId": "open_validation_cycle_api_api_v1_integration_versions__version_id__validation_cycles_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "version_id",
+            "required": true,
+            "schema": {
+              "title": "Version Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidationCycleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationCycleView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Open Validation Cycle Api",
+        "tags": [
+          "integrations"
+        ]
+      }
+    },
     "/api/v1/internal/agent-messages": {
       "post": {
         "operationId": "agent_message_api_v1_internal_agent_messages_post",
@@ -13692,6 +16889,128 @@
         "summary": "Ingest Native Event",
         "tags": [
           "instances"
+        ]
+      }
+    },
+    "/api/v1/logs/{log_id}": {
+      "get": {
+        "operationId": "get_log_slice_api_v1_logs__log_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "log_id",
+            "required": true,
+            "schema": {
+              "title": "Log Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 4096,
+              "maximum": 65536,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Log Slice Api V1 Logs  Log Id  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Log Slice",
+        "tags": [
+          "logs"
         ]
       }
     },
@@ -16449,6 +19768,211 @@
         ]
       }
     },
+    "/api/v1/runs/{run_id}/acceptance": {
+      "post": {
+        "description": "User acceptance — ordinary bearer only; integration-review tickets cannot call this.",
+        "operationId": "post_acceptance_api_v1_runs__run_id__acceptance_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptanceDecisionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptanceResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Post Acceptance",
+        "tags": [
+          "delivery"
+        ]
+      }
+    },
+    "/api/v1/runs/{run_id}/acceptance-decisions": {
+      "get": {
+        "operationId": "get_acceptance_history_api_v1_runs__run_id__acceptance_decisions_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptanceDecisionListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Acceptance History",
+        "tags": [
+          "delivery"
+        ]
+      }
+    },
     "/api/v1/runs/{run_id}/actions": {
       "post": {
         "operationId": "run_action_api_v1_runs__run_id__actions_post",
@@ -16663,6 +20187,307 @@
         ]
       }
     },
+    "/api/v1/runs/{run_id}/delivery": {
+      "get": {
+        "operationId": "get_delivery_api_v1_runs__run_id__delivery_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeliveryPointerView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Delivery",
+        "tags": [
+          "delivery"
+        ]
+      }
+    },
+    "/api/v1/runs/{run_id}/delivery-manifests": {
+      "post": {
+        "description": "Publish immutable manifest for current version+cycle query params.",
+        "operationId": "publish_delivery_manifest_api_v1_runs__run_id__delivery_manifests_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeliveryManifestView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Publish Delivery Manifest",
+        "tags": [
+          "delivery"
+        ]
+      }
+    },
+    "/api/v1/runs/{run_id}/delivery-manifests/{manifest_hash}": {
+      "get": {
+        "operationId": "get_manifest_api_v1_runs__run_id__delivery_manifests__manifest_hash__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "manifest_hash",
+            "required": true,
+            "schema": {
+              "title": "Manifest Hash",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeliveryManifestView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Manifest",
+        "tags": [
+          "delivery"
+        ]
+      }
+    },
     "/api/v1/runs/{run_id}/driver": {
       "get": {
         "operationId": "get_run_driver_api_v1_runs__run_id__driver_get",
@@ -16757,6 +20582,146 @@
         "summary": "Get Run Driver",
         "tags": [
           "collaboration"
+        ]
+      }
+    },
+    "/api/v1/runs/{run_id}/events": {
+      "get": {
+        "description": "SSE stream — does not start the Run. Requires snapshot cursor on first connect.",
+        "operationId": "stream_run_events_api_v1_runs__run_id__events_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "afterSequence",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Aftersequence"
+            }
+          },
+          {
+            "in": "query",
+            "name": "maxBatch",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Maxbatch",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Last-Event-ID",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Last-Event-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Stream Run Events",
+        "tags": [
+          "events"
         ]
       }
     },
@@ -16895,6 +20860,56 @@
               "title": "Run Id",
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 100,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Limit"
+            }
+          },
+          {
+            "in": "query",
+            "name": "snapshotToken",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Snapshottoken"
+            }
           }
         ],
         "responses": {
@@ -16902,7 +20917,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AgentInstanceListResponse"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/AgentInstanceListResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/PageCursorResponse"
+                    }
+                  ],
+                  "title": "Response List Instances Api V1 Runs  Run Id  Instances Get"
                 }
               }
             },
@@ -16980,9 +21003,116 @@
         ]
       }
     },
-    "/api/v1/runs/{run_id}/messages": {
+    "/api/v1/runs/{run_id}/integration-selections": {
+      "post": {
+        "operationId": "post_integration_selection_api_v1_runs__run_id__integration_selections_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IntegrationSelectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationSelection"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Post Integration Selection",
+        "tags": [
+          "integrations"
+        ]
+      }
+    },
+    "/api/v1/runs/{run_id}/integrations": {
       "get": {
-        "operationId": "list_messages_api_v1_runs__run_id__messages_get",
+        "operationId": "list_integration_builds_api_v1_runs__run_id__integrations_get",
         "parameters": [
           {
             "in": "path",
@@ -16999,7 +21129,272 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MessageListResponse"
+                  "items": {
+                    "$ref": "#/components/schemas/IntegrationBuildView"
+                  },
+                  "title": "Response List Integration Builds Api V1 Runs  Run Id  Integrations Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Integration Builds",
+        "tags": [
+          "integrations"
+        ]
+      },
+      "post": {
+        "description": "Accept integration build intent — does not claim already integrated/passed.",
+        "operationId": "post_integration_build_api_v1_runs__run_id__integrations_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IntegrationBuildRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationBuildView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Post Integration Build",
+        "tags": [
+          "integrations"
+        ]
+      }
+    },
+    "/api/v1/runs/{run_id}/messages": {
+      "get": {
+        "operationId": "list_messages_api_v1_runs__run_id__messages_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 100,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Limit"
+            }
+          },
+          {
+            "in": "query",
+            "name": "snapshotToken",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Snapshottoken"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/MessageListResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/PageCursorResponse"
+                    }
+                  ],
+                  "title": "Response List Messages Api V1 Runs  Run Id  Messages Get"
                 }
               }
             },
@@ -17807,9 +22202,10 @@
         ]
       }
     },
-    "/api/v1/runs/{run_id}/stages": {
+    "/api/v1/runs/{run_id}/snapshot": {
       "get": {
-        "operationId": "list_stages_api_v1_runs__run_id__stages_get",
+        "description": "Consistent bounded snapshot (REPEATABLE READ) for SSE bootstrap / UI.",
+        "operationId": "get_run_snapshot_api_v1_runs__run_id__snapshot_get",
         "parameters": [
           {
             "in": "path",
@@ -17826,7 +22222,162 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/StageListResponse"
+                  "$ref": "#/components/schemas/RunSnapshot"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Run Snapshot",
+        "tags": [
+          "runs"
+        ]
+      }
+    },
+    "/api/v1/runs/{run_id}/stages": {
+      "get": {
+        "operationId": "list_stages_api_v1_runs__run_id__stages_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 100,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Limit"
+            }
+          },
+          {
+            "in": "query",
+            "name": "snapshotToken",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Snapshottoken"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/StageListResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/PageCursorResponse"
+                    }
+                  ],
+                  "title": "Response List Stages Api V1 Runs  Run Id  Stages Get"
                 }
               }
             },
@@ -18812,6 +23363,202 @@
         "summary": "User Decision",
         "tags": [
           "stages"
+        ]
+      }
+    },
+    "/api/v1/validation-cycles/{cycle_id}/evaluate": {
+      "post": {
+        "description": "Technical evaluation from server-assembled facts — clients cannot pass outcomes.",
+        "operationId": "evaluate_cycle_api_api_v1_validation_cycles__cycle_id__evaluate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cycle_id",
+            "required": true,
+            "schema": {
+              "title": "Cycle Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationEvaluation"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Evaluate Cycle Api",
+        "tags": [
+          "integrations"
+        ]
+      }
+    },
+    "/api/v1/validation-cycles/{cycle_id}/final-reviews": {
+      "post": {
+        "description": "Open a final review for the reviewer instance named in X-Reviewer-Instance-Id.\n\nHeader alone does not grant identity — open binds the current assignment;\nresponses still require an integration-review ticket.",
+        "operationId": "open_final_review_api_api_v1_validation_cycles__cycle_id__final_reviews_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cycle_id",
+            "required": true,
+            "schema": {
+              "title": "Cycle Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinalReviewRequestView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Open Final Review Api",
+        "tags": [
+          "integrations"
         ]
       }
     }

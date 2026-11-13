@@ -42,7 +42,5 @@ def get_log_slice(
             principal=_principal(request),
         )
     except LogQueryError as exc:
-        status = {"not_found": 404, "unauthorized": 401, "forbidden": 403}.get(
-            exc.code, 400
-        )
+        status = {"not_found": 404, "unauthorized": 401, "forbidden": 403}.get(exc.code, 400)
         raise HTTPException(status, f"{exc.code}: {exc.message}") from exc

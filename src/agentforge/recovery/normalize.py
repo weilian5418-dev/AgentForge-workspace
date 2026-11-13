@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, cast
 
 from agentforge.contracts.recovery import (
+    HandoffRequiredResult,
     NativeObservation,
     ObservationSupport,
     ResumeCoordinatorResult,
@@ -13,7 +14,6 @@ from agentforge.contracts.recovery import (
     ResumeFailedResult,
     ResumeUnknownResult,
     ResumeUnsupportedResult,
-    HandoffRequiredResult,
 )
 
 
@@ -24,7 +24,7 @@ def _now() -> datetime:
 def _support(raw: dict[str, Any]) -> ObservationSupport:
     value = raw.get("support") or raw.get("status") or "unknown"
     if value in {"supported", "unsupported", "partial", "unknown"}:
-        return value  # type: ignore[return-value]
+        return cast(ObservationSupport, value)
     if value in {"ok", "confirmed", "succeeded"}:
         return "supported"
     if value in {"failed"}:
@@ -72,9 +72,7 @@ def normalize_native_observation(
             or native_session_id,
             "instanceId": instance_id,
             "attemptId": attempt_id or raw.get("attemptId") or raw.get("attempt_id"),
-            "generation": generation
-            if generation is not None
-            else raw.get("generation"),
+            "generation": generation if generation is not None else raw.get("generation"),
             "workspaceId": observed_ws or workspace_id,
             "actualCwd": raw.get("actualCwd") or raw.get("actual_cwd") or raw.get("cwd"),
             "running": running if isinstance(running, bool) else None,

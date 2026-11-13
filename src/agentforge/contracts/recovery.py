@@ -163,9 +163,7 @@ class RecoveryRecommendation(ContractModel):
     """Pure policy output — does not mutate Run or call adapters."""
 
     action: RecoveryAction
-    reason_codes: list[RecoveryBlockerCode | ShortText] = Field(
-        default_factory=list, max_length=16
-    )
+    reason_codes: list[RecoveryBlockerCode | ShortText] = Field(default_factory=list, max_length=16)
     required_evidence: list[ShortText] = Field(default_factory=list, max_length=32)
     requires_user_decision: bool = Field(strict=True)
     detail: ShortText | None = None
@@ -255,9 +253,7 @@ class ResumeExistingResult(ContractModel):
 
 class HandoffRequiredResult(ContractModel):
     kind: Literal["handoff_required"] = "handoff_required"
-    reason_codes: list[RecoveryBlockerCode | ShortText] = Field(
-        default_factory=list, max_length=16
-    )
+    reason_codes: list[RecoveryBlockerCode | ShortText] = Field(default_factory=list, max_length=16)
     detail: ShortText | None = None
 
 

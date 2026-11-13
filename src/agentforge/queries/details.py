@@ -39,9 +39,7 @@ def list_run_details(
     if snapshot_token and settings is not None:
         from agentforge.queries.snapshots import validate_snapshot_binding
 
-        claims = validate_snapshot_binding(
-            settings, snapshot_token, run_id=run_id
-        )
+        claims = validate_snapshot_binding(settings, snapshot_token, run_id=run_id)
         if int(claims.get("statusVersion") or 0) != int(run.status_version):
             raise SnapshotError("snapshot_stale", "run statusVersion changed since snapshot")
 
@@ -87,54 +85,52 @@ def list_run_details(
             last = page[-1]
             next_key = {"createdAt": last.created_at.isoformat(), "id": last.id}
     elif resource == "stages":
-        stmt = (
-            select(StageRow)
-            .where(StageRow.run_id == run_id)
-            .order_by(StageRow.id.asc())
-        )
-        rows = list(session.scalars(stmt).all())
+        stages_stmt = select(StageRow).where(StageRow.run_id == run_id).order_by(StageRow.id.asc())
+        stage_rows = list(session.scalars(stages_stmt).all())
         if after_key:
-            rows = [r for r in rows if r.id > str(after_key.get("id", ""))]
-        page = rows[:limit]
+            stage_rows = [
+                stages_row
+                for stages_row in stage_rows
+                if stages_row.id > str(after_key.get("id", ""))
+            ]
+        stage_page = stage_rows[:limit]
         items = [
             {
-                "stageId": r.id,
-                "status": r.status,
-                "waitingReason": r.waiting_reason,
-                "planVersion": r.plan_version,
+                "stageId": stages_row.id,
+                "status": stages_row.status,
+                "waitingReason": stages_row.waiting_reason,
+                "planVersion": stages_row.plan_version,
             }
-            for r in page
+            for stages_row in stage_page
         ]
-        if len(page) == limit:
-            next_key = {"id": page[-1].id}
+        if len(stage_page) == limit:
+            next_key = {"id": stage_page[-1].id}
     elif resource == "messages":
-        stmt = (
+        messages_stmt = (
             select(CollaborationMessageRow)
             .where(CollaborationMessageRow.run_id == run_id)
-            .order_by(
-                CollaborationMessageRow.created_at.asc(), CollaborationMessageRow.id.asc()
-            )
+            .order_by(CollaborationMessageRow.created_at.asc(), CollaborationMessageRow.id.asc())
         )
-        rows = list(session.scalars(stmt).all())
+        message_rows = list(session.scalars(messages_stmt).all())
         if after_key:
-            rows = [
-                r
-                for r in rows
-                if (r.created_at.isoformat(), r.id)
+            message_rows = [
+                messages_row
+                for messages_row in message_rows
+                if (messages_row.created_at.isoformat(), messages_row.id)
                 > (after_key.get("createdAt", ""), after_key.get("id", ""))
             ]
-        page = rows[:limit]
+        message_page = message_rows[:limit]
         items = [
             {
-                "messageId": r.id,
-                "messageType": r.message_type,
-                "createdAt": r.created_at.isoformat(),
+                "messageId": messages_row.id,
+                "messageType": messages_row.message_type,
+                "createdAt": messages_row.created_at.isoformat(),
             }
-            for r in page
+            for messages_row in message_page
         ]
-        if len(page) == limit:
-            last = page[-1]
-            next_key = {"createdAt": last.created_at.isoformat(), "id": last.id}
+        if len(message_page) == limit:
+            message_last = message_page[-1]
+            next_key = {"createdAt": message_last.created_at.isoformat(), "id": message_last.id}
     else:
         raise SnapshotError("invalid_request", f"unknown resource {resource}")
 

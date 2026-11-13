@@ -110,9 +110,7 @@ def test_fenced_saver_delegates_get_next_version() -> None:
     conn = MagicMock()
     delegate = MagicMock()
     delegate.get_next_version.return_value = "1.0"
-    fence = LeaseFence(
-        run_id="run_1", owner="o", token="t", lease_generation=1
-    )
+    fence = LeaseFence(run_id="run_1", owner="o", token="t", lease_generation=1)
     saver = FencedPostgresSaver(conn, fence, delegate=delegate)
     assert saver.get_next_version(None, None) == "1.0"
     assert saver.serde is delegate.serde

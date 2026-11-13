@@ -18,6 +18,17 @@ from agentforge.contracts.agents import (
     RoleAssignmentsResponse,
     RoleSpec,
 )
+from agentforge.contracts.artifacts import (
+    AcceptanceRequest,
+    AcceptanceResponse,
+    ArtifactContract,
+    ArtifactListResponse,
+    ArtifactRef,
+    ArtifactVersionInfo,
+    DeliveryManifest,
+    WorkPackage,
+)
+from agentforge.contracts.base import ApiInputModel, ContractModel
 from agentforge.contracts.collaboration import (
     DriverResult,
     DriverStatusResponse,
@@ -32,6 +43,7 @@ from agentforge.contracts.collaboration import (
     SchedulerOperation,
     WakeSignal,
 )
+from agentforge.contracts.common import SCHEMA_VERSION
 from agentforge.contracts.delivery import (
     AcceptanceDecisionRequest,
     AcceptanceResult,
@@ -39,49 +51,13 @@ from agentforge.contracts.delivery import (
     DeliveryManifestView,
     DeliveryPointerView,
 )
+from agentforge.contracts.errors import ErrorCode, ErrorDetail, ErrorResponse, build_error
 from agentforge.contracts.event_stream import (
     EventBatch,
     PublicEventEnvelope,
     ResolvedCursor,
     SseControlFrame,
 )
-from agentforge.contracts.integrations import (
-    CheckPolicy,
-    FinalReviewResponseRequest,
-    IntegrationEvaluation,
-    IntegrationSelection,
-    IntegrationSelectionRequest,
-    IntegrationVersionView,
-    ValidationCycleRequest,
-)
-from agentforge.contracts.recovery import (
-    HandoffManifest,
-    RecoveryCase,
-    RecoveryCaseListResponse,
-    RecoveryDecision,
-    RecoveryDecisionRequest,
-    RecoveryObservation,
-    RecoveryRecommendation,
-    RecoveryReport,
-)
-from agentforge.contracts.snapshots import (
-    AgentCounts,
-    AgentSummaryResponse,
-    RunSnapshot,
-)
-from agentforge.contracts.artifacts import (
-    AcceptanceRequest,
-    AcceptanceResponse,
-    ArtifactContract,
-    ArtifactListResponse,
-    ArtifactRef,
-    ArtifactVersionInfo,
-    DeliveryManifest,
-    WorkPackage,
-)
-from agentforge.contracts.base import ApiInputModel, ContractModel
-from agentforge.contracts.common import SCHEMA_VERSION
-from agentforge.contracts.errors import ErrorCode, ErrorDetail, ErrorResponse, build_error
 from agentforge.contracts.events import EventEnvelope, EventType, parse_event_payload
 from agentforge.contracts.grants import (
     DirectoryGrant,
@@ -92,6 +68,15 @@ from agentforge.contracts.grants import (
     ProjectBaseline,
     ProjectInputRecord,
     TrustPolicy,
+)
+from agentforge.contracts.integrations import (
+    CheckPolicy,
+    FinalReviewResponseRequest,
+    IntegrationEvaluation,
+    IntegrationSelection,
+    IntegrationSelectionRequest,
+    IntegrationVersionView,
+    ValidationCycleRequest,
 )
 from agentforge.contracts.messages import (
     CollaborationMessage,
@@ -150,6 +135,16 @@ from agentforge.contracts.providers import (
     SettlementRecord,
     UsageRecord,
 )
+from agentforge.contracts.recovery import (
+    HandoffManifest,
+    RecoveryCase,
+    RecoveryCaseListResponse,
+    RecoveryDecision,
+    RecoveryDecisionRequest,
+    RecoveryObservation,
+    RecoveryRecommendation,
+    RecoveryReport,
+)
 from agentforge.contracts.runs import (
     OperationAccepted,
     OperationStatusResponse,
@@ -158,6 +153,11 @@ from agentforge.contracts.runs import (
     RunCreateRequest,
     RunListResponse,
     RunSnapshotResponse,
+)
+from agentforge.contracts.snapshots import (
+    AgentCounts,
+    AgentSummaryResponse,
+    RunSnapshot,
 )
 from agentforge.contracts.stages import (
     CandidateSet,

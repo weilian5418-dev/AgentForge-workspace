@@ -72,9 +72,7 @@ def test_product_count_dedupes_installations() -> None:
 def test_stale_capability_not_schedulable() -> None:
     now = datetime(2026, 11, 12, 12, 0, tzinfo=UTC)
     profile = _profile()
-    installation = MagicMock(
-        id="inst_1", environment_id="local", product_version="1.0.0"
-    )
+    installation = MagicMock(id="inst_1", environment_id="local", product_version="1.0.0")
     check = _check(checked_at=now - timedelta(hours=48))
     session = MagicMock()
     session.get.side_effect = lambda model, key: {  # noqa: ARG005
@@ -82,9 +80,7 @@ def test_stale_capability_not_schedulable() -> None:
         "check_1": check,
     }.get(key)
 
-    expl = explain_profile_schedulability(
-        session, profile, {"edit"}, as_of=now
-    )
+    expl = explain_profile_schedulability(session, profile, {"edit"}, as_of=now)
     assert expl.category == "not_schedulable"
     assert "capability_stale" in expl.reasons
 
@@ -92,9 +88,7 @@ def test_stale_capability_not_schedulable() -> None:
 def test_verified_but_busy_separate_from_schedulable() -> None:
     now = datetime(2026, 11, 12, 12, 0, tzinfo=UTC)
     profile = _profile()
-    installation = MagicMock(
-        id="inst_1", environment_id="local", product_version="1.0.0"
-    )
+    installation = MagicMock(id="inst_1", environment_id="local", product_version="1.0.0")
     check = _check()
     session = MagicMock()
     session.get.side_effect = lambda model, key: {  # noqa: ARG005

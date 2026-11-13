@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+from pydantic import ValidationError
 
 from agentforge.contracts.delivery import DeliveryManifestPayload
 from agentforge.delivery.manifest import canonical_manifest_bytes, compute_manifest_hash
@@ -84,11 +85,7 @@ def test_unordered_members_same_hash() -> None:
 def test_risk_change_changes_hash() -> None:
     base = compute_manifest_hash(_payload())
     changed = compute_manifest_hash(
-        _payload(
-            knownRisks=[
-                {"kind": "manual_step", "detail": "needs_human", "memberIds": []}
-            ]
-        )
+        _payload(knownRisks=[{"kind": "manual_step", "detail": "needs_human", "memberIds": []}])
     )
     assert base != changed
 
@@ -112,18 +109,21 @@ def test_check_outcome_change_changes_hash() -> None:
 
 
 def test_empty_members_cannot_be_passed() -> None:
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         _payload(members=[], technicalStatus="passed")
 
 
 def test_empty_checks_cannot_be_passed() -> None:
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         _payload(checks=[], technicalStatus="passed")
 
 
 def test_blocked_empty_is_allowed() -> None:
-    p = _payload(members=[], checks=[], technicalStatus="blocked", knownRisks=[
-        {"kind": "not_run", "detail": "incomplete", "memberIds": []}
-    ])
+    p = _payload(
+        members=[],
+        checks=[],
+        technicalStatus="blocked",
+        knownRisks=[{"kind": "not_run", "detail": "incomplete", "memberIds": []}],
+    )
     assert p.technical_status == "blocked"
     assert compute_manifest_hash(p)

@@ -92,9 +92,7 @@ def test_platform_pipeline_failed_iv_blocks_accept_semantics() -> None:
                 }
             ],
             "reviews": [],
-            "knownRisks": [
-                {"kind": "known_failure", "detail": "pytest_failed", "memberIds": []}
-            ],
+            "knownRisks": [{"kind": "known_failure", "detail": "pytest_failed", "memberIds": []}],
             "technicalStatus": "failed",
         }
     )

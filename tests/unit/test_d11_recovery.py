@@ -193,8 +193,9 @@ def test_open_case_writes_outbox_without_adapter_io() -> None:
     )
     session.get.return_value = run
 
-    with patch("agentforge.recovery.service.append_fact"), patch(
-        "agentforge.recovery.service.db_now", side_effect=Exception("no sql")
+    with (
+        patch("agentforge.recovery.service.append_fact"),
+        patch("agentforge.recovery.service.db_now", side_effect=Exception("no sql")),
     ):
         case = RecoveryService(session).open_case(
             "run_1", reason="unknown_attempt", request_operation_id="sop_1"

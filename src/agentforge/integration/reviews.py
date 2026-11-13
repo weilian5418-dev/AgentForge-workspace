@@ -50,8 +50,8 @@ def _now(session: Session) -> datetime:
     try:
         value = db_now(session)
         if getattr(value, "tzinfo", None) is None:
-            return value.replace(tzinfo=UTC)  # type: ignore[union-attr]
-        return value  # type: ignore[return-value]
+            return value.replace(tzinfo=UTC)
+        return value
     except Exception:
         return datetime.now(UTC)
 
@@ -158,6 +158,8 @@ def evaluate_integration_facts(facts: IntegrationFacts) -> IntegrationEvaluation
             and rep.get("policyHash") == facts.policy_hash
             and rep.get("environmentHash") == facts.environment_fingerprint
             and rep.get("versionId") == facts.version_id
+            and rep.get("configHash") == item.get("configHash")
+            and rep.get("checkVersion") == item.get("checkVersion")
         ):
             satisfied_checks += 1
         elif rep is not None and (
@@ -165,6 +167,8 @@ def evaluate_integration_facts(facts: IntegrationFacts) -> IntegrationEvaluation
             or rep.get("policyHash") != facts.policy_hash
             or rep.get("environmentHash") != facts.environment_fingerprint
             or rep.get("versionId") != facts.version_id
+            or rep.get("configHash") != item.get("configHash")
+            or rep.get("checkVersion") != item.get("checkVersion")
         ):
             blockers.append("check_evidence_mismatch")
             if status == "passed":
@@ -184,9 +188,7 @@ def evaluate_integration_facts(facts: IntegrationFacts) -> IntegrationEvaluation
 
     roles = list(facts.required_review_roles)
     reviews_total = len(roles)
-    request_by_role = {
-        str(r.get("roleId")): r for r in facts.review_requests if r.get("roleId")
-    }
+    request_by_role = {str(r.get("roleId")): r for r in facts.review_requests if r.get("roleId")}
     satisfied_reviews = 0
 
     if reviews_total == 0:
@@ -394,9 +396,8 @@ def submit_final_review(
         )
     )
     if existing is not None:
-        same = (
-            existing.verdict == body.verdict
-            and list(existing.evidence_refs or []) == list(body.evidence_refs)
+        same = existing.verdict == body.verdict and list(existing.evidence_refs or []) == list(
+            body.evidence_refs
         )
         if same:
             return _report_view(existing)
@@ -501,12 +502,14 @@ def assemble_integration_facts(session: Session, *, cycle_id: str) -> Integratio
                 "environmentHash": report.environment_hash,
                 "versionId": report.version_id,
                 "reportHash": report.report_hash,
+                "configHash": run_row.config_hash,
+                "checkVersion": run_row.check_version,
             }
         )
 
-    content_integrity_ok = all(
-        r.get("treeHash") == tree_hash for r in check_reports
-    ) if check_reports else True
+    content_integrity_ok = (
+        all(r.get("treeHash") == tree_hash for r in check_reports) if check_reports else True
+    )
 
     review_reqs = list(
         session.scalars(

@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
+from pydantic import ValidationError
 
 from agentforge.contracts.integrations import IntegrationSelectionRequest
 from agentforge.driver.binding import sha256_hex
@@ -24,7 +25,7 @@ PRINCIPAL = AuthenticatedPrincipal("c1", 1, "user:api")
 
 
 def test_rejects_client_extra_snapshots_at_contract() -> None:
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         IntegrationSelectionRequest.model_validate(
             {
                 "handoffRef": "hof_1",
@@ -101,9 +102,7 @@ def test_resolve_released_inputs_ok_for_frozen_file() -> None:
         return {"rel_1": release, "stage_1": stage, "cand_1": candidate}.get(key)
 
     session.get.side_effect = _get
-    bindings = resolve_released_inputs(
-        session, run_id="run_1", release_record_ids=["rel_1"]
-    )
+    bindings = resolve_released_inputs(session, run_id="run_1", release_record_ids=["rel_1"])
     assert len(bindings) == 1
     assert bindings[0]["snapshotId"] == "cand_1"
     assert bindings[0]["contentHash"] == H
@@ -148,9 +147,7 @@ def test_create_selection_idempotent_and_conflict() -> None:
         stage_id="stage_1",
         shared_interface_still_blocked=False,
         dependency_satisfied_refs=[],
-        candidate_versions=[
-            {"candidateId": "cand_1", "contentHash": H, "workPackageId": "wp_1"}
-        ],
+        candidate_versions=[{"candidateId": "cand_1", "contentHash": H, "workPackageId": "wp_1"}],
         work_package_ids=["wp_1"],
         scope_kind="document",
     )
@@ -205,9 +202,7 @@ def test_create_selection_idempotent_and_conflict() -> None:
 
     session.add.side_effect = _add
     with patch("agentforge.integration.selection.db_now", return_value=NOW):
-        first = create_selection(
-            session, principal=PRINCIPAL, run_id="run_1", request=req
-        )
+        first = create_selection(session, principal=PRINCIPAL, run_id="run_1", request=req)
     assert first.selection_hash
     assert first.baseline_tree_hash == H
     assert len(first.source_bindings) == 1
@@ -217,9 +212,7 @@ def test_create_selection_idempotent_and_conflict() -> None:
     session.scalar.side_effect = [existing]
     session.scalars.side_effect = _scalars
     with patch("agentforge.integration.selection.db_now", return_value=NOW):
-        second = create_selection(
-            session, principal=PRINCIPAL, run_id="run_1", request=req
-        )
+        second = create_selection(session, principal=PRINCIPAL, run_id="run_1", request=req)
     assert second.selection_id == first.selection_id
 
     # Same key + different content → conflict

@@ -14,7 +14,6 @@ from agentforge.driver.signals import WAKE_SOURCE_ALLOWLIST, record_wake_signal
 from agentforge.driver.waits import WaitOutcome, WaitService, evaluate_wait_predicate
 from agentforge.storage.models import Outbox, Run, RunWaitRow, RunWakeSignalRow
 
-
 NOW = datetime(2026, 11, 12, 12, 0, tzinfo=UTC)
 
 
@@ -75,8 +74,9 @@ def test_wake_allowlist_rejects_heartbeat() -> None:
 
 def test_wake_dedupes_same_source_ref() -> None:
     session = _MemSession()
-    with patch("agentforge.driver.signals.append_fact"), patch(
-        "agentforge.driver.signals.db_now", return_value=NOW
+    with (
+        patch("agentforge.driver.signals.append_fact"),
+        patch("agentforge.driver.signals.db_now", return_value=NOW),
     ):
         a = record_wake_signal(
             session,  # type: ignore[arg-type]
@@ -125,12 +125,12 @@ def test_register_or_observe_satisfied_skips_insert() -> None:
         updated_at=NOW,
     )
     session.store[(Run, "run_1")] = run
-    fence = LeaseFence(
-        run_id="run_1", owner="o", token="t", lease_generation=1
-    )
-    with patch("agentforge.driver.waits.assert_driver_fence", return_value=None), patch(
-        "agentforge.driver.waits.evaluate_wait_predicate", return_value=True
-    ), patch("agentforge.driver.waits.db_now", return_value=NOW):
+    fence = LeaseFence(run_id="run_1", owner="o", token="t", lease_generation=1)
+    with (
+        patch("agentforge.driver.waits.assert_driver_fence", return_value=None),
+        patch("agentforge.driver.waits.evaluate_wait_predicate", return_value=True),
+        patch("agentforge.driver.waits.db_now", return_value=NOW),
+    ):
         outcome = WaitService(session).register_or_observe(  # type: ignore[arg-type]
             fence,
             wait_key="plan_confirmation:abc",
@@ -161,13 +161,12 @@ def test_register_or_observe_creates_open_wait() -> None:
         updated_at=NOW,
     )
     session.store[(Run, "run_1")] = run
-    fence = LeaseFence(
-        run_id="run_1", owner="o", token="t", lease_generation=1
-    )
-    with patch("agentforge.driver.waits.assert_driver_fence", return_value=None), patch(
-        "agentforge.driver.waits.evaluate_wait_predicate", return_value=False
-    ), patch("agentforge.driver.waits.append_fact"), patch(
-        "agentforge.driver.waits.db_now", return_value=NOW
+    fence = LeaseFence(run_id="run_1", owner="o", token="t", lease_generation=1)
+    with (
+        patch("agentforge.driver.waits.assert_driver_fence", return_value=None),
+        patch("agentforge.driver.waits.evaluate_wait_predicate", return_value=False),
+        patch("agentforge.driver.waits.append_fact"),
+        patch("agentforge.driver.waits.db_now", return_value=NOW),
     ):
         outcome = WaitService(session).register_or_observe(  # type: ignore[arg-type]
             fence,
@@ -184,9 +183,10 @@ def test_register_or_observe_creates_open_wait() -> None:
 
 
 def test_driver_yield_predicate_not_auto_true() -> None:
-    assert evaluate_wait_predicate(
-        MagicMock(), run_id="run_1", reason="driver_yield", scope={}
-    ) is False
+    assert (
+        evaluate_wait_predicate(MagicMock(), run_id="run_1", reason="driver_yield", scope={})
+        is False
+    )
 
 
 def test_wake_allowlist_covers_d11_sources() -> None:

@@ -53,9 +53,7 @@ def test_unknown_attempt_opens_recovery_not_redispatch() -> None:
                     status="unknown",
                 ),
             ),
-            work_packages=(
-                WorkPackageSnap("wp_a", "stage_a", "role_dev"),
-            ),
+            work_packages=(WorkPackageSnap("wp_a", "stage_a", "role_dev"),),
         )
     )
     assert action.kind == "open_recovery"
@@ -76,15 +74,9 @@ def test_unconfirmed_plan_waits_without_dispatch() -> None:
 def test_first_stage_ready_dispatches_when_instance_idle() -> None:
     action = choose_next_action(
         _snap(
-            stages=(
-                StageSnap("stage_a", "executing", "none", False, ("wp_a",)),
-            ),
+            stages=(StageSnap("stage_a", "executing", "none", False, ("wp_a",)),),
             work_packages=(WorkPackageSnap("wp_a", "stage_a", "role_dev"),),
-            instances=(
-                InstanceSnap(
-                    "inst_1", "role_dev", "active", "idle", "ws_1", "ns_1"
-                ),
-            ),
+            instances=(InstanceSnap("inst_1", "role_dev", "active", "idle", "ws_1", "ns_1"),),
         )
     )
     assert action.kind == "dispatch_ready"
@@ -99,14 +91,8 @@ def test_busy_role_waits_on_capacity() -> None:
                 WorkPackageSnap("wp_a", "stage_a", "role_dev"),
                 WorkPackageSnap("wp_b", "stage_a", "role_dev"),
             ),
-            instances=(
-                InstanceSnap(
-                    "inst_1", "role_dev", "active", "idle", "ws_1", "ns_1"
-                ),
-            ),
-            attempts=(
-                AttemptSnap("ia_1", "wp_a", "inst_1", "running", "stage_a"),
-            ),
+            instances=(InstanceSnap("inst_1", "role_dev", "active", "idle", "ws_1", "ns_1"),),
+            attempts=(AttemptSnap("ia_1", "wp_a", "inst_1", "running", "stage_a"),),
         )
     )
     assert action.kind == "register_wait"
@@ -124,11 +110,7 @@ def test_upstream_not_released_does_not_skip_to_handoff() -> None:
                 StageSnap("stage_a", "executing", "none", False),
                 StageSnap("stage_b", "pending", "none", False),
             ),
-            instances=(
-                InstanceSnap(
-                    "inst_1", "role_dev", "active", "idle", "ws_1", "ns_1"
-                ),
-            ),
+            instances=(InstanceSnap("inst_1", "role_dev", "active", "idle", "ws_1", "ns_1"),),
             releases=(),
         )
     )
@@ -139,9 +121,7 @@ def test_upstream_not_released_does_not_skip_to_handoff() -> None:
 def test_all_required_released_prepares_handoff_not_completed() -> None:
     action = choose_next_action(
         _snap(
-            work_packages=(
-                WorkPackageSnap("wp_a", "stage_a", "role_dev", True),
-            ),
+            work_packages=(WorkPackageSnap("wp_a", "stage_a", "role_dev", True),),
             releases=(ReleaseSnap("rel_1", "stage_a", ("wp_a",)),),
             collaboration_state="running",
         )
@@ -154,8 +134,6 @@ def test_same_snapshot_is_stable() -> None:
     snap = _snap(
         stages=(StageSnap("stage_a", "executing", "none", False),),
         work_packages=(WorkPackageSnap("wp_a", "stage_a", "role_dev"),),
-        instances=(
-            InstanceSnap("inst_1", "role_dev", "active", "idle", "ws_1", "ns_1"),
-        ),
+        instances=(InstanceSnap("inst_1", "role_dev", "active", "idle", "ws_1", "ns_1"),),
     )
     assert choose_next_action(snap).kind == choose_next_action(snap).kind

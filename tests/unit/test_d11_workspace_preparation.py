@@ -6,8 +6,6 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from agentforge.contracts.collaboration import LeaseFence
 from agentforge.driver.binding import sha256_hex
 from agentforge.driver.workspace_preparation import (
@@ -69,12 +67,11 @@ def test_ensure_workspace_operation_fixes_identity_and_outbox() -> None:
     session.store[(DirectoryGrantRow, "grant_1")] = grant
     session.store[(ProjectBaselineRow, "base_1")] = baseline
 
-    fence = LeaseFence(
-        run_id="run_1", owner="o", token="t", lease_generation=1, thread_id="afg:1"
-    )
-    with patch(
-        "agentforge.driver.workspace_preparation.assert_driver_fence", return_value=None
-    ), patch("agentforge.driver.workspace_preparation.db_now", side_effect=Exception("no sql")):
+    fence = LeaseFence(run_id="run_1", owner="o", token="t", lease_generation=1, thread_id="afg:1")
+    with (
+        patch("agentforge.driver.workspace_preparation.assert_driver_fence", return_value=None),
+        patch("agentforge.driver.workspace_preparation.db_now", side_effect=Exception("no sql")),
+    ):
         result = ensure_workspace_operation(
             session,  # type: ignore[arg-type]
             fence,
@@ -82,11 +79,14 @@ def test_ensure_workspace_operation_fixes_identity_and_outbox() -> None:
             state_dir=Path("/state"),
         )
     assert result["status"] == "waiting"
-    expected_id = f"gwt_{sha256_hex({'run': 'run_1', 'role': 'role_dev', 'g': 2})[:16]}"
+    expected_id = (
+        f"gwt_{sha256_hex({'run': 'run_1', 'role': 'role_dev', 'g': 2, 'purpose': 'initial'})[:16]}"
+    )
     assert result["binding"]["workspaceId"] == expected_id
-    assert "role_dev" in result["binding"]["worktreePath"] or expected_id in result["binding"][
-        "worktreePath"
-    ]
+    assert (
+        "role_dev" in result["binding"]["worktreePath"]
+        or expected_id in result["binding"]["worktreePath"]
+    )
     ops = [r for r in session.added if isinstance(r, SchedulerOperationRow)]
     assert len(ops) == 1
     assert ops[0].operation_key.startswith("workspace_prepare:")
@@ -113,14 +113,21 @@ def test_ensure_workspace_reuses_same_operation_key() -> None:
     )
     session.store[(ProjectBaselineRow, "base_1")] = MagicMock(id="base_1")
     fence = LeaseFence(run_id="run_1", owner="o", token="t", lease_generation=1)
-    with patch(
-        "agentforge.driver.workspace_preparation.assert_driver_fence", return_value=None
-    ), patch("agentforge.driver.workspace_preparation.db_now", side_effect=Exception()):
+    with (
+        patch("agentforge.driver.workspace_preparation.assert_driver_fence", return_value=None),
+        patch("agentforge.driver.workspace_preparation.db_now", side_effect=Exception()),
+    ):
         a = ensure_workspace_operation(
-            session, fence, role_id="role_dev", state_dir=Path("/s")  # type: ignore[arg-type]
+            session,
+            fence,
+            role_id="role_dev",
+            state_dir=Path("/s"),  # type: ignore[arg-type]
         )
         b = ensure_workspace_operation(
-            session, fence, role_id="role_dev", state_dir=Path("/s")  # type: ignore[arg-type]
+            session,
+            fence,
+            role_id="role_dev",
+            state_dir=Path("/s"),  # type: ignore[arg-type]
         )
     assert a["operationId"] == b["operationId"]
     assert len([r for r in session.added if isinstance(r, SchedulerOperationRow)]) == 1

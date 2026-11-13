@@ -105,9 +105,7 @@ def build_handoff_manifest(
         "inputReleaseRefs": sorted(set(release_ids)),
         "inputCandidateRefs": sorted(set(candidate_refs)),
         "candidateHashes": sorted(set(candidate_hashes)),
-        "uncertainSideEffectRefs": sorted(
-            set((uncertain_side_effect_refs or []) + unknown_ops)
-        ),
+        "uncertainSideEffectRefs": sorted(set((uncertain_side_effect_refs or []) + unknown_ops)),
         "uncertainBudgetRefs": list(uncertain_budget_refs or []),
         "requiredReauth": list(required_reauth or []),
         "remainingObjective": remaining_objective,

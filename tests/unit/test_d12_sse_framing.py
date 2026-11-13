@@ -75,8 +75,7 @@ def test_project_strips_secrets_and_internal_types() -> None:
     )
     assert public.type == "run.status_changed"
     assert "apiToken" not in public.payload
-    assert "bearerToken" not in public.payload["nested"]
-    assert public.payload["nested"]["ok"] is True
+    assert "nested" not in public.payload
 
     redacted = project_public_event(
         event_id="evt_2",
@@ -107,9 +106,7 @@ def test_project_unknown_type_rejected() -> None:
 def test_resolve_cursor_rejects_crlf_and_cross_run() -> None:
     session = MagicMock()
     run = MagicMock(last_sequence=5)
-    with patch(
-        "agentforge.streaming.cursor.authorize_run_read", return_value=run
-    ):
+    with patch("agentforge.streaming.cursor.authorize_run_read", return_value=run):
         session.get.return_value = None
         with pytest.raises(CursorError) as exc:
             resolve_event_cursor(
@@ -135,28 +132,20 @@ def test_resolve_cursor_rejects_crlf_and_cross_run() -> None:
 def test_resolve_cursor_ahead_and_empty_run_zero() -> None:
     session = MagicMock()
     run = MagicMock(last_sequence=0)
-    with patch(
-        "agentforge.streaming.cursor.authorize_run_read", return_value=run
-    ):
+    with patch("agentforge.streaming.cursor.authorize_run_read", return_value=run):
         session.get.return_value = None
-        both_none = resolve_event_cursor(
-            session, principal=PRINCIPAL, run_id="run_1"
-        )
+        both_none = resolve_event_cursor(session, principal=PRINCIPAL, run_id="run_1")
         assert both_none.resync_required is True
         assert both_none.reason == "snapshot_required"
 
-        ok = resolve_event_cursor(
-            session, principal=PRINCIPAL, run_id="run_1", after_sequence=0
-        )
+        ok = resolve_event_cursor(session, principal=PRINCIPAL, run_id="run_1", after_sequence=0)
         assert ok.resync_required is False
         assert ok.after_sequence == 0
         assert ok.latest_sequence == 0
 
         run.last_sequence = 4
         with pytest.raises(CursorError) as ahead:
-            resolve_event_cursor(
-                session, principal=PRINCIPAL, run_id="run_1", after_sequence=9
-            )
+            resolve_event_cursor(session, principal=PRINCIPAL, run_id="run_1", after_sequence=9)
         assert ahead.value.code == "cursor_ahead"
 
 
@@ -164,9 +153,7 @@ def test_resolve_cursor_conflict_when_header_and_query_disagree() -> None:
     session = MagicMock()
     run = MagicMock(last_sequence=10)
     event = MagicMock(run_id="run_1", sequence=4, event_id="evt_4")
-    with patch(
-        "agentforge.streaming.cursor.authorize_run_read", return_value=run
-    ):
+    with patch("agentforge.streaming.cursor.authorize_run_read", return_value=run):
         session.get.return_value = None
         session.scalar.return_value = event
         with pytest.raises(CursorError) as conflict:

@@ -909,9 +909,7 @@ class InstanceAttemptRow(Base):
     generation: Mapped[int] = mapped_column(Integer, nullable=False)
     workspace_id: Mapped[str] = mapped_column(Text, nullable=False)
     native_session_id: Mapped[str | None] = mapped_column(Text, nullable=True)
-    status: Mapped[str] = mapped_column(
-        Text, nullable=False, server_default=text("'scheduled'")
-    )
+    status: Mapped[str] = mapped_column(Text, nullable=False, server_default=text("'scheduled'"))
     dispatch_delivery_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     scheduler_operation_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -1571,9 +1569,7 @@ class DriverThreadRow(Base):
     execution_generation: Mapped[int] = mapped_column(Integer, nullable=False)
     graph_version: Mapped[str] = mapped_column(Text, nullable=False)
     state_schema_version: Mapped[int] = mapped_column(Integer, nullable=False)
-    checkpoint_epoch: Mapped[int] = mapped_column(
-        Integer, nullable=False, server_default=text("1")
-    )
+    checkpoint_epoch: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("1"))
     binding_hash: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(Text, nullable=False)
     latest_checkpoint_id: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -1798,9 +1794,7 @@ class IntegrationVersionRow(Base):
     __tablename__ = "integration_versions"
     __table_args__ = (
         PrimaryKeyConstraint("id", name="integration_versions_pkey"),
-        UniqueConstraint(
-            "run_id", "version_number", name="integration_versions_run_number_unique"
-        ),
+        UniqueConstraint("run_id", "version_number", name="integration_versions_run_number_unique"),
     )
 
     id: Mapped[str] = mapped_column(Text, nullable=False)
@@ -1821,9 +1815,7 @@ class IntegrationVersionRow(Base):
     selection_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     selection_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
     git_integration_id: Mapped[str | None] = mapped_column(Text, nullable=True)
-    version_number: Mapped[int] = mapped_column(
-        Integer, nullable=False, server_default=text("1")
-    )
+    version_number: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("1"))
     tree_manifest_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
     baseline_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
     contract_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -1840,9 +1832,7 @@ class EventReplayWindowRow(Base):
     __table_args__ = (
         PrimaryKeyConstraint("run_id", name="event_replay_windows_pkey"),
         CheckConstraint("replay_floor_sequence >= 0", name="event_replay_windows_floor_check"),
-        CheckConstraint(
-            "last_archived_sequence >= 0", name="event_replay_windows_archived_check"
-        ),
+        CheckConstraint("last_archived_sequence >= 0", name="event_replay_windows_archived_check"),
         CheckConstraint(
             "last_archived_sequence <= replay_floor_sequence",
             name="event_replay_windows_order_check",
@@ -1871,9 +1861,7 @@ class IntegrationSelectionRow(Base):
     __tablename__ = "integration_selections"
     __table_args__ = (
         PrimaryKeyConstraint("id", name="integration_selections_pkey"),
-        UniqueConstraint(
-            "run_id", "request_key", name="integration_selections_run_key_unique"
-        ),
+        UniqueConstraint("run_id", "request_key", name="integration_selections_run_key_unique"),
     )
 
     id: Mapped[str] = mapped_column(Text, nullable=False)
@@ -1925,9 +1913,7 @@ class IntegrationBuildRow(Base):
 
 class IntegrationValidationCycleRow(Base):
     __tablename__ = "integration_validation_cycles"
-    __table_args__ = (
-        PrimaryKeyConstraint("id", name="integration_validation_cycles_pkey"),
-    )
+    __table_args__ = (PrimaryKeyConstraint("id", name="integration_validation_cycles_pkey"),)
 
     id: Mapped[str] = mapped_column(Text, nullable=False)
     version_id: Mapped[str] = mapped_column(

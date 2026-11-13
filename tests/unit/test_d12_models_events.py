@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
+from pydantic import ValidationError
 
 from agentforge.storage.models import (
     APP_V14_TABLES,
@@ -48,7 +49,7 @@ def test_append_with_outbox_validates_payload_before_sequence() -> None:
     session = MagicMock()
     uow.session = session
     repo = EventRepository(uow)
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         repo.append_with_outbox(
             run_id="run_1",
             event_type="acceptance.decided",

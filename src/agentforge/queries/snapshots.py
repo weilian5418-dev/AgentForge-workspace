@@ -8,7 +8,7 @@ import hmac
 import json
 import time
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, cast
 
 from sqlalchemy import select
 from sqlalchemy.engine import Engine
@@ -55,8 +55,8 @@ def _now(session: Session) -> datetime:
     try:
         value = db_now(session)
         if getattr(value, "tzinfo", None) is None:
-            return value.replace(tzinfo=UTC)  # type: ignore[union-attr]
-        return value  # type: ignore[return-value]
+            return value.replace(tzinfo=UTC)
+        return value
     except Exception:
         return datetime.now(UTC)
 
@@ -134,7 +134,7 @@ def validate_snapshot_binding(
     scope_hash = _sha_scope(expected_scope or {"resource": "run.snapshot"})
     if claims.get("queryScopeHash") != scope_hash:
         raise SnapshotError("snapshot_stale", "snapshot token scope mismatch")
-    return claims
+    return cast(dict[str, Any], claims)
 
 
 def make_page_cursor(
@@ -168,7 +168,7 @@ def parse_page_cursor(cursor: str, *, run_id: str, resource: str) -> dict[str, A
         raise SnapshotError("snapshot_stale", "malformed page cursor") from exc
     if payload.get("runId") != run_id or payload.get("resource") != resource:
         raise SnapshotError("snapshot_stale", "page cursor scope mismatch")
-    return payload
+    return cast(dict[str, Any], payload)
 
 
 def build_bounded_snapshot(
@@ -328,9 +328,9 @@ def build_bounded_snapshot(
                 if delivery_overview
                 else None
             ),
-            "waitSummary": WaitSummary(
-                open_count=len(open_waits), by_reason=by_reason
-            ).model_dump(mode="json", by_alias=True),
+            "waitSummary": WaitSummary(open_count=len(open_waits), by_reason=by_reason).model_dump(
+                mode="json", by_alias=True
+            ),
             "latestSequence": latest_sequence,
             "latestEventId": latest_event_id,
             "replayFloorSequence": floor,

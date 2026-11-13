@@ -16,13 +16,18 @@ from agentforge.driver.fencing import assert_driver_fence
 from agentforge.driver.repository import DriverRepository
 from agentforge.storage.event_log import append_fact
 from agentforge.storage.models import (
+    AgentInstanceRow,
+    Event,
+    GitWorkspaceRow,
     InstanceAttemptRow,
     NativeSessionRow,
     Plan,
     PlanConfirmationRequestRow,
+    RecoveryCaseRow,
     ReleaseRecordRow,
     Run,
     RunWaitRow,
+    StageRow,
 )
 from agentforge.storage.uow import db_now
 
@@ -32,8 +37,8 @@ PredicateFn = Callable[[Session, str, dict[str, Any]], bool]
 def _now(session: Session) -> datetime:
     value = db_now(session)
     if getattr(value, "tzinfo", None) is None:
-        return value.replace(tzinfo=UTC)  # type: ignore[union-attr]
-    return value  # type: ignore[return-value]
+        return value.replace(tzinfo=UTC)
+    return value
 
 
 def _pred_plan_confirmation(session: Session, run_id: str, scope: dict[str, Any]) -> bool:
@@ -99,17 +104,82 @@ def _pred_always_false(_session: Session, _run_id: str, _scope: dict[str, Any]) 
     return False
 
 
+def _pred_domain_change(session: Session, run_id: str, scope: dict[str, Any]) -> bool:
+    run = session.get(Run, run_id)
+    if run is None:
+        return False
+    if run.status in {"cancel_requested", "pause_requested"}:
+        return True
+    stage_id = scope.get("stageId")
+    if stage_id:
+        stage = session.get(StageRow, stage_id)
+        if stage and stage.run_id == run_id and scope.get("stageStatus") is not None:
+            return bool(stage.status != scope["stageStatus"])
+    case_id = scope.get("caseId")
+    if case_id:
+        case = session.get(RecoveryCaseRow, case_id)
+        return bool(case and case.run_id == run_id and case.status == "applied")
+    return False
+
+
+def _pred_workspace(session: Session, run_id: str, scope: dict[str, Any]) -> bool:
+    run = session.get(Run, run_id)
+    if not run:
+        return False
+    roles = set(scope.get("roleIds") or [])
+    ready = {
+        w.role_id
+        for w in session.scalars(
+            select(GitWorkspaceRow).where(
+                GitWorkspaceRow.project_id == run.project_id,
+                GitWorkspaceRow.baseline_id == run.baseline_id,
+                GitWorkspaceRow.status == "active",
+            )
+        ).all()
+    }
+    return bool(roles and roles <= ready)
+
+
+def _pred_capacity(session: Session, run_id: str, scope: dict[str, Any]) -> bool:
+    for instance in session.scalars(
+        select(AgentInstanceRow).where(
+            AgentInstanceRow.run_id == run_id,
+            AgentInstanceRow.lifecycle == "active",
+            AgentInstanceRow.activity == "idle",
+        )
+    ).all():
+        if scope.get("roleId") and instance.role_id != scope["roleId"]:
+            continue
+        if not session.scalar(
+            select(InstanceAttemptRow).where(
+                InstanceAttemptRow.instance_id == instance.id,
+                InstanceAttemptRow.status.in_(
+                    [
+                        "scheduled",
+                        "dispatching",
+                        "running",
+                        "submitted",
+                        "awaiting_stop_verification",
+                        "unknown",
+                    ]
+                ),
+            )
+        ):
+            return True
+    return False
+
+
 PREDICATE_REGISTRY: dict[str, PredicateFn] = {
     "plan_confirmation": _pred_plan_confirmation,
-    "workspace_ready": _pred_always_false,  # filled when workspace coordinator lands
+    "workspace_ready": _pred_workspace,
     "session_ready": _pred_session_ready,
     "task_submission": _pred_task_submission,
-    "native_approval": _pred_always_false,
-    "stage_review": _pred_always_false,
-    "user_gate_decision": _pred_always_false,
-    "stop_verification": _pred_always_false,
-    "recovery_evidence": _pred_always_false,
-    "capacity": _pred_always_false,
+    "native_approval": _pred_domain_change,
+    "stage_review": _pred_domain_change,
+    "user_gate_decision": _pred_domain_change,
+    "stop_verification": _pred_domain_change,
+    "recovery_evidence": _pred_domain_change,
+    "capacity": _pred_capacity,
     "dependency": _pred_dependency,
     "driver_yield": _pred_driver_yield,
 }
@@ -168,26 +238,25 @@ class WaitService:
         deadline_at: datetime | None = None,
         thread_id: str | None = None,
     ) -> WaitOutcome:
-        assert_driver_fence(
-            self.session, fence, require_active_thread=fence.thread_id is not None
-        )
+        assert_driver_fence(self.session, fence, require_active_thread=fence.thread_id is not None)
         run = self.session.get(Run, fence.run_id, with_for_update=True)
         if run is None:
             raise ValueError(f"run {fence.run_id} missing")
 
-        if evaluate_wait_predicate(
-            self.session, run_id=fence.run_id, reason=reason, scope=scope
-        ):
+        if evaluate_wait_predicate(self.session, run_id=fence.run_id, reason=reason, scope=scope):
             return WaitOutcome(status="satisfied", wait=None)
 
         existing = self.repo.get_wait_by_key(fence.run_id, wait_key)
         if existing is not None and existing.status == "open":
             return WaitOutcome(status="waiting", wait=_to_contract(existing))
 
-        if existing is not None and existing.status != "open":
-            # Supersede prior terminal wait with same key by reopening only when allowed.
-            existing.status = "superseded"
-            existing.resolved_at = _now(self.session)
+        if existing is not None:
+            existing.status = "open"
+            existing.resolved_at = None
+            existing.resolved_by_ref = None
+            existing.scope_json = dict(scope)
+            existing.after_sequence = int(run.last_sequence or 0)
+            return WaitOutcome(status="waiting", wait=_to_contract(existing))
 
         row = RunWaitRow(
             id=f"wait_{uuid.uuid4().hex[:16]}",
@@ -245,6 +314,19 @@ class WaitService:
             raise ValueError(f"wait {wait_id} not found")
         if row.status != "open":
             return WaitOutcome(status="satisfied", wait=_to_contract(row))
+        change = self.session.scalar(
+            select(Event)
+            .where(
+                Event.run_id == row.run_id,
+                Event.sequence > row.after_sequence,
+                Event.type.not_in(["driver.wait_registered", "driver.wake_recorded"]),
+            )
+            .limit(1)
+        )
+        if change is not None:
+            return WaitOutcome(
+                status="satisfied", wait=self.resolve_wait(row.id, resolved_by_ref=change.event_id)
+            )
         if evaluate_wait_predicate(
             self.session,
             run_id=row.run_id,

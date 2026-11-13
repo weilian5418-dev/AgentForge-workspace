@@ -173,9 +173,7 @@ def combine_approved_deltas(
     sources_by_path: dict[str, list[str]] = {}
 
     def _conflict(path: str, reason: str, *srcs: str) -> None:
-        plan.conflicts.append(
-            MergeConflict(path=path, reason=reason, sources=tuple(srcs))
-        )
+        plan.conflicts.append(MergeConflict(path=path, reason=reason, sources=tuple(srcs)))
         pending.pop(path, None)
 
     for delta in inputs:
@@ -335,16 +333,9 @@ def materialize_merge_plan(
             message=str(exc)[:500],
         )
 
-    # contentHash: hash of sorted blob hashes (not archive timestamps)
-    content_hash = sha256_hex(
-        {
-            "treeManifestHash": tm_hash,
-            "blobs": [
-                {"path": p, "contentHash": merged[p].content_hash}
-                for p in sorted(merged)
-            ],
-        }
-    )
+    from agentforge.integration.objects import store_tree
+
+    content_hash, tm_hash = store_tree(merged, object_store)
     return BuildResult(
         status="succeeded",
         tree_manifest=merged,

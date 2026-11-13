@@ -42,8 +42,8 @@ def _now(session: Session | None = None) -> datetime:
         try:
             value = db_now(session)
             if getattr(value, "tzinfo", None) is None:
-                return value.replace(tzinfo=UTC)  # type: ignore[union-attr]
-            return value  # type: ignore[return-value]
+                return value.replace(tzinfo=UTC)
+            return value
         except Exception:
             pass
     return datetime.now(UTC)
@@ -318,9 +318,7 @@ def probe_case(engine: Engine, settings: Settings, case_id: str) -> dict[str, An
         append_fact(
             uow.session,
             case.run_id,
-            "recovery.observed"
-            if case.status != "blocked"
-            else "recovery.blocked",
+            "recovery.observed" if case.status != "blocked" else "recovery.blocked",
             {
                 "caseId": case.id,
                 "status": case.status,

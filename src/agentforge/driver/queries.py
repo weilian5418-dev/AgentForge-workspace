@@ -105,7 +105,9 @@ def get_driver_status(session: Session, run_id: str) -> DriverStatusResponse:
             "collaborationState": run.collaboration_state,
             "thread": thread.model_dump(mode="json", by_alias=True) if thread else None,
             "lastObservedSequence": int(
-                thread_row.last_observed_sequence if thread_row is not None else run.last_sequence or 0
+                thread_row.last_observed_sequence
+                if thread_row is not None
+                else run.last_sequence or 0
             ),
             "openWaitCount": open_waits,
             "pendingWakeCount": pending_wakes,

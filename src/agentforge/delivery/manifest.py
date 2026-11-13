@@ -7,7 +7,6 @@ import json
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.engine import Engine
@@ -60,8 +59,8 @@ def _now(session: Session) -> datetime:
     try:
         value = db_now(session)
         if getattr(value, "tzinfo", None) is None:
-            return value.replace(tzinfo=UTC)  # type: ignore[union-attr]
-        return value  # type: ignore[return-value]
+            return value.replace(tzinfo=UTC)
+        return value
     except Exception:
         return datetime.now(UTC)
 
@@ -84,7 +83,9 @@ def canonical_manifest_bytes(payload: DeliveryManifestPayload) -> bytes:
     data["checks"] = checks
     data["reviews"] = reviews
     data["knownRisks"] = risks
-    text = json.dumps(data, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False)
+    text = json.dumps(
+        data, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False
+    )
     return text.encode("utf-8")
 
 
@@ -102,6 +103,9 @@ class ManifestBuildIntent:
     payload: DeliveryManifestPayload
     manifest_hash: str
     payload_bytes: bytes
+    expected_delivery_revision: int = 0
+    expected_status_version: int = 0
+    expected_plan_hash: str = ""
 
 
 def build_delivery_manifest(
@@ -135,6 +139,11 @@ def build_delivery_manifest(
     }
     technical_status = tech_map.get(technical, "blocked")
 
+    from agentforge.storage.models import Plan
+
+    current_plan = session.get(Plan, (run.id, run.plan_version))
+    if current_plan is None:
+        raise ManifestError("manifest_stale", "Current plan missing")
     tree_hash = version.tree_manifest_hash or version.content_hash
     selection_hash = version.selection_hash or ("0" * 64)
     baseline_hash = version.baseline_hash or ("0" * 64)
@@ -150,7 +159,7 @@ def build_delivery_manifest(
                     "kind": "code_tree",
                     "required": True,
                     "safeRelativePath": ".",
-                    "objectHash": tree_hash,
+                    "objectHash": version.content_hash,
                     "sourceCandidateRef": None,
                     "sourceReleaseRef": None,
                     "dependsOnMemberIds": [],
@@ -161,7 +170,8 @@ def build_delivery_manifest(
                     ],
                     "applicableReviewRequestIds": [],
                     "memberTechnicalStatus": technical_status
-                    if technical_status in {
+                    if technical_status
+                    in {
                         "not_started",
                         "building",
                         "conflicted",
@@ -178,9 +188,7 @@ def build_delivery_manifest(
         )
 
     selection = (
-        session.get(IntegrationSelectionRow, version.selection_id)
-        if version.selection_id
-        else None
+        session.get(IntegrationSelectionRow, version.selection_id) if version.selection_id else None
     )
     if selection is not None:
         for binding in selection.source_bindings or []:
@@ -244,12 +252,16 @@ def build_delivery_manifest(
                     "checkVersion": str(
                         req.get("checkVersion") or (run_row.check_version if run_row else "v1")
                     ),
-                    "configHash": str(req.get("configHash") or (run_row.config_hash if run_row else ("0" * 64))),
+                    "configHash": str(
+                        req.get("configHash") or (run_row.config_hash if run_row else ("0" * 64))
+                    ),
                     "checkRunId": run_row.id if run_row else None,
                     "reportId": report.id if report else None,
                     "reportHash": report.report_hash if report else None,
                     "outcome": (report.outcome if report else "not_run"),
-                    "environmentHash": report.environment_hash if report else cycle.environment_fingerprint,
+                    "environmentHash": report.environment_hash
+                    if report
+                    else cycle.environment_fingerprint,
                     "inputFingerprint": tree_hash,
                 }
             )
@@ -257,11 +269,9 @@ def build_delivery_manifest(
 
     review_entries: list[ManifestReviewEntry] = []
     for req in session.scalars(
-        select(IntegrationReviewRequestRow).where(
-            IntegrationReviewRequestRow.cycle_id == cycle.id
-        )
+        select(IntegrationReviewRequestRow).where(IntegrationReviewRequestRow.cycle_id == cycle.id)
     ).all():
-        report = session.scalar(
+        review_report = session.scalar(
             select(IntegrationReviewReportRow)
             .where(IntegrationReviewReportRow.request_id == req.id)
             .order_by(IntegrationReviewReportRow.created_at.asc())
@@ -281,9 +291,11 @@ def build_delivery_manifest(
             ManifestReviewEntry.model_validate(
                 {
                     "requestId": req.id,
-                    "reportId": report.id if report else None,
-                    "reviewerIdentityRef": report.reviewer_identity_ref if report else None,
-                    "verdict": report.verdict if report else "pending",
+                    "reportId": review_report.id if review_report else None,
+                    "reviewerIdentityRef": review_report.reviewer_identity_ref
+                    if review_report
+                    else None,
+                    "verdict": review_report.verdict if review_report else "pending",
                     "bindingFingerprint": binding_fp,
                 }
             )
@@ -365,6 +377,9 @@ def build_delivery_manifest(
         payload=payload,
         manifest_hash=digest,
         payload_bytes=raw,
+        expected_delivery_revision=get_or_create_delivery(session, run.id).delivery_revision,
+        expected_status_version=run.status_version,
+        expected_plan_hash=current_plan.plan_hash or "",
     )
 
 
@@ -386,30 +401,51 @@ def publish_manifest(
 
     with unit_of_work_connection(engine) as uow:
         session = uow.session
-        # Re-validate inputs still match
-        version = session.get(IntegrationVersionRow, intent.version_id, with_for_update=True)
-        cycle = session.get(IntegrationValidationCycleRow, intent.cycle_id)
-        if version is None or cycle is None or cycle.version_id != version.id:
-            raise ManifestError("manifest_stale", "version/cycle no longer valid")
-        run = session.get(Run, intent.run_id, with_for_update=True)
+        run = session.get(Run, intent.run_id, with_for_update=True, populate_existing=True)
         if run is None:
             raise ManifestError("run_not_found", intent.run_id)
-
-        # Idempotent: same hash already published
+        delivery = get_or_create_delivery(session, intent.run_id)
+        # Idempotent publication returns historical data, never rewinds the current pointer.
         existing = session.scalar(
             select(DeliveryManifestRow).where(
                 DeliveryManifestRow.manifest_hash == intent.manifest_hash
             )
         )
-        delivery = get_or_create_delivery(session, intent.run_id)
         if existing is not None:
-            delivery.current_manifest_id = existing.id
-            delivery.current_version_id = existing.version_id
-            delivery.technical_status = existing.technical_status
-            delivery.updated_at = _now(session)
-            session.flush()
             return _view(existing, intent.payload)
+        version = session.get(IntegrationVersionRow, intent.version_id)
+        cycle = session.get(IntegrationValidationCycleRow, intent.cycle_id)
+        from agentforge.integration.authority import (
+            assert_run_deliverable,
+            assert_selection_current,
+        )
+        from agentforge.integration.objects import load_tree
 
+        try:
+            assert_run_deliverable(session, run)
+            if (
+                version is None
+                or cycle is None
+                or cycle.version_id != version.id
+                or version.run_id != run.id
+            ):
+                raise ValueError("version_cycle_mismatch")
+            plan = assert_selection_current(
+                session, run, session.get(IntegrationSelectionRow, version.selection_id)
+            )
+            if (
+                delivery.current_version_id != version.id
+                or delivery.delivery_revision != intent.expected_delivery_revision
+                or run.status_version != intent.expected_status_version
+                or plan.plan_hash != intent.expected_plan_hash
+            ):
+                raise ValueError("delivery_revision_conflict")
+            load_tree(store, version.content_hash, version.tree_manifest_hash or "")
+            current = build_delivery_manifest(session, version_id=version.id, cycle_id=cycle.id)
+            if current.manifest_hash != intent.manifest_hash:
+                raise ValueError("manifest_evidence_changed")
+        except (ValueError, KeyError) as exc:
+            raise ManifestError("manifest_stale", str(exc)) from exc
         protect_content_object(
             session,
             content_hash=object_hash,
@@ -438,6 +474,8 @@ def publish_manifest(
         delivery.delivery_revision = int(delivery.delivery_revision) + 1
         if intent.payload.technical_status == "passed":
             delivery.acceptance_status = "awaiting_acceptance"
+            run.status = "awaiting_acceptance"
+            run.status_version += 1
         delivery.updated_at = now
 
         append_domain_fact(
@@ -495,7 +533,5 @@ def build_and_publish_manifest(
     cycle_id: str,
 ) -> DeliveryManifestView:
     with unit_of_work_connection(engine) as uow:
-        intent = build_delivery_manifest(
-            uow.session, version_id=version_id, cycle_id=cycle_id
-        )
+        intent = build_delivery_manifest(uow.session, version_id=version_id, cycle_id=cycle_id)
     return publish_manifest(engine, store, intent=intent)

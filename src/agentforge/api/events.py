@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
 from typing import Annotated, Any, cast
 
 from fastapi import APIRouter, Depends, Header, Query, Request
@@ -10,14 +11,14 @@ from starlette.exceptions import HTTPException
 
 from agentforge.core.config import Settings
 from agentforge.queries.authorization import AuthenticatedPrincipal, api_principal
+from agentforge.storage.database import create_database_engine
+from agentforge.storage.uow import unit_of_work_connection
 from agentforge.streaming.cursor import CursorError, resolve_event_cursor
 from agentforge.streaming.service import (
     EventStreamService,
     StreamLimitError,
     StreamSlotRegistry,
 )
-from agentforge.storage.database import create_database_engine
-from agentforge.storage.uow import unit_of_work_connection
 
 router = APIRouter(prefix="/api/v1", tags=["events"])
 
@@ -102,11 +103,9 @@ async def stream_run_events(
     except StreamLimitError as exc:
         raise HTTPException(429, f"{exc.code}: {exc.message}") from exc
 
-    service = EventStreamService(
-        engine, settings, verifier=verifier, slots=slots
-    )
+    service = EventStreamService(engine, settings, verifier=verifier, slots=slots)
 
-    async def frames():
+    async def frames() -> AsyncIterator[bytes]:
         try:
             async for frame in service.iter_frames(
                 principal=principal,

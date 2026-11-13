@@ -85,6 +85,41 @@ def collaboration_operation(
 
     try:
         require_control_role(engine)
+        if intent_type == "integration_build":
+            from agentforge.integration.coordinator import process_integration_build
+
+            result = process_integration_build(engine, settings, build_id=payload["buildId"])
+            return result.status
+        if intent_type == "integration_check":
+            from agentforge.integration.check_worker import process_check_run
+
+            process_check_run(engine, settings, check_run_id=payload["checkRunId"])
+            from agentforge.integration.orchestration import advance_integration
+
+            return advance_integration(engine, settings, cycle_id=payload["cycleId"])
+        if intent_type == "integration.evaluate":
+            from agentforge.integration.orchestration import advance_integration
+
+            return advance_integration(engine, settings, cycle_id=payload["cycleId"])
+        if intent_type == "delivery.manifest_build":
+            from agentforge.delivery.manifest import build_and_publish_manifest
+
+            build_and_publish_manifest(
+                engine,
+                ArtifactStore(settings.state_dir / "artifact_store"),
+                version_id=payload["versionId"],
+                cycle_id=payload["cycleId"],
+            )
+            return "published"
+        if intent_type in {"recovery.apply", "rework.prepare"}:
+            from agentforge.recovery.coordinator import process_transition
+
+            return process_transition(
+                engine,
+                settings,
+                case_id=payload.get("caseId"),
+                rework_order_id=payload.get("reworkOrderId"),
+            )
         if intent_type.startswith("instance."):
             return str(process_instance_operation(engine, payload["operationId"])["status"])
         if intent_type == "message.deliver":
@@ -134,9 +169,7 @@ def collaboration_operation(
     pass_context=False,
     retry=RetryStrategy(max_attempts=3, wait=2),
 )
-def driver_step(
-    run_id: str, wake_signal_id: str | None = None, task_version: int = 1
-) -> str:
+def driver_step(run_id: str, wake_signal_id: str | None = None, task_version: int = 1) -> str:
     """Bounded Driver fragment via drive_once (D11.8)."""
     from agentforge.core.config import Settings
     from agentforge.driver.fencing import DriverFenceLost

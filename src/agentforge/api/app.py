@@ -19,20 +19,18 @@ from agentforge import __version__
 from agentforge.api.approvals import router as approvals_router
 from agentforge.api.artifacts import router as artifacts_router
 from agentforge.api.collaboration import router as collaboration_router
+from agentforge.api.delivery import router as delivery_router
 from agentforge.api.discovery import router as discovery_router
 from agentforge.api.events import router as events_router
 from agentforge.api.git import router as git_router
-from agentforge.api.delivery import router as delivery_router
-from agentforge.api.integrations import router as integrations_router
 from agentforge.api.instances import router as instances_router
+from agentforge.api.integrations import router as integrations_router
 from agentforge.api.logs import router as logs_router
 from agentforge.api.projects import router as projects_router
 from agentforge.api.providers import router as providers_router
 from agentforge.api.runner import router as runner_router
 from agentforge.api.runs import router as runs_router
 from agentforge.api.stages import router as stages_router
-from agentforge.queries.authorization import AuthenticatedPrincipal
-from agentforge.streaming.service import StreamSlotRegistry
 from agentforge.contracts.errors import ErrorCode, ErrorResponse, build_error
 from agentforge.contracts.system import (
     CapabilityResponse,
@@ -45,11 +43,13 @@ from agentforge.contracts.system import (
 from agentforge.core.config import Settings
 from agentforge.core.credentials import CredentialError, CredentialVerifier
 from agentforge.core.service_identity import verify_ticket
+from agentforge.queries.authorization import AuthenticatedPrincipal
 from agentforge.runtime.components import component_status_snapshot
 from agentforge.runtime.control import admits_new_work, apply_admission, read_admission
 from agentforge.runtime.drain import collect_drain_coordination
 from agentforge.runtime.instance import read_runtime_record, write_runtime_record
 from agentforge.storage.database import check_database, create_database_engine
+from agentforge.streaming.service import StreamSlotRegistry
 
 bearer = HTTPBearer(auto_error=False)
 

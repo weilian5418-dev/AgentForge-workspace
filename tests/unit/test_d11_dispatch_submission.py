@@ -60,9 +60,7 @@ class _Mem:
 
 
 def _fence() -> LeaseFence:
-    return LeaseFence(
-        run_id="run_1", owner="o", token="t", lease_generation=1, thread_id="afg:1"
-    )
+    return LeaseFence(run_id="run_1", owner="o", token="t", lease_generation=1, thread_id="afg:1")
 
 
 def test_released_input_rejects_unpublished_only_candidate() -> None:
@@ -233,9 +231,7 @@ def test_dispatch_returns_existing_operation_for_same_key() -> None:
             status="approved", spec_json={"schemaVersion": "1"}
         )
         session.store[(StageRow, "run_1:p1:s1")] = MagicMock(id="run_1:p1:s1")
-        select_inst.return_value = MagicMock(
-            id="inst_1", workspace_id="ws", native_session_id="ns"
-        )
+        select_inst.return_value = MagicMock(id="inst_1", workspace_id="ws", native_session_id="ns")
         resolve.return_value = MagicMock(
             release_refs=[],
             candidate_refs=[],

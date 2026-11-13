@@ -40,8 +40,8 @@ def _now(session: Session | None = None) -> datetime:
         try:
             value = db_now(session)
             if getattr(value, "tzinfo", None) is None:
-                return value.replace(tzinfo=UTC)  # type: ignore[union-attr]
-            return value  # type: ignore[return-value]
+                return value.replace(tzinfo=UTC)
+            return value
         except Exception:
             pass
     return datetime.now(UTC)
@@ -200,9 +200,16 @@ def prepare_handoff(session: Session, fence: LeaseFence) -> dict[str, Any]:
     required = [wp.work_package_id for wp in snap.work_packages if wp.required]
     released = snap.released_work_packages()
     if not required or not all(wp in released for wp in required):
-        return {"status": "blocked", "errorCode": "handoff_incomplete", "message": "not all released"}
+        return {
+            "status": "blocked",
+            "errorCode": "handoff_incomplete",
+            "message": "not all released",
+        }
 
     release_ids = [r.release_id for r in snap.releases]
+    approved_plan = session.get(Plan, (run.id, run.plan_version))
+    if approved_plan is None:
+        raise ValueError("Approved plan missing")
     body = {
         "runId": run.id,
         "planVersion": run.plan_version,
@@ -211,7 +218,7 @@ def prepare_handoff(session: Session, fence: LeaseFence) -> dict[str, Any]:
         "executionGeneration": run.active_generation,
         "releaseRecordIds": sorted(release_ids),
         "candidateSetHashes": [],
-        "contractHash": "0" * 64,
+        "contractHash": approved_plan.contract_hash,
         "environmentFingerprint": "0" * 64,
     }
     digest = sha256_hex(body)
@@ -286,6 +293,17 @@ def register_wait_action(
         scope["stageId"] = action.stage_id
     if action.work_package_id:
         scope["workPackageId"] = action.work_package_id
+    from agentforge.storage.models import StageRow
+
+    if action.stage_id:
+        stage = session.get(StageRow, action.stage_id)
+        scope["stageStatus"] = stage.status if stage else None
+    if wait_key.startswith("session:"):
+        scope["instanceId"] = wait_key.removeprefix("session:")
+    if wait_key.startswith(("stop:", "submit:", "attempt:")):
+        scope["attemptId"] = wait_key.split(":", 1)[1]
+    if wait_key.startswith("recovery:"):
+        scope["caseId"] = wait_key.removeprefix("recovery:")
     outcome = WaitService(session).register_or_observe(
         fence,
         wait_key=wait_key,
@@ -364,11 +382,9 @@ def open_recovery_stub(session: Session, fence: LeaseFence, action: NextAction) 
 # --- Graph node wrappers ---
 
 
-def refresh_snapshot(
-    state: CollaborationState, runtime: Runtime[DriverContext]
-) -> dict[str, Any]:
+def refresh_snapshot(state: CollaborationState, runtime: Runtime[DriverContext]) -> dict[str, Any]:
     ctx = runtime.context
-    steps = int(state.get("steps_remaining") if state.get("steps_remaining") is not None else 8)
+    steps = int(state.get("steps_remaining", 8))
 
     def _load(session: Session) -> Any:
         return SnapshotReader(session).load(ctx.fence.run_id, ctx.fence)
@@ -403,7 +419,13 @@ def decide_next_action(
     snap = ctx.latest_snapshot
     if snap is None:
         raise RuntimeError("refresh_snapshot must run before decide_next_action")
-    if snap.collaboration_state == "ready_for_integration":
+    if snap.collaboration_state == "ready_for_integration" and snap.run_status not in {
+        "cancel_requested",
+        "pause_requested",
+        "paused",
+        "blocked",
+        "canceled",
+    }:
         action = NextAction(kind="end", detail="ready_for_integration")
         ctx.last_action = action
         return {
@@ -487,6 +509,18 @@ def node_register_wait(
     result = run_fenced_transaction(ctx.engine, ctx.fence, _apply)
     if result.get("status") == "satisfied":
         return {"wait_ref": None, "next_action": "refresh"}
+    if action.wait_reason == "driver_yield" and action.detail == "fragment_budget":
+        from agentforge.driver.signals import record_wake_signal
+        from agentforge.storage.uow import unit_of_work_connection
+
+        with unit_of_work_connection(ctx.engine) as uow:
+            record_wake_signal(
+                uow.session,
+                run_id=ctx.fence.run_id,
+                source_kind="driver_continue",
+                source_ref=f"{result.get('waitId')}:{ctx.fence.lease_generation}",
+                binding={"waitId": result.get("waitId")},
+            )
     return {"wait_ref": result.get("waitId")}
 
 
@@ -508,7 +542,12 @@ def await_condition(state: CollaborationState, runtime: Runtime[DriverContext]) 
             "scope": wait.scope_json,
         }
     )
-    return {"wait_ref": None, "next_action": "refresh", "fragment_outcome": "interrupted"}
+    return {
+        "wait_ref": None,
+        "next_action": "refresh",
+        "steps_remaining": 8,
+        "fragment_outcome": None,
+    }
 
 
 def node_prepare_handoff(
@@ -566,21 +605,73 @@ def node_open_recovery(
 def node_prepare_rework(
     state: CollaborationState, runtime: Runtime[DriverContext]
 ) -> dict[str, Any]:
-    """Defer full rework to D10 accept_rework + D11.9; park on recovery wait."""
     ctx = runtime.context
-    action = NextAction(
-        kind="register_wait",
-        stage_id=state.get("action_stage_id"),
-        wait_reason="recovery_evidence",
-        wait_key=f"rework:{state.get('action_stage_id') or 'stage'}",
-        detail="prepare_rework_deferred",
-    )
 
-    def _apply(session: Session) -> dict[str, Any]:
-        return register_wait_action(session, ctx.fence, action)
+    def apply(session: Session) -> dict[str, Any]:
+        from sqlalchemy import select
 
-    result = run_fenced_transaction(ctx.engine, ctx.fence, _apply)
-    return {"wait_ref": result.get("waitId"), "last_error": None}
+        from agentforge.contracts.agents import AgentInstanceActionRequest
+        from agentforge.instances.actions import InstanceActionService
+        from agentforge.stages.service import StageService
+        from agentforge.storage.models import AgentInstanceRow, ReworkOrderRow
+
+        stage_id = state.get("action_stage_id")
+        order = session.scalar(
+            select(ReworkOrderRow).where(
+                ReworkOrderRow.stage_id == stage_id, ReworkOrderRow.status == "open"
+            )
+        )
+        if order is None:
+            return {"status": "blocked", "errorCode": "rework_order_missing"}
+        instance = session.scalar(
+            select(AgentInstanceRow).where(
+                AgentInstanceRow.run_id == ctx.fence.run_id,
+                AgentInstanceRow.role_id == order.target_role_id,
+            )
+        )
+        if instance is None:
+            return {"status": "blocked", "errorCode": "instance_missing"}
+        if instance.lifecycle != "closed":
+            action = "close" if instance.lifecycle == "stopped" else "request_stop"
+            accepted = InstanceActionService(session).request_action(
+                instance.id,
+                AgentInstanceActionRequest.model_validate(
+                    dict(action=action, reason=f"rework:{order.id}")
+                ),
+                actor="driver:rework",
+            )
+            return {"status": "waiting", "operationId": accepted.operation_id}
+        prepared = ensure_workspace_operation(
+            session,
+            ctx.fence,
+            role_id=order.target_role_id,
+            purpose=order.id,
+            state_dir=ctx.state_dir,
+        )
+        if prepared["status"] != "succeeded":
+            return prepared
+        StageService(session).accept_rework(order.id, workspace_id=prepared["resultRefs"][0])
+        return {"status": "succeeded"}
+
+    result = run_fenced_transaction(ctx.engine, ctx.fence, apply)
+    if result["status"] == "succeeded":
+        return {"wait_ref": None, "next_action": "refresh"}
+
+    def wait(session: Session) -> dict[str, Any]:
+        return register_wait_action(
+            session,
+            ctx.fence,
+            NextAction(
+                kind="register_wait",
+                stage_id=state.get("action_stage_id"),
+                wait_reason="recovery_evidence",
+                wait_key=f"rework:{state.get('action_stage_id')}",
+                detail="await verified rework preparation",
+            ),
+        )
+
+    waiting = run_fenced_transaction(ctx.engine, ctx.fence, wait)
+    return {"wait_ref": waiting.get("waitId"), "last_error": result.get("errorCode")}
 
 
 def node_coordinate_stop(

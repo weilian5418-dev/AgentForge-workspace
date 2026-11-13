@@ -140,9 +140,7 @@ class RunActionRequest(ApiInputModel):
         }
         for key in data:
             if key in forbidden:
-                raise ValueError(
-                    f"clients cannot declare trusted run-control facts ({key})"
-                )
+                raise ValueError(f"clients cannot declare trusted run-control facts ({key})")
         return data
 
 

@@ -55,9 +55,7 @@ def agents_summary(
     settings: Annotated[Settings, Depends(_settings)],
     environment_id: Annotated[str, Query(alias="environmentId")] = "local",
     run_id: Annotated[str | None, Query(alias="runId")] = None,
-    required_capabilities: Annotated[
-        list[str] | None, Query(alias="requiredCapability")
-    ] = None,
+    required_capabilities: Annotated[list[str] | None, Query(alias="requiredCapability")] = None,
 ) -> AgentSummaryResponse:
     """Inventory counts with inventoryRevision — independent of Run.sequence."""
     engine = _engine(request, settings)

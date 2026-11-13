@@ -6,6 +6,7 @@ import threading
 from collections.abc import Iterator, Sequence
 from typing import Any
 
+from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.base import (
     ChannelVersions,
     Checkpoint,
@@ -25,7 +26,7 @@ class FencedPostgresSaver:
 
     def __init__(
         self,
-        conn: Connection,
+        conn: Connection[dict[str, Any]],
         fence: LeaseFence,
         *,
         delegate: PostgresSaver | None = None,
@@ -47,31 +48,29 @@ class FencedPostgresSaver:
     def get_next_version(self, current: str | None, channel: None) -> str:
         return self.delegate.get_next_version(current, channel)
 
-    def get_tuple(self, config: dict[str, Any]) -> CheckpointTuple | None:
+    def get_tuple(self, config: RunnableConfig) -> CheckpointTuple | None:
         with self._lock:
             return self.delegate.get_tuple(config)
 
     def list(
         self,
-        config: dict[str, Any] | None,
+        config: RunnableConfig | None,
         *,
         filter: dict[str, Any] | None = None,
-        before: dict[str, Any] | None = None,
+        before: RunnableConfig | None = None,
         limit: int | None = None,
     ) -> Iterator[CheckpointTuple]:
         # Materialize under the connection lock — do not return a live cursor.
         with self._lock:
-            return iter(
-                list(self.delegate.list(config, filter=filter, before=before, limit=limit))
-            )
+            return iter(list(self.delegate.list(config, filter=filter, before=before, limit=limit)))
 
     def put(
         self,
-        config: dict[str, Any],
+        config: RunnableConfig,
         checkpoint: Checkpoint,
         metadata: CheckpointMetadata,
         new_versions: ChannelVersions,
-    ) -> dict[str, Any]:
+    ) -> RunnableConfig:
         with self._lock:
             with self.conn.transaction():
                 self._assert_fence_on_connection()
@@ -81,7 +80,7 @@ class FencedPostgresSaver:
 
     def put_writes(
         self,
-        config: dict[str, Any],
+        config: RunnableConfig,
         writes: Sequence[tuple[str, Any]],
         task_id: str,
         task_path: str = "",
@@ -138,16 +137,16 @@ class FencedPostgresSaver:
                 )
                 thread = cur.fetchone()
                 if thread is None or thread["status"] != "active":
-                    raise DriverFenceLost(
-                        f"[{stage}] driver thread {fence.thread_id} not active"
-                    )
+                    raise DriverFenceLost(f"[{stage}] driver thread {fence.thread_id} not active")
                 if fence.binding_hash and thread["binding_hash"] != fence.binding_hash:
                     raise DriverFenceLost(f"[{stage}] binding_hash mismatch")
                 if int(thread["execution_generation"]) != int(run["active_generation"]):
                     raise DriverFenceLost(f"[{stage}] execution generation mismatch")
 
 
-def open_graph_connection(dsn: str, *, search_path: str = "graph, app, public") -> Connection:
+def open_graph_connection(
+    dsn: str, *, search_path: str = "graph, app, public"
+) -> Connection[dict[str, Any]]:
     """Dedicated AUTOCOMMIT psycopg connection for graph advisory lock + checkpoint."""
     conn = Connection.connect(dsn, autocommit=True, row_factory=dict_row)
     with conn.cursor() as cur:
@@ -155,7 +154,7 @@ def open_graph_connection(dsn: str, *, search_path: str = "graph, app, public") 
     return conn
 
 
-def try_acquire_graph_advisory_lock(conn: Connection, run_id: str) -> bool:
+def try_acquire_graph_advisory_lock(conn: Connection[dict[str, Any]], run_id: str) -> bool:
     """Session-level try-lock for serializing drive_once on one Run."""
     with conn.cursor() as cur:
         cur.execute(
@@ -169,7 +168,7 @@ def try_acquire_graph_advisory_lock(conn: Connection, run_id: str) -> bool:
         return bool(value)
 
 
-def release_graph_advisory_lock(conn: Connection, run_id: str) -> None:
+def release_graph_advisory_lock(conn: Connection[dict[str, Any]], run_id: str) -> None:
     with conn.cursor() as cur:
         cur.execute(
             "SELECT pg_advisory_unlock(hashtext(%s))",
@@ -177,7 +176,7 @@ def release_graph_advisory_lock(conn: Connection, run_id: str) -> None:
         )
 
 
-def setup_graph_schema(conn: Connection) -> None:
+def setup_graph_schema(conn: Connection[dict[str, Any]]) -> None:
     """Install/upgrade PostgresSaver tables once under an install advisory lock.
 
     Resident Drivers must not call this on every boot without the migrator role.

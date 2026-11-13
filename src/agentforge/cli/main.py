@@ -14,7 +14,6 @@ import uvicorn
 from pydantic import ValidationError
 
 from agentforge import __version__
-from agentforge.api.app import create_app
 from agentforge.core.config import Settings
 from agentforge.core.credentials import (
     CredentialError,
@@ -34,7 +33,12 @@ from agentforge.core.exit_codes import (
 )
 from agentforge.observability.logging import configure_logging
 from agentforge.runtime.components import component_status_snapshot
-from agentforge.runtime.control import admits_new_work, apply_admission, read_admission, write_admission
+from agentforge.runtime.control import (
+    admits_new_work,
+    apply_admission,
+    read_admission,
+    write_admission,
+)
 from agentforge.runtime.doctor import run_doctor
 from agentforge.runtime.drain import collect_drain_coordination
 from agentforge.runtime.instance import (
@@ -193,6 +197,8 @@ def start(
         )
     else:
         typer.echo(f"AgentForge API: {settings.base_url}/api/v1/health", err=True)
+
+    from agentforge.api.app import create_app
 
     api = create_app(settings)
     server = uvicorn.Server(
@@ -828,7 +834,7 @@ def queue_work(
 ) -> None:
     """Run the model-operation worker (uses API/driver DB credentials)."""
     from agentforge.queue.app import open_app
-    from agentforge.queue.constants import CONTROL_QUEUE_NAME, DEFAULT_QUEUE_NAME
+    from agentforge.queue.constants import CONTROL_QUEUE_NAME, DEFAULT_QUEUE_NAME, DRIVER_QUEUE_NAME
 
     settings = load_settings()
     try:
@@ -865,12 +871,14 @@ def queue_work(
         if once:
             # Single fetch cycle — suitable for supervised ticks / tests.
             app_q.run_worker(
-                queues=[CONTROL_QUEUE_NAME if control else DEFAULT_QUEUE_NAME],
+                queues=[CONTROL_QUEUE_NAME, DRIVER_QUEUE_NAME] if control else [DEFAULT_QUEUE_NAME],
                 wait=False,
                 install_signal_handlers=False,
             )
         else:
-            app_q.run_worker(queues=[CONTROL_QUEUE_NAME if control else DEFAULT_QUEUE_NAME])
+            app_q.run_worker(
+                queues=[CONTROL_QUEUE_NAME, DRIVER_QUEUE_NAME] if control else [DEFAULT_QUEUE_NAME]
+            )
     finally:
         app_q.close()
     emit({"status": "stopped"}, as_json=json_out, human="queue worker stopped")
@@ -907,9 +915,9 @@ def queue_replay(
 def agent_summary(
     environment_id: str = typer.Option("local", "--environment-id"),
     run_id: str | None = typer.Option(None, "--run-id"),
-    required_capability: list[str] | None = typer.Option(
-        None, "--required-capability", help="Repeatable capability filter"
-    ),
+    required_capability: Annotated[
+        list[str] | None, typer.Option("--required-capability", help="Repeatable capability filter")
+    ] = None,
     json_out: bool = typer.Option(False, "--json"),
 ) -> None:
     """Agent inventory summary (products/profiles/instances). Not Run.sequence."""
@@ -1626,8 +1634,8 @@ def run_accept(
     expected_status_version: int = typer.Option(..., "--expected-status-version"),
     idempotency_key: str = typer.Option(..., "--idempotency-key"),
     decision: str = typer.Option("accept", "--decision"),
-    member_id: list[str] | None = typer.Option(None, "--member-id"),
-    rejected_member_id: list[str] | None = typer.Option(None, "--rejected-member-id"),
+    member_id: Annotated[list[str] | None, typer.Option("--member-id")] = None,
+    rejected_member_id: Annotated[list[str] | None, typer.Option("--rejected-member-id")] = None,
     manifest_revision: int = typer.Option(1, "--manifest-revision"),
     note: str | None = typer.Option(None, "--note"),
     json_out: bool = typer.Option(False, "--json"),
@@ -1686,7 +1694,7 @@ def run_events(
     run_id: str = typer.Option(..., "--run-id"),
     follow: bool = typer.Option(False, "--follow"),
     after_sequence: int | None = typer.Option(None, "--after-sequence"),
-    cursor_file: Path | None = typer.Option(None, "--cursor-file"),
+    cursor_file: Annotated[Path | None, typer.Option("--cursor-file")] = None,
     json_out: bool = typer.Option(False, "--json"),
 ) -> None:
     """Stream run events via SSE. Does not start the Run. Bearer never written to cursor file."""

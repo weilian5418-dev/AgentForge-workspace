@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-import json
-import os
 import subprocess
 import uuid
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.engine import Engine
@@ -59,8 +58,8 @@ def _now(session: Session) -> datetime:
     try:
         value = db_now(session)
         if getattr(value, "tzinfo", None) is None:
-            return value.replace(tzinfo=UTC)  # type: ignore[union-attr]
-        return value  # type: ignore[return-value]
+            return value.replace(tzinfo=UTC)
+        return value
     except Exception:
         return datetime.now(UTC)
 
@@ -97,6 +96,7 @@ def open_validation_cycle(
             "checkVersion": c.version,
             "required": True,
             "configHash": c.config_hash,
+            "config": c.raw,
         }
         for c in policy.required_checks
     ]
@@ -185,7 +185,7 @@ def request_check_run(
             run_id=None,
             intent_type="integration_check",
             target="integration_check",
-            payload={"checkRunId": row.id, "cycleId": cycle_id},
+            payload={"operationId": row.id, "checkRunId": row.id, "cycleId": cycle_id},
             idempotency_key=f"integration_check:{row.id}",
             delivery_status="pending",
             attempt_count=0,
@@ -216,7 +216,7 @@ def process_check_run(
         run_row = session.get(IntegrationCheckRunRow, check_run_id, with_for_update=True)
         if run_row is None:
             raise CheckWorkerError("check_run_not_found", check_run_id)
-        if run_row.status not in {"not_run", "unknown"}:
+        if run_row.status != "not_run":
             # Do not restart possibly still-running processes
             report = session.scalar(
                 select(IntegrationCheckReportRow).where(
@@ -234,6 +234,26 @@ def process_check_run(
         if version is None:
             raise CheckWorkerError("version_not_found", cycle.version_id)
 
+        from agentforge.contracts.plans import PlanSpec
+        from agentforge.integration.authority import (
+            assert_run_deliverable,
+            assert_selection_current,
+        )
+        from agentforge.storage.models import IntegrationSelectionRow
+
+        owner = session.get(Run, version.run_id, with_for_update=True)
+        if owner is None:
+            raise CheckWorkerError("run_not_found", version.run_id)
+        try:
+            assert_run_deliverable(session, owner)
+            plan = assert_selection_current(
+                session, owner, session.get(IntegrationSelectionRow, version.selection_id)
+            )
+        except ValueError as exc:
+            raise CheckWorkerError("selection_stale", str(exc)) from exc
+        policy_spec = PlanSpec.model_validate(plan.spec_json).integration_policy
+        if policy_spec is None:
+            raise CheckWorkerError("policy_not_confirmed", "Missing confirmed integration policy")
         adapter = reg.get(run_row.check_id, run_row.check_version)
         spec = next(
             (
@@ -252,19 +272,25 @@ def process_check_run(
 
         tree_hash = version.tree_manifest_hash or version.content_hash
         scratch = Path(settings.state_dir) / "checks" / run_row.id
-        scratch.mkdir(parents=True, exist_ok=True)
         workspace = Path(settings.state_dir) / "integration_builds" / "_checks" / version.id
-        workspace.mkdir(parents=True, exist_ok=True)
 
         context = {
             "workspacePath": str(workspace),
             "outputDir": str(scratch),
             "treeHash": tree_hash,
             "versionId": version.id,
-            "pythonExecutable": os.environ.get("AGENTFORGE_CHECK_PYTHON", "python"),
+            "pythonExecutable": __import__("sys").executable,
             "containerVerified": False,
-            "requireContainer": False,
+            "requireContainer": True,
         }
+        context["requireContainer"] = policy_spec.execution_mode == "container"
+        if (
+            policy_spec.execution_mode == "host_authorized"
+            and owner.execution_profile != "host_authorized"
+        ):
+            raise CheckWorkerError(
+                "check_capability_unverified", "Host execution was not authorized"
+            )
         try:
             approved = adapter.build_execution_request(context=context, config=cfg)
         except CheckError as exc:
@@ -279,13 +305,29 @@ def process_check_run(
         approved_req = approved
         tree_hash_fixed = tree_hash
         adapter_ref = adapter
+        content_hash_fixed = version.content_hash
+        version_id_fixed = version.id
+        policy_hash_fixed = cycle.policy_hash
 
+    # Restore exactly this immutable version after the dispatch intent is committed.
+    from agentforge.artifacts.store import ArtifactStore
+    from agentforge.integration.objects import load_tree, materialize_tree, verify_materialized
+
+    tree = load_tree(
+        ArtifactStore(settings.state_dir / "artifact_store"), content_hash_fixed, tree_hash_fixed
+    )
+    materialize_tree(tree, ArtifactStore(settings.state_dir / "artifact_store"), workspace)
+    scratch.mkdir(parents=True, exist_ok=False)
     # Outside short update — execute
     if executor is not None:
         receipt = executor(approved_req)
     else:
         receipt = _host_execute(approved_req, tree_hash=tree_hash_fixed)
 
+    if not verify_materialized(tree, workspace):
+        from dataclasses import replace
+
+        receipt = replace(receipt, tree_hash_after="0" * 64)
     report_data = structured_report
     if report_data is None:
         json_path = Path(approved_req.output_dir) / "pytest_report.json"
@@ -300,8 +342,8 @@ def process_check_run(
         except ReportError:
             report_data = {}
     report_data = dict(report_data or {})
-    report_data.setdefault("minimumCollectedTests", min_tests)
-    report_data.setdefault("allowAllSkipped", allow_skip)
+    report_data["minimumCollectedTests"] = min_tests
+    report_data["allowAllSkipped"] = allow_skip
     report_data["argvDefinitionHash"] = approved_req.argv_definition_hash
 
     outcome = adapter_ref.parse_result(receipt, report_data)
@@ -314,6 +356,13 @@ def process_check_run(
         assert cycle is not None
         version = session.get(IntegrationVersionRow, cycle.version_id)
         assert version is not None
+        if (
+            run_row.operation_ref != approved_req.argv_definition_hash[:32]
+            or run_row.status != "unknown"
+            or version.id != version_id_fixed
+            or cycle.policy_hash != policy_hash_fixed
+        ):
+            raise CheckWorkerError("stale_check_receipt", "Dispatch binding changed")
         now = _now(session)
         run_row.status = outcome.outcome
         run_row.finished_at = now
@@ -326,11 +375,7 @@ def process_check_run(
             environment_hash=cycle.environment_fingerprint,
             outcome=outcome.outcome,
             structured_result=outcome.structured,
-            evidence_refs=[
-                x
-                for x in [receipt.stdout_log_id, receipt.stderr_log_id]
-                if x
-            ],
+            evidence_refs=[x for x in [receipt.stdout_log_id, receipt.stderr_log_id] if x],
             report_hash=outcome.report_hash,
             created_at=now,
         )
@@ -350,7 +395,11 @@ def process_check_run(
             },
         )
         delivery = session.get(RunDeliveryRow, version.run_id)
-        if delivery is not None and outcome.outcome == "failed":
+        if (
+            delivery is not None
+            and delivery.current_version_id == version.id
+            and outcome.outcome == "failed"
+        ):
             delivery.technical_status = "failed"
             delivery.updated_at = now
         session.flush()
@@ -358,44 +407,67 @@ def process_check_run(
 
 
 def _host_execute(approved: Any, *, tree_hash: str) -> CheckExecutionReceipt:
-    """Honest host_authorized execution — not an OS sandbox."""
+    """Explicit host-authorized mode, bounded file capture; never claim an OS sandbox."""
+    import threading
+
     log_dir = Path(approved.output_dir)
-    log_dir.mkdir(parents=True, exist_ok=True)
-    stdout_path = log_dir / "stdout.log"
-    stderr_path = log_dir / "stderr.log"
+    stdout_path, stderr_path = log_dir / "stdout.log", log_dir / "stderr.log"
+    if approved.execution_mode != "host_authorized":
+        raise CheckWorkerError("check_capability_unverified", "No verified container executor")
+
+    def drain(pipe: Any, path: Path) -> None:
+        remaining = 2 * 1024 * 1024
+        with path.open("wb") as log:
+            while chunk := pipe.read(8192):
+                if remaining:
+                    written = chunk[:remaining]
+                    log.write(written)
+                    remaining -= len(written)
+        pipe.close()
+
+    from agentforge.integration.processes import ProcessTree
+
+    process_tree = ProcessTree()
+    proc = process_tree.start(
+        list(approved.argv),
+        cwd=approved.cwd,
+        env=approved.env_whitelist,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        shell=False,
+    )
+    readers = [
+        threading.Thread(target=drain, args=(proc.stdout, stdout_path), daemon=True),
+        threading.Thread(target=drain, args=(proc.stderr, stderr_path), daemon=True),
+    ]
+    for reader in readers:
+        reader.start()
     timed_out = False
-    exit_code: int | None = None
     try:
-        proc = subprocess.Popen(  # noqa: S603 — argv from registry only, shell=False
-            list(approved.argv),
-            cwd=approved.cwd,
-            env={**approved.env_whitelist},
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            shell=False,
-        )
-        try:
-            out, err = proc.communicate(timeout=approved.max_duration_seconds)
-        except subprocess.TimeoutExpired:
-            timed_out = True
-            proc.kill()
-            out, err = proc.communicate(timeout=30)
-        exit_code = proc.returncode
-        stdout_path.write_bytes(out or b"")
-        stderr_path.write_bytes(err or b"")
-        termination_confirmed = proc.poll() is not None
-    except OSError:
-        timed_out = False
-        termination_confirmed = True
-        exit_code = None
-        stdout_path.write_bytes(b"")
-        stderr_path.write_bytes(b"spawn_failed")
+        proc.wait(timeout=approved.max_duration_seconds)
+    except subprocess.TimeoutExpired:
+        timed_out = True
+        process_tree.terminate()
+        proc.wait(timeout=10)
+    for reader in readers:
+        reader.join(timeout=2)
+    # Host PID exit alone cannot prove descendant quiescence. On an authorized host,
+    # terminate any remaining process group before recording a safe receipt.
+    terminated = (
+        not timed_out and process_tree.quiescent() and not any(r.is_alive() for r in readers)
+    )
+    if not terminated:
+        process_tree.terminate()
+        for reader in readers:
+            reader.join(timeout=2)
+        terminated = process_tree.quiescent() and not any(r.is_alive() for r in readers)
+    process_tree.close()
     return CheckExecutionReceipt(
-        exit_code=exit_code,
+        exit_code=proc.returncode,
         timed_out=timed_out,
-        termination_confirmed=termination_confirmed if not timed_out else False,
-        stdout_log_id=stdout_path.stem,
-        stderr_log_id=stderr_path.stem,
+        termination_confirmed=terminated,
+        stdout_log_id=f"{log_dir.name}/stdout",
+        stderr_log_id=f"{log_dir.name}/stderr",
         report_path=str(log_dir / "junit.xml"),
         tree_hash_before=tree_hash,
         tree_hash_after=tree_hash,
@@ -410,22 +482,64 @@ def start_validation_for_version(
     principal: AuthenticatedPrincipal,
     version_id: str,
     body: ValidationCycleRequest,
-    check_specs: list[dict[str, Any]],
+    check_specs: list[dict[str, Any]] | None = None,
 ) -> ValidationCycleView:
-    try:
-        policy = compile_integration_policy(
-            policy_ref=body.policy_ref,
-            check_specs=check_specs,
-        )
-    except CheckError as exc:
-        raise CheckWorkerError(exc.code, exc.message) from exc
+    import sys
+
+    from agentforge.contracts.plans import PlanSpec
+    from agentforge.integration.authority import assert_run_deliverable, assert_selection_current
+    from agentforge.queries.authorization import authorize_run_read
+    from agentforge.storage.models import IntegrationSelectionRow
+
     with unit_of_work_connection(engine) as uow:
         version = uow.session.get(IntegrationVersionRow, version_id)
         if version is None:
             raise CheckWorkerError("version_not_found", version_id)
-        # ensure run exists
-        if uow.session.get(Run, version.run_id) is None:
+        authorized = authorize_run_read(uow.session, principal, version.run_id)
+        run = uow.session.get(Run, authorized.id, with_for_update=True, populate_existing=True)
+        if run is None:
             raise CheckWorkerError("run_not_found", version.run_id)
+        try:
+            assert_run_deliverable(uow.session, run)
+            plan = assert_selection_current(
+                uow.session, run, uow.session.get(IntegrationSelectionRow, version.selection_id)
+            )
+        except ValueError as exc:
+            raise CheckWorkerError("selection_stale", str(exc)) from exc
+        confirmed = PlanSpec.model_validate(plan.spec_json).integration_policy
+        if confirmed is None or confirmed.policy_ref != body.policy_ref:
+            raise CheckWorkerError(
+                "policy_not_confirmed", "Policy must be part of the approved plan"
+            )
+        if check_specs is not None and check_specs != confirmed.checks:
+            raise CheckWorkerError("policy_not_confirmed", "Caller cannot replace confirmed checks")
+        try:
+            policy = compile_integration_policy(
+                policy_ref=body.policy_ref,
+                check_specs=confirmed.checks,
+                required_review_roles=confirmed.required_review_roles,
+                environment_capabilities=frozenset(
+                    {"host_process", "filesystem_read", "python_interpreter"}
+                )
+                if confirmed.execution_mode == "host_authorized"
+                and run.execution_profile == "host_authorized"
+                else frozenset(),
+            )
+        except CheckError as exc:
+            raise CheckWorkerError(exc.code, exc.message) from exc
+        from dataclasses import replace
+
+        policy = replace(
+            policy,
+            environment_fingerprint=sha256_hex(
+                {
+                    "python": sys.executable,
+                    "pythonVersion": sys.version,
+                    "mode": confirmed.execution_mode,
+                    "policyHash": policy.policy_hash,
+                }
+            ),
+        )
         cycle = open_validation_cycle(
             uow.session,
             principal=principal,

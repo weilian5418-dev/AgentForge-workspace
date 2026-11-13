@@ -5,15 +5,14 @@ from __future__ import annotations
 from typing import Annotated, Any, cast
 
 from fastapi import APIRouter, Depends, Request, Response
+from pydantic import Field
 from starlette.exceptions import HTTPException
 
+from agentforge.contracts.base import ApiInputModel
 from agentforge.contracts.collaboration import (
     DriverStatusResponse,
     RunWaitListResponse,
 )
-from pydantic import Field
-
-from agentforge.contracts.base import ApiInputModel
 from agentforge.contracts.common import ShortText
 from agentforge.contracts.recovery import (
     RecoveryCaseListResponse,
@@ -93,9 +92,7 @@ def run_action(
     engine = _require_engine(request, settings)
     try:
         with unit_of_work_connection(engine) as uow:
-            accepted = RunControlService(uow.session).request_action(
-                run_id, body, actor="user:api"
-            )
+            accepted = RunControlService(uow.session).request_action(run_id, body, actor="user:api")
     except RunControlError as exc:
         raise _map_control(exc) from exc
     response.status_code = 202
@@ -203,9 +200,7 @@ def decide_recovery_case(
     engine = _require_engine(request, settings)
     try:
         with unit_of_work_connection(engine) as uow:
-            return RecoveryService(uow.session).apply_decision(
-                case_id, body, actor="user:api"
-            )
+            return RecoveryService(uow.session).apply_decision(case_id, body, actor="user:api")
     except RecoveryError as exc:
         raise _map_recovery(exc) from exc
 

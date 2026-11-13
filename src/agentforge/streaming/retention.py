@@ -47,8 +47,8 @@ def get_replay_window(session: Session, run_id: str) -> ReplayWindow:
         raise RetentionError("run_not_found", run_id)
     window = ensure_replay_window(session, run_id)
     latest = int(run.last_sequence or 0)
-    floor = int(window.replay_floor_sequence)
-    archived = int(window.last_archived_sequence)
+    floor = int(window.replay_floor_sequence) if window else 0
+    archived = int(window.last_archived_sequence) if window else 0
     if floor > latest:
         raise RetentionError(
             "storage_integrity",
@@ -63,7 +63,7 @@ def get_replay_window(session: Session, run_id: str) -> ReplayWindow:
         run_id=run_id,
         replay_floor_sequence=floor,
         last_archived_sequence=archived,
-        retention_version=int(window.retention_version),
+        retention_version=int(window.retention_version) if window else 1,
         latest_sequence=latest,
     )
 
@@ -250,7 +250,10 @@ def archive_event_range(
     digest = hashlib.sha256(raw).hexdigest()
     archive_dir = Path(archive_dir)
     archive_dir.mkdir(parents=True, exist_ok=True)
-    path = archive_dir / f"{run_id}_{from_sequence_exclusive}_{to_sequence_inclusive}_{digest[:16]}.json"
+    path = (
+        archive_dir
+        / f"{run_id}_{from_sequence_exclusive}_{to_sequence_inclusive}_{digest[:16]}.json"
+    )
     # Write then verify before raising watermarks
     path.write_bytes(raw)
     verified = path.read_bytes()
@@ -267,9 +270,7 @@ def archive_event_range(
 
     window.last_archived_sequence = to_sequence_inclusive
     if raise_floor:
-        window.replay_floor_sequence = max(
-            int(window.replay_floor_sequence), to_sequence_inclusive
-        )
+        window.replay_floor_sequence = max(int(window.replay_floor_sequence), to_sequence_inclusive)
     window.retention_version = int(window.retention_version) + 1
     window.updated_at = _now(session)
     if delete_online:
@@ -296,7 +297,7 @@ def _now(session: Session) -> datetime:
     try:
         value = db_now(session)
         if getattr(value, "tzinfo", None) is None:
-            return value.replace(tzinfo=UTC)  # type: ignore[union-attr]
-        return value  # type: ignore[return-value]
+            return value.replace(tzinfo=UTC)
+        return value
     except Exception:
         return datetime.now(UTC)

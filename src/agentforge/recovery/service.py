@@ -14,6 +14,7 @@ from agentforge.contracts.recovery import (
     RecoveryDecision,
     RecoveryDecisionRequest,
     RecoveryRecommendation,
+    RecoveryReport,
 )
 from agentforge.contracts.runs import OperationAccepted
 from agentforge.driver.binding import sha256_hex
@@ -39,8 +40,8 @@ def _now(session: Session | None = None) -> datetime:
         try:
             value = db_now(session)
             if getattr(value, "tzinfo", None) is None:
-                return value.replace(tzinfo=UTC)  # type: ignore[union-attr]
-            return value  # type: ignore[return-value]
+                return value.replace(tzinfo=UTC)
+            return value
         except Exception:
             pass
     return datetime.now(UTC)
@@ -436,13 +437,13 @@ class RecoveryService:
         )
         if prior is not None:
             if prior.decision != body.decision or prior.context_hash != body.context_hash:
-                raise RecoveryError("idempotency_conflict", "decision key reused with different body")
-            return OperationAccepted(
-                operation_id=prior.id, status="accepted", run_id=run.id
-            )
+                raise RecoveryError(
+                    "idempotency_conflict", "decision key reused with different body"
+                )
+            return OperationAccepted(operation_id=prior.id, status="accepted", run_id=run.id)
 
         recommendation = self.recommend(case_id)
-        if body.decision != recommendation.action and not actor.startswith("user:"):
+        if body.decision != recommendation.action:
             raise RecoveryError(
                 "decision_mismatch",
                 "non-user actor may only apply the current recommendation",
@@ -473,17 +474,37 @@ class RecoveryService:
                 created_at=_now(self.session),
             )
         )
-        case.status = "applied"
+        if body.decision in {
+            "await_reconciliation",
+            "await_stop_verification",
+            "wait_authorization",
+            "block_or_rework",
+        }:
+            case.status = "blocked"
+        else:
+            case.status = "applying"
+        self.session.add(
+            Outbox(
+                id=_id("obx"),
+                run_id=run.id,
+                intent_type="recovery.apply",
+                target="recovery",
+                payload={"operationId": decision_id, "caseId": case.id},
+                idempotency_key=f"recovery.apply:{decision_id}",
+                delivery_status="pending",
+                attempt_count=0,
+            )
+        )
         case.proposed_action = body.decision
         case.case_version = int(case.case_version) + 1
         case.updated_at = _now(self.session)
         append_fact(
             self.session,
             run.id,
-            "recovery.applied",
+            "recovery.observed",
             {
                 "caseId": case.id,
-                "status": "applied",
+                "status": case.status,
                 "action": body.decision,
                 "blockerCodes": list(recommendation.reason_codes),
             },

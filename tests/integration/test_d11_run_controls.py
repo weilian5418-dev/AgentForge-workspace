@@ -34,9 +34,7 @@ def engine():
     eng = create_database_engine(Settings(_env_file=None, database_url=url))
     assert eng is not None
     with eng.connect() as conn:
-        exists = conn.execute(
-            text("SELECT to_regclass('app.recovery_cases') IS NOT NULL")
-        ).scalar()
+        exists = conn.execute(text("SELECT to_regclass('app.recovery_cases') IS NOT NULL")).scalar()
         if not exists:
             pytest.skip("D11 migration 20261112_0017 not applied")
     yield eng

@@ -268,6 +268,12 @@ def _process_instance_operation(
             instance.lifecycle = "stopped"
             instance.activity = "idle"
             instance.status = "stopped"
+            if op.attempt_id:
+                stopped_attempt = session.get(InstanceAttemptRow, op.attempt_id)
+                if stopped_attempt and stopped_attempt.instance_id == instance.id:
+                    stopped_attempt.status = "stopped"
+                    stopped_attempt.stop_verified_at = now()
+
         elif kind == "close" and support in {"confirmed", "acked", "succeeded"}:
             native = required(session, NativeSessionRow, instance.native_session_id)
             native.binding_status = "closed"

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
 
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
@@ -45,17 +44,13 @@ class DriverRepository:
 
     def get_wait_by_key(self, run_id: str, wait_key: str) -> RunWaitRow | None:
         return self.session.scalar(
-            select(RunWaitRow).where(
-                RunWaitRow.run_id == run_id, RunWaitRow.wait_key == wait_key
-            )
+            select(RunWaitRow).where(RunWaitRow.run_id == run_id, RunWaitRow.wait_key == wait_key)
         )
 
     def list_open_waits(self, run_id: str) -> list[RunWaitRow]:
         return list(
             self.session.scalars(
-                select(RunWaitRow).where(
-                    RunWaitRow.run_id == run_id, RunWaitRow.status == "open"
-                )
+                select(RunWaitRow).where(RunWaitRow.run_id == run_id, RunWaitRow.status == "open")
             ).all()
         )
 
@@ -144,8 +139,9 @@ class DriverRepository:
                 RunWakeSignalRow.status.in_(("pending", "claimed")),
             )
             .values(status="completed")
+            .returning(RunWakeSignalRow.id)
         )
-        return int(result.rowcount or 0)
+        return len(result.all())
 
     def mark_wake_obsolete(self, wake_id: str) -> None:
         row = self.get_wake(wake_id)

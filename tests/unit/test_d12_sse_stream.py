@@ -9,9 +9,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from agentforge.contracts.event_stream import PublicEventEnvelope
+from agentforge.contracts.event_stream import PublicEventEnvelope, SseControlFrame
 from agentforge.core.config import Settings
-from agentforge.core.credentials import CredentialRecord, CredentialVerifier
+from agentforge.core.credentials import CredentialVerifier
 from agentforge.queries.authorization import AuthenticatedPrincipal
 from agentforge.streaming.client import (
     ClientRunProjection,
@@ -21,8 +21,11 @@ from agentforge.streaming.client import (
     reconnect_from_cursor,
     save_cursor_file,
 )
-from agentforge.streaming.framing import encode_business_event, encode_control_frame, encode_heartbeat
-from agentforge.contracts.event_stream import SseControlFrame
+from agentforge.streaming.framing import (
+    encode_business_event,
+    encode_control_frame,
+    encode_heartbeat,
+)
 from agentforge.streaming.service import (
     EventStreamService,
     StreamLimitError,
@@ -89,14 +92,20 @@ def test_cursor_file_rejects_secrets_and_cross_run(tmp_path: Path) -> None:
 
 def test_apply_public_event_dedupe_and_gap() -> None:
     proj = ClientRunProjection(run_id="run_1", applied_sequence=2)
-    assert apply_public_event(
-        proj,
-        {"runId": "run_1", "sequence": 2, "eventId": "evt_2"},
-    ) is False
-    assert apply_public_event(
-        proj,
-        {"runId": "run_1", "sequence": 3, "eventId": "evt_3"},
-    ) is True
+    assert (
+        apply_public_event(
+            proj,
+            {"runId": "run_1", "sequence": 2, "eventId": "evt_2"},
+        )
+        is False
+    )
+    assert (
+        apply_public_event(
+            proj,
+            {"runId": "run_1", "sequence": 3, "eventId": "evt_3"},
+        )
+        is True
+    )
     assert proj.applied_sequence == 3
     with pytest.raises(ValueError, match="gap"):
         apply_public_event(
@@ -125,9 +134,7 @@ def test_read_bounded_batch_resync_when_below_floor() -> None:
     engine.connect.return_value.__enter__.return_value = conn
     with patch("agentforge.streaming.service.Session") as session_cls:
         session_cls.return_value.__enter__.return_value = session
-        with patch(
-            "agentforge.streaming.service.authorize_run_read", return_value=MagicMock()
-        ):
+        with patch("agentforge.streaming.service.authorize_run_read", return_value=MagicMock()):
             with patch(
                 "agentforge.streaming.service.read_after_in_window",
                 return_value=WindowReadResult(
@@ -157,12 +164,12 @@ async def test_iter_frames_auth_revoked_emits_control() -> None:
     from agentforge.core.credentials import CredentialError
 
     verifier.verify.side_effect = CredentialError("revoked")
-    service = EventStreamService(
-        engine, settings, verifier=verifier, slots=StreamSlotRegistry()
-    )
+    service = EventStreamService(engine, settings, verifier=verifier, slots=StreamSlotRegistry())
     principal = AuthenticatedPrincipal("c1", 1, "cred:c1")
 
-    with patch.object(service, "ensure_current_authorization", side_effect=StreamLimitError("auth_revoked", "x")):
+    with patch.object(
+        service, "ensure_current_authorization", side_effect=StreamLimitError("auth_revoked", "x")
+    ):
         frames = []
         async for frame in service.iter_frames(
             principal=principal,

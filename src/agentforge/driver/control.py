@@ -31,8 +31,8 @@ def _now(session: Session | None = None) -> datetime:
         try:
             value = db_now(session)
             if getattr(value, "tzinfo", None) is None:
-                return value.replace(tzinfo=UTC)  # type: ignore[union-attr]
-            return value  # type: ignore[return-value]
+                return value.replace(tzinfo=UTC)
+            return value
         except Exception:
             pass
     return datetime.now(UTC)
@@ -72,10 +72,6 @@ class RunControlService:
         if run is None:
             raise RunControlError("run_not_found", run_id)
 
-        expected = int(body.expected_status_version)
-        if expected != int(run.status_version):
-            raise RunControlError("status_version_conflict", "expectedStatusVersion mismatch")
-
         existing = None
         for row in self.session.scalars(
             select(AsyncOperationRow).where(
@@ -89,13 +85,24 @@ class RunControlService:
         if existing is not None:
             prior_action = (existing.payload or {}).get("action")
             prior_reason = (existing.payload or {}).get("reason")
-            if prior_action != body.action or prior_reason != body.reason:
-                raise RunControlError("idempotency_conflict", "control key reused with different body")
+            if (
+                prior_action != body.action
+                or prior_reason != body.reason
+                or (existing.payload or {}).get("expectedStatusVersion")
+                != body.expected_status_version
+            ):
+                raise RunControlError(
+                    "idempotency_conflict", "control key reused with different body"
+                )
             return OperationAccepted(
                 operation_id=existing.id,
                 status="accepted" if existing.status == "accepted" else existing.status,  # type: ignore[arg-type]
                 run_id=run_id,
             )
+
+        expected = int(body.expected_status_version)
+        if expected != int(run.status_version):
+            raise RunControlError("status_version_conflict", "expectedStatusVersion mismatch")
 
         op_id = _id("aop")
         if body.action == "pause":
@@ -143,6 +150,7 @@ class RunControlService:
                 "reason": body.reason,
                 "actor": actor,
                 "statusVersionAtAccept": run.status_version,
+                "expectedStatusVersion": body.expected_status_version,
             },
             created_at=_now(self.session),
             updated_at=_now(self.session),
@@ -300,27 +308,46 @@ class RunControlService:
         if unknown:
             raise RunControlError("pending_side_effects", "unknown ops block resume")
 
-        if recovery_case_id:
-            from agentforge.storage.models import RecoveryCaseRow
+        from agentforge.storage.models import RecoveryCaseRow
 
-            case = self.session.get(RecoveryCaseRow, recovery_case_id)
-            if case is None or case.run_id != run_id:
-                raise RunControlError("case_not_found", recovery_case_id or "")
-            if case.status not in {"applied", "observing"} or case.proposed_action not in {
+        if not recovery_case_id:
+            raise RunControlError(
+                "recovery_evidence_stale", "A completed recovery case is required"
+            )
+        case = self.session.get(RecoveryCaseRow, recovery_case_id)
+        if (
+            case is None
+            or case.run_id != run_id
+            or case.status != "applied"
+            or case.proposed_action
+            not in {
                 "observe_existing",
                 "continue_stage_processing",
                 "resume_existing",
-                None,
-            }:
-                if case.status != "applied":
-                    raise RunControlError(
-                        "recovery_evidence_stale",
-                        "recovery decision not applied",
-                    )
-
+                "handoff_new_session",
+            }
+        ):
+            raise RunControlError("recovery_evidence_stale", "Recovery action is not complete")
+        binding = case.context_json or {}
+        if (case.plan_version, case.assignment_version, binding.get("activeGeneration")) != (
+            run.plan_version,
+            run.assignment_version,
+            run.active_generation,
+        ):
+            raise RunControlError("recovery_evidence_stale", "Recovery binding changed")
         run.status = "running"
         run.status_version = int(run.status_version) + 1
         run.updated_at = _now(self.session)
+        append_fact(
+            self.session,
+            run.id,
+            "run.status_changed",
+            {
+                "status": "running",
+                "statusVersion": run.status_version,
+                "reason": "verified recovery",
+            },
+        )
         self._update_control_op(operation_id, status="succeeded", message="running")
         return {"status": "running", "statusVersion": run.status_version}
 

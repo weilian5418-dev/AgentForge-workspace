@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from agentforge.driver.binding import sha256_hex
 
@@ -63,7 +63,7 @@ def read_build_marker(workspace: Path) -> dict[str, Any]:
     if not marker.is_file():
         raise WorkspaceError("workspace_identity_unknown", "build marker missing")
     try:
-        return json.loads(marker.read_text(encoding="utf-8"))
+        return cast(dict[str, Any], json.loads(marker.read_text(encoding="utf-8")))
     except (OSError, json.JSONDecodeError) as exc:
         raise WorkspaceError("workspace_identity_unknown", "build marker unreadable") from exc
 

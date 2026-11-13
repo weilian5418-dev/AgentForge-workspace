@@ -265,6 +265,53 @@
       "title": "Criterion",
       "type": "object"
     },
+    "IntegrationPolicySpec": {
+      "additionalProperties": false,
+      "properties": {
+        "checks": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "maxItems": 32,
+          "minItems": 1,
+          "title": "Checks",
+          "type": "array"
+        },
+        "executionMode": {
+          "default": "container",
+          "enum": [
+            "container",
+            "host_authorized"
+          ],
+          "title": "Executionmode",
+          "type": "string"
+        },
+        "policyRef": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Policyref",
+          "type": "string"
+        },
+        "requiredReviewRoles": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "type": "string"
+          },
+          "maxItems": 16,
+          "title": "Requiredreviewroles",
+          "type": "array"
+        }
+      },
+      "required": [
+        "policyRef",
+        "checks"
+      ],
+      "title": "IntegrationPolicySpec",
+      "type": "object"
+    },
     "PlanResourceEstimate": {
       "additionalProperties": false,
       "description": "Estimate only — does not reserve execution budget.",
@@ -347,7 +394,6 @@
     },
     "PlanSpec": {
       "additionalProperties": false,
-      "description": "Immutable complete plan definition for one planVersion.",
       "properties": {
         "baselineId": {
           "maxLength": 128,
@@ -394,6 +440,17 @@
           "maxItems": 64,
           "title": "Inputids",
           "type": "array"
+        },
+        "integrationPolicy": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/IntegrationPolicySpec"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "resourceEstimate": {
           "anyOf": [

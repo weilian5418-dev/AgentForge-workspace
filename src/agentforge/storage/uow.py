@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Any
+from datetime import datetime
 
 from sqlalchemy import Engine
 from sqlalchemy.orm import Session, sessionmaker
@@ -50,7 +50,7 @@ def unit_of_work_connection(engine: Engine) -> Iterator[UnitOfWork]:
         yield uow
 
 
-def db_now(session: Session) -> Any:
+def db_now(session: Session) -> datetime:
     """Database clock for lease/claim expiry comparisons.
 
     Prefer ``clock_timestamp()`` so lock-wait time is reflected (statement_timestamp
@@ -58,4 +58,7 @@ def db_now(session: Session) -> Any:
     """
     from sqlalchemy import text
 
-    return session.execute(text("SELECT clock_timestamp()")).scalar_one()
+    value: object = session.execute(text("SELECT clock_timestamp()")).scalar_one()
+    if not isinstance(value, datetime):
+        raise TypeError("Invalid database clock")
+    return value

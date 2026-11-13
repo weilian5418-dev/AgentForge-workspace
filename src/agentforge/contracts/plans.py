@@ -158,7 +158,15 @@ class PlanResourceEstimate(ContractModel):
     uncertainties: list[ShortText] = Field(default_factory=list, max_length=16)
 
 
+class IntegrationPolicySpec(ContractModel):
+    policy_ref: ShortText
+    checks: list[dict[str, Any]] = Field(min_length=1, max_length=32)
+    required_review_roles: list[OpaqueId] = Field(default_factory=list, max_length=16)
+    execution_mode: Literal["container", "host_authorized"] = "container"
+
+
 class PlanSpec(ContractModel):
+    integration_policy: IntegrationPolicySpec | None = None
     """Immutable complete plan definition for one planVersion."""
 
     goal: ShortText

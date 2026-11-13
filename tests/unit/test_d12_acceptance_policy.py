@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+from pydantic import ValidationError
 
 from agentforge.contracts.delivery import AcceptanceDecisionRequest, DeliveryManifestPayload
 from agentforge.delivery.acceptance import AcceptanceError, validate_member_dependency_closure
@@ -75,7 +76,7 @@ def _payload(**kwargs: object) -> DeliveryManifestPayload:
 
 
 def test_accept_rejects_authority_fields() -> None:
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         AcceptanceDecisionRequest.model_validate(
             {
                 "integrationVersion": "iv_1",
@@ -140,7 +141,7 @@ def test_failed_shared_check_blocks_code_accept() -> None:
 
 
 def test_partial_accept_requires_members() -> None:
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         AcceptanceDecisionRequest.model_validate(
             {
                 "integrationVersion": "iv_1",
@@ -154,7 +155,7 @@ def test_partial_accept_requires_members() -> None:
 
 
 def test_full_accept_cannot_reject_members() -> None:
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         AcceptanceDecisionRequest.model_validate(
             {
                 "integrationVersion": "iv_1",

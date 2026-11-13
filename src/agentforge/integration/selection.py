@@ -74,9 +74,7 @@ def _to_view(row: IntegrationSelectionRow) -> IntegrationSelection:
     )
 
 
-def _load_handoff_op(
-    session: Session, *, run_id: str, handoff_ref: str
-) -> SchedulerOperationRow:
+def _load_handoff_op(session: Session, *, run_id: str, handoff_ref: str) -> SchedulerOperationRow:
     ops = list(
         session.scalars(
             select(SchedulerOperationRow).where(
@@ -192,9 +190,7 @@ def resolve_released_inputs(
                 candidate=candidate,
             )
             snapshot_id = (
-                member.get("workspaceSnapshotId")
-                or member.get("snapshotId")
-                or candidate.id
+                member.get("workspaceSnapshotId") or member.get("snapshotId") or candidate.id
             )
             tree_hash = member.get("treeHash") or member.get("tree_hash")
             bindings.append(
@@ -310,10 +306,9 @@ def create_selection(
         and binding["assignmentVersion"] != run.assignment_version
     ):
         raise SelectionError("selection_stale", "assignment version drifted since handoff")
-    if (
-        binding.get("executionGeneration") is not None
-        and int(binding["executionGeneration"]) != int(run.active_generation)
-    ):
+    if binding.get("executionGeneration") is not None and int(
+        binding["executionGeneration"]
+    ) != int(run.active_generation):
         raise SelectionError("selection_stale", "execution generation drifted since handoff")
 
     release_ids = list(binding.get("releaseRecordIds") or [])

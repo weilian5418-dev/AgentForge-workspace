@@ -13,7 +13,9 @@ from agentforge.driver.binding import sha256_hex
 from agentforge.driver.fencing import assert_driver_fence
 from agentforge.storage.models import (
     AgentInstanceRow,
+    CollaborationMessageRow,
     DriverThreadRow,
+    GitWorkspaceRow,
     InstanceAttemptRow,
     Plan,
     PlanConfirmationRequestRow,
@@ -21,6 +23,7 @@ from agentforge.storage.models import (
     Run,
     RunWaitRow,
     StageRow,
+    StageSubmissionRow,
 )
 
 
@@ -96,12 +99,17 @@ class CollaborationSnapshot:
     releases: tuple[ReleaseSnap, ...] = ()
     open_waits: tuple[WaitSnap, ...] = ()
     active_thread_id: str | None = None
+    prepared_roles: tuple[str, ...] | None = None
+    pending_submissions: tuple[str, ...] = ()
     snapshot_hash: str = ""
     notes: tuple[str, ...] = field(default_factory=tuple)
 
     def active_attempt_for_wp(self, work_package_id: str) -> AttemptSnap | None:
         for a in self.attempts:
-            if a.work_package_id == work_package_id and a.status in ACTIVE_INSTANCE_ATTEMPT_STATUSES:
+            if (
+                a.work_package_id == work_package_id
+                and a.status in ACTIVE_INSTANCE_ATTEMPT_STATUSES
+            ):
                 return a
         return None
 
@@ -167,7 +175,13 @@ class SnapshotReader:
                 write_access_closed=bool(s.write_access_closed),
                 required_work_packages=tuple(s.required_work_packages or []),
             )
-            for s in self.session.scalars(select(StageRow).where(StageRow.run_id == run_id)).all()
+            for s in self.session.scalars(
+                select(StageRow).where(
+                    StageRow.run_id == run_id,
+                    StageRow.plan_version == run.plan_version,
+                    StageRow.assignment_version == run.assignment_version,
+                )
+            ).all()
         )
 
         work_packages: list[WorkPackageSnap] = []
@@ -175,30 +189,16 @@ class SnapshotReader:
             plan = self.session.scalar(
                 select(Plan).where(Plan.run_id == run_id, Plan.version == run.plan_version)
             )
-            spec = (plan.spec_json or {}) if plan is not None else {}
-            for wp in spec.get("workPackages") or spec.get("work_packages") or []:
-                if not isinstance(wp, dict):
-                    continue
+            from agentforge.contracts.plans import PlanSpec
+
+            spec = PlanSpec.model_validate(plan.spec_json) if plan is not None else None
+            for wp in spec.work_packages if spec else []:
                 work_packages.append(
                     WorkPackageSnap(
-                        work_package_id=str(
-                            wp.get("workPackageId") or wp.get("id") or wp.get("work_package_id")
-                        ),
-                        stage_id=(
-                            str(wp["stageId"])
-                            if wp.get("stageId")
-                            else str(wp["stage_id"])
-                            if wp.get("stage_id")
-                            else None
-                        ),
-                        role_id=(
-                            str(wp["roleId"])
-                            if wp.get("roleId")
-                            else str(wp["role_id"])
-                            if wp.get("role_id")
-                            else None
-                        ),
-                        required=bool(wp.get("required", True)),
+                        work_package_id=wp.id,
+                        stage_id=f"{run.id}:p{run.plan_version}:{wp.stage_id}",
+                        role_id=wp.owner_role_id,
+                        required=any(d.required for d in wp.deliverables),
                     )
                 )
 
@@ -211,7 +211,10 @@ class SnapshotReader:
                 stage_id=a.stage_id,
             )
             for a in self.session.scalars(
-                select(InstanceAttemptRow).where(InstanceAttemptRow.run_id == run_id)
+                select(InstanceAttemptRow).where(
+                    InstanceAttemptRow.run_id == run_id,
+                    InstanceAttemptRow.generation == run.active_generation,
+                )
             ).all()
         )
 
@@ -225,20 +228,30 @@ class SnapshotReader:
                 native_session_id=i.native_session_id,
             )
             for i in self.session.scalars(
-                select(AgentInstanceRow).where(AgentInstanceRow.run_id == run_id)
+                select(AgentInstanceRow).where(
+                    AgentInstanceRow.run_id == run_id,
+                    AgentInstanceRow.plan_version == run.plan_version,
+                    AgentInstanceRow.assignment_version == run.assignment_version,
+                )
             ).all()
         )
 
-        releases = tuple(
-            ReleaseSnap(
-                release_id=r.id,
-                stage_id=r.stage_id,
-                work_package_ids=tuple(r.work_package_ids or []),
+        releases = (
+            tuple(
+                ReleaseSnap(
+                    release_id=r.id,
+                    stage_id=r.stage_id,
+                    work_package_ids=tuple(r.work_package_ids or []),
+                )
+                for r in self.session.scalars(
+                    select(ReleaseRecordRow).where(
+                        ReleaseRecordRow.stage_id.in_([s.stage_id for s in stages] or ["__none__"])
+                    )
+                ).all()
             )
-            for r in self.session.scalars(
-                select(ReleaseRecordRow).where(ReleaseRecordRow.stage_id.in_([s.stage_id for s in stages] or ["__none__"]))
-            ).all()
-        ) if stages else ()
+            if stages
+            else ()
+        )
 
         open_waits = tuple(
             WaitSnap(
@@ -248,9 +261,7 @@ class SnapshotReader:
                 status=w.status,
             )
             for w in self.session.scalars(
-                select(RunWaitRow).where(
-                    RunWaitRow.run_id == run_id, RunWaitRow.status == "open"
-                )
+                select(RunWaitRow).where(RunWaitRow.run_id == run_id, RunWaitRow.status == "open")
             ).all()
         )
 
@@ -294,5 +305,32 @@ class SnapshotReader:
             releases=releases,
             open_waits=open_waits,
             active_thread_id=thread.thread_id if thread else None,
+            prepared_roles=tuple(
+                w.role_id
+                for w in self.session.scalars(
+                    select(GitWorkspaceRow).where(
+                        GitWorkspaceRow.project_id == run.project_id,
+                        GitWorkspaceRow.baseline_id == run.baseline_id,
+                        GitWorkspaceRow.status == "active",
+                    )
+                ).all()
+                if w.role_id
+            ),
+            pending_submissions=tuple(
+                msg.id
+                for msg in self.session.scalars(
+                    select(CollaborationMessageRow).where(
+                        CollaborationMessageRow.run_id == run.id,
+                        CollaborationMessageRow.message_type == "stage.submission",
+                        CollaborationMessageRow.plan_version == run.plan_version,
+                        CollaborationMessageRow.assignment_version == run.assignment_version,
+                    )
+                ).all()
+                if not self.session.scalar(
+                    select(StageSubmissionRow).where(
+                        StageSubmissionRow.idempotency_key == f"msg:{msg.id}"
+                    )
+                )
+            ),
             snapshot_hash=_hash_snapshot(base),
         )

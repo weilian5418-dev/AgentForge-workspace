@@ -82,9 +82,7 @@ def collect_drain_report(session: Session) -> dict[str, Any]:
 
     for runner in session.scalars(
         select(RunnerOperationRow).where(
-            RunnerOperationRow.status.in_(
-                ("unknown", "issued", "running", "needs_reconciliation")
-            )
+            RunnerOperationRow.status.in_(("unknown", "issued", "running", "needs_reconciliation"))
         )
     ).all():
         unknown_ops.append(

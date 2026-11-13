@@ -6,9 +6,10 @@ Real dual-product external acceptance remains a separate R15 evidence gate.
 
 from __future__ import annotations
 
-import json
+from datetime import UTC, datetime
 
 from agentforge.contracts.delivery import AcceptanceDecisionRequest
+from agentforge.contracts.event_stream import PublicEventEnvelope
 from agentforge.delivery.manifest import compute_manifest_hash
 from agentforge.integration.builder import TreeEntry, combine_approved_deltas, compute_tree_delta
 from agentforge.integration.checks import (
@@ -19,8 +20,6 @@ from agentforge.integration.checks import (
 from agentforge.integration.reviews import IntegrationFacts, evaluate_integration_facts
 from agentforge.streaming.client import apply_public_event, parse_sse_stream
 from agentforge.streaming.framing import encode_business_event
-from agentforge.contracts.event_stream import PublicEventEnvelope
-from datetime import UTC, datetime
 
 H = "a" * 64
 H2 = "b" * 64
@@ -95,7 +94,10 @@ def test_out_of_order_client_projection_does_not_rewind() -> None:
 def test_empty_required_checks_all_empty_not_pass() -> None:
     """空必需检查不 all([]) 通过."""
     assert evaluate_check_requirements(required=[], reports=[]) == "blocked"
-    assert evaluate_check_requirements(required=[], reports=[{"checkId": "x", "outcome": "passed"}]) == "blocked"
+    assert (
+        evaluate_check_requirements(required=[], reports=[{"checkId": "x", "outcome": "passed"}])
+        == "blocked"
+    )
 
 
 def test_path_exists_only_is_not_registered_software_check() -> None:
@@ -171,12 +173,14 @@ def test_evaluation_waiting_when_review_missing() -> None:
         build_conflict_free=True,
         content_integrity_ok=True,
         required_checks=[
-            {"checkId": "python_pytest", "required": True, "configHash": H}
+            {"checkId": "python_pytest", "checkVersion": "v1", "required": True, "configHash": H}
         ],
         check_reports=[
             {
                 "checkId": "python_pytest",
                 "outcome": "passed",
+                "configHash": H,
+                "checkVersion": "v1",
                 "treeHash": H,
                 "policyHash": H,
                 "environmentHash": H,

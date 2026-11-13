@@ -35,9 +35,7 @@ def test_submitted_attempt_waits_for_stop_not_resubmit() -> None:
         last_sequence=1,
         plan_confirmed=True,
         work_packages=(WorkPackageSnap("wp_a", "stage_a", "role_dev"),),
-        attempts=(
-            AttemptSnap("ia_1", "wp_a", "inst_1", "submitted", "stage_a"),
-        ),
+        attempts=(AttemptSnap("ia_1", "wp_a", "inst_1", "submitted", "stage_a"),),
         snapshot_hash="a" * 64,
     )
     action = choose_next_action(snap)
@@ -65,11 +63,10 @@ def test_prepare_handoff_sets_collaboration_ready() -> None:
         active_generation=1,
         collaboration_state="running",
         collaboration_ready_at=None,
+        contract_hash="a" * 64,
     )
     session.get.return_value = run
-    fence = LeaseFence(
-        run_id="run_1", owner="o", token="t", lease_generation=1, thread_id="afg:1"
-    )
+    fence = LeaseFence(run_id="run_1", owner="o", token="t", lease_generation=1, thread_id="afg:1")
 
     class _Snap:
         work_packages = (WorkPackageSnap("wp_a", "s", "r", True),)

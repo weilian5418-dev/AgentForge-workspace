@@ -28,7 +28,6 @@ from agentforge.integration.check_worker import (
 )
 from agentforge.integration.coordinator import (
     IntegrationError,
-    process_integration_build,
     reconcile_integration_build,
     request_integration_build,
 )
@@ -130,8 +129,7 @@ def post_integration_build(
             body=body,
             settings=settings,
         )
-        # Local single-tenant: process immediately after accept (outbox also recorded).
-        return process_integration_build(engine, settings, build_id=view.build_id)
+        return view
     except IntegrationError as exc:
         raise _map_build(exc) from exc
 
@@ -185,14 +183,6 @@ def open_validation_cycle_api(
 ) -> ValidationCycleView:
     """Open a validation cycle from a confirmed policy — clients cannot pass outcomes."""
     engine = _require_engine(request, settings)
-    # Default first check: python_pytest_v1 with tests/ — policy_ref selects package.
-    check_specs = [
-        {
-            "checkId": "python_pytest",
-            "checkVersion": "v1",
-            "config": {"testPaths": ["tests"], "minimumCollectedTests": 1},
-        }
-    ]
     try:
         return start_validation_for_version(
             engine,
@@ -200,7 +190,6 @@ def open_validation_cycle_api(
             principal=_principal(request),
             version_id=version_id,
             body=body,
-            check_specs=check_specs,
         )
     except CheckWorkerError as exc:
         status = {

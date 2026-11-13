@@ -136,9 +136,7 @@ def _seed(factory, store: ArtifactStore, *, technical: str = "passed") -> dict[s
         delivery.technical_status = technical
         delivery.acceptance_status = "awaiting_acceptance"
         delivery.delivery_revision = 3
-        protect_content_object(
-            uow.session, content_hash=object_hash, size_bytes=len(raw)
-        )
+        protect_content_object(uow.session, content_hash=object_hash, size_bytes=len(raw))
         row = DeliveryManifestRow(
             id=f"dm_{suffix}",
             run_id=run_id,
@@ -221,9 +219,7 @@ def test_full_accept_does_not_enqueue_push_or_deploy(
     assert result.run_status == "completed"
     with unit_of_work(session_factory) as uow:
         intents = list(
-            uow.session.scalars(
-                select(Outbox).where(Outbox.run_id == str(seed["run_id"]))
-            ).all()
+            uow.session.scalars(select(Outbox).where(Outbox.run_id == str(seed["run_id"]))).all()
         )
     forbidden = {"git.push", "deploy", "publish_site", "push", "deploy_site"}
     assert not any(o.intent_type in forbidden for o in intents)

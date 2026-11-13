@@ -72,9 +72,7 @@ class SseControlFrame(ContractModel):
         }
         for key in data:
             if key in forbidden:
-                raise ValueError(
-                    f"control frames must not forge business cursor fields ({key})"
-                )
+                raise ValueError(f"control frames must not forge business cursor fields ({key})")
         return data
 
 

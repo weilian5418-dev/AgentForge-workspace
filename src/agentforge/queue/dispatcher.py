@@ -141,6 +141,12 @@ def _enqueue(app: App, snap: ClaimSnapshot) -> None:
         return
 
     collaboration = {
+        "integration_build",
+        "integration_check",
+        "integration.evaluate",
+        "delivery.manifest_build",
+        "recovery.apply",
+        "rework.prepare",
         "instance.create_session",
         "instance.request_stop",
         "instance.close",

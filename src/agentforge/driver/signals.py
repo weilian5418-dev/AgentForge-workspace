@@ -40,8 +40,8 @@ def _now(session: Session) -> datetime:
     except Exception:
         return datetime.now(UTC)
     if getattr(value, "tzinfo", None) is None:
-        return value.replace(tzinfo=UTC)  # type: ignore[union-attr]
-    return value  # type: ignore[return-value]
+        return value.replace(tzinfo=UTC)
+    return value
 
 
 def _to_contract(row: RunWakeSignalRow) -> WakeSignal:
@@ -79,9 +79,7 @@ def record_wake_signal(
         raise ValueError(f"wake source_kind not allowlisted: {source_kind}")
 
     repo = DriverRepository(session)
-    existing = repo.find_wake(
-        run_id=run_id, source_kind=str(source_kind), source_ref=source_ref
-    )
+    existing = repo.find_wake(run_id=run_id, source_kind=str(source_kind), source_ref=source_ref)
     if existing is not None:
         if existing.status == "obsolete":
             existing.status = "pending"

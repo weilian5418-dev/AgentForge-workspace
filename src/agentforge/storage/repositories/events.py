@@ -34,9 +34,7 @@ class EventRepository:
         session = self._uow.session
         # Validate before allocating sequence so invalid payloads leave no hole.
         parsed = parse_event_payload(event_type, payload)
-        run = session.execute(
-            select(Run).where(Run.id == run_id).with_for_update()
-        ).scalar_one()
+        run = session.execute(select(Run).where(Run.id == run_id).with_for_update()).scalar_one()
         next_sequence = int(run.last_sequence) + 1
         session.execute(update(Run).where(Run.id == run_id).values(last_sequence=next_sequence))
 
