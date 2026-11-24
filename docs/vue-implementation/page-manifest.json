@@ -1,0 +1,21 @@
+{
+  "version": "1.0",
+  "referenceRoot": "D:/AgentFront/output/imagegen/lavender-suite",
+  "canonicalPage": "03-execution",
+  "viewport": { "width": 2048, "height": 1152, "deviceScaleFactor": 1 },
+  "targetAppRoot": "D:/AgentFront/apps/workbench-vue",
+  "pages": [
+    { "id": "01-overview", "route": "/workspace", "reference": "01-overview.png", "shell": "management", "fixture": "overview", "title": "工作台首页" },
+    { "id": "02-new-task", "route": "/tasks/new", "reference": "02-new-task.png", "shell": "task", "fixture": "newTask", "title": "新建任务与角色分配" },
+    { "id": "03-execution", "route": "/tasks/demo-order-export", "reference": "03-execution.png", "shell": "execution", "fixture": "executing", "title": "对话与执行画布" },
+    { "id": "04-delivery-review", "route": "/tasks/demo-order-export/delivery", "reference": "04-delivery-review.png", "shell": "task", "fixture": "deliveryReady", "title": "交付与验收" },
+    { "id": "05-task-library", "route": "/tasks", "reference": "05-task-library.png", "shell": "management", "fixture": "taskLibrary", "title": "全部任务" },
+    { "id": "06-inbox", "route": "/inbox", "reference": "06-inbox.png", "shell": "management", "fixture": "approvalPending", "title": "审批收件箱" },
+    { "id": "07-executors", "route": "/executors", "reference": "07-executors.png", "shell": "management", "fixture": "executors", "title": "执行者管理" },
+    { "id": "08-harness-profile", "route": "/executors/profiles/demo-frontend", "reference": "08-harness-profile.png", "shell": "management", "fixture": "profile", "title": "Harness 配置" },
+    { "id": "09-knowledge-library", "route": "/knowledge", "reference": "09-knowledge-library.png", "shell": "management", "fixture": "knowledge", "title": "知识库" },
+    { "id": "10-knowledge-document", "route": "/knowledge/demo-api-contract", "reference": "10-knowledge-document.png", "shell": "knowledgeDetail", "fixture": "document", "title": "文档详情" },
+    { "id": "11-extensions", "route": "/extensions", "reference": "11-extensions.png", "shell": "management", "fixture": "extensions", "title": "扩展与工具服务" },
+    { "id": "12-settings-system", "route": "/settings/connection", "reference": "12-settings-system.png", "shell": "management", "fixture": "settings", "title": "设置与服务状态" }
+  ]
+}

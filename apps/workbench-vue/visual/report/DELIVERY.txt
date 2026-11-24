@@ -1,0 +1,29 @@
+﻿实现版本/lockfile hash：workbench-vue @ apps/workbench-vue ；pnpm-lock.yaml SHA256=A9B0BC227923F41903FC2E15A1965DF96ED30A9F0E7B5F66380218851FF62F70
+后端契约版本/hash：未导出 OpenAPI；live 按 docs/04 手写 path
+参考图目录：apps/workbench-vue/visual/reference （自用户提供的 R2 gateway 链接下载并按页面识别命名；第12个URL为06-inbox重复，未单独入库；另有 visual/image.png 同为01-overview）
+浏览器/OS/字体版本：Chromium Playwright 1.56.1 ；Windows ；AF Sans/Latin/Mono 本地字体
+12页截图与diff目录：
+  - 实现截图 visual/current/*.png
+  - 设计原图 visual/reference/*.png （均为 2048x1152）
+  - 差异/叠图 visual/diff-design/*-diff.png 、*-overlay.png
+  - 报告 visual/diff-design/report.json （diagnostic，未设通过阈值）
+设计还原诊断差异率（整页，非合格判定）：
+  01-overview 6.113%
+  02-new-task 5.913%
+  03-execution 9.069%
+  04-delivery-review 13.098%
+  05-task-library 5.402%
+  06-inbox 7.057%
+  07-executors 5.515%
+  08-harness-profile 5.135%
+  09-knowledge-library 7.156%
+  10-knowledge-document 7.099%
+  11-extensions 5.692%
+  12-settings-system 4.352%
+共享几何变更：Header72 / 侧栏296|314 / 会话602；主按钮石墨灰
+原图纠正项：替代字体；紫色实心按钮归一石墨灰
+通过的功能流程：reference 12页截图 + 原图 diff 诊断已跑通
+真实后端已联调项目：未联调
+未实现或能力不足：知识CRUD / profile PATCH / PTY / 看板 / OpenAPI生成
+未执行的检查：人工叠图签收、区域阈值回归门槛、响应式多分辨率、真实SSE联调
+人工确认的baseline：未建立（首次截图不得自动升格）

@@ -1,0 +1,49 @@
+.af-shell {
+  height: 100dvh;
+  display: grid;
+  grid-template-rows: var(--af-header-height) minmax(0, 1fr);
+  overflow: hidden;
+  background: var(--af-bg);
+}
+.af-body { min-height: 0; min-width: 0; display: flex; }
+.af-page { flex: 1; min-width: 0; overflow: auto; padding: 28px 32px 24px; }
+.af-workspace { flex: 1; min-width: 0; min-height: 0; display: flex; overflow: hidden; }
+.af-pane { min-width: 0; min-height: 0; }
+.af-conversation { flex: 0 0 var(--af-conversation-width); border-right: 1px solid var(--af-border); }
+.af-canvas { flex: 1; }
+.af-management-sidebar {
+  flex: 0 0 var(--af-management-width);
+  border-right: 1px solid var(--af-border);
+  background: var(--af-surface);
+  overflow: auto;
+}
+.af-task-sidebar {
+  flex: 0 0 var(--af-task-width);
+  border-right: 1px solid var(--af-border);
+  background: var(--af-surface);
+  overflow: hidden;
+  min-width: 0;
+  min-height: 0;
+}
+.af-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+@media (max-width: 1919px) {
+  :root { --af-task-width: 240px; --af-conversation-width: 420px; }
+}
+@media (max-width: 1535px) {
+  :root { --af-task-width: 224px; --af-management-width: 224px; }
+  .af-shell[data-shell='taskManage'] .af-body > .af-management-sidebar { display: none; }
+}
+@media (min-width: 1024px) and (max-width: 1279px) {
+  :root { --af-management-width: 76px; }
+  .af-body > .af-management-sidebar .af-nav-item { padding: 0; justify-content: center; }
+  .af-body > .af-management-sidebar :is(.af-nav-item > span, .af-nav-item > em, .af-side-label, .af-workspace-chip) { display: none; }
+}
+@media (max-width: 1023px) {
+  .af-body > :is(.af-management-sidebar,.af-task-sidebar,.af-knowledge-tree) { display: none; }
+  .af-page { padding: 24px; }
+}
+@media (max-width: 639px) {
+  :root { --af-header-height: 64px; }
+  .af-page { padding: 20px 16px; }
+}

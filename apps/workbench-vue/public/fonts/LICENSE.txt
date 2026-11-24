@@ -1,0 +1,5 @@
+﻿Fonts:
+- Inter Variable (OFL) — AF Latin
+- Noto Sans SC Variable (OFL) — AF Sans  
+- JetBrains Mono Variable (OFL) — AF Mono
+Replacement recorded: original brand fonts unavailable; these are the contracted substitutes.

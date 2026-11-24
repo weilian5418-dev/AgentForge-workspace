@@ -20,7 +20,9 @@ class ProcessTree:
         import ctypes
         from ctypes import wintypes
 
-        k = ctypes.WinDLL("kernel32", use_last_error=True)
+        # Windows-only ctypes attributes are absent from the POSIX type stubs.
+        windows_ctypes = cast(Any, ctypes)
+        k = windows_ctypes.WinDLL("kernel32", use_last_error=True)
         for name in ["CreateJobObjectW"]:
             getattr(k, name).restype = wintypes.HANDLE
         k.AssignProcessToJobObject.argtypes = [wintypes.HANDLE, wintypes.HANDLE]
@@ -46,7 +48,7 @@ class ProcessTree:
             proc.kill()
             self.close()
             raise OSError("Cannot bind check process tree")
-        nt = ctypes.WinDLL("ntdll")
+        nt = windows_ctypes.WinDLL("ntdll")
         nt.NtResumeProcess.argtypes = [wintypes.HANDLE]
         if nt.NtResumeProcess(handle) != 0:
             self.terminate()

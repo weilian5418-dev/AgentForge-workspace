@@ -1,0 +1,80 @@
+{
+  "generatedAt": "2026-11-20T03:32:16.997Z",
+  "note": "Design PNGs under output/imagegen/lavender-suite were deleted by explicit user request before rebuild. Pixel/diff vs design cannot be computed until originals are restored to visual/reference.",
+  "referenceRoot": "visual/reference (empty)",
+  "actualRoot": "visual/current",
+  "pages": [
+    {
+      "page": "01-overview",
+      "actual": "01-overview.png",
+      "designReference": "missing",
+      "status": "missing-design-reference"
+    },
+    {
+      "page": "02-new-task",
+      "actual": "02-new-task.png",
+      "designReference": "missing",
+      "status": "missing-design-reference"
+    },
+    {
+      "page": "03-execution",
+      "actual": "03-execution.png",
+      "designReference": "missing",
+      "status": "missing-design-reference"
+    },
+    {
+      "page": "04-delivery-review",
+      "actual": "04-delivery-review.png",
+      "designReference": "missing",
+      "status": "missing-design-reference"
+    },
+    {
+      "page": "05-task-library",
+      "actual": "05-task-library.png",
+      "designReference": "missing",
+      "status": "missing-design-reference"
+    },
+    {
+      "page": "06-inbox",
+      "actual": "06-inbox.png",
+      "designReference": "missing",
+      "status": "missing-design-reference"
+    },
+    {
+      "page": "07-executors",
+      "actual": "07-executors.png",
+      "designReference": "missing",
+      "status": "missing-design-reference"
+    },
+    {
+      "page": "08-harness-profile",
+      "actual": "08-harness-profile.png",
+      "designReference": "missing",
+      "status": "missing-design-reference"
+    },
+    {
+      "page": "09-knowledge-library",
+      "actual": "09-knowledge-library.png",
+      "designReference": "missing",
+      "status": "missing-design-reference"
+    },
+    {
+      "page": "10-knowledge-document",
+      "actual": "10-knowledge-document.png",
+      "designReference": "missing",
+      "status": "missing-design-reference"
+    },
+    {
+      "page": "11-extensions",
+      "actual": "11-extensions.png",
+      "designReference": "missing",
+      "status": "missing-design-reference"
+    },
+    {
+      "page": "12-settings-system",
+      "actual": "12-settings-system.png",
+      "designReference": "missing",
+      "status": "missing-design-reference"
+    }
+  ]
+}
