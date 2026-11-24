@@ -63,7 +63,8 @@ def _windows_process_handle(pid: int) -> Any | None:
     from ctypes import wintypes
 
     process_query_limited_information = 0x1000
-    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    # Windows-only ctypes attributes are absent from the POSIX type stubs.
+    kernel32 = cast(Any, ctypes).WinDLL("kernel32", use_last_error=True)
     kernel32.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
     kernel32.OpenProcess.restype = wintypes.HANDLE
     handle = kernel32.OpenProcess(process_query_limited_information, False, pid)
@@ -75,7 +76,7 @@ def _windows_process_handle(pid: int) -> Any | None:
 def _windows_close_handle(handle: Any) -> None:
     import ctypes
 
-    ctypes.WinDLL("kernel32", use_last_error=True).CloseHandle(handle)
+    cast(Any, ctypes).WinDLL("kernel32", use_last_error=True).CloseHandle(handle)
 
 
 def _windows_process_alive(pid: int) -> bool:
@@ -85,9 +86,9 @@ def _windows_process_alive(pid: int) -> bool:
     handle = _windows_process_handle(pid)
     if handle is None:
         # 5 = ERROR_ACCESS_DENIED → process exists but is not queryable.
-        return ctypes.get_last_error() == 5
+        return int(cast(Any, ctypes).get_last_error()) == 5
     try:
-        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        kernel32 = cast(Any, ctypes).WinDLL("kernel32", use_last_error=True)
         code = wintypes.DWORD()
         if not kernel32.GetExitCodeProcess(handle, ctypes.byref(code)):
             return False
@@ -105,7 +106,7 @@ def _windows_process_key(pid: int) -> str | None:
     if handle is None:
         return None
     try:
-        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        kernel32 = cast(Any, ctypes).WinDLL("kernel32", use_last_error=True)
         creation = wintypes.FILETIME()
         exit_time = wintypes.FILETIME()
         kernel_time = wintypes.FILETIME()
@@ -273,7 +274,8 @@ class InstanceLock:
             if os.name == "nt":
                 import msvcrt
 
-                msvcrt.locking(self._fh.fileno(), msvcrt.LK_NBLCK, 1)
+                windows_lock = cast(Any, msvcrt)
+                windows_lock.locking(self._fh.fileno(), windows_lock.LK_NBLCK, 1)
             else:
                 import fcntl as _fcntl
 
@@ -296,7 +298,8 @@ class InstanceLock:
                 import msvcrt
 
                 self._fh.seek(0)
-                msvcrt.locking(self._fh.fileno(), msvcrt.LK_UNLCK, 1)
+                windows_lock = cast(Any, msvcrt)
+                windows_lock.locking(self._fh.fileno(), windows_lock.LK_UNLCK, 1)
             else:
                 import fcntl as _fcntl
 
@@ -333,7 +336,7 @@ def force_terminate_process(record: PlatformInstance) -> bool:
         from ctypes import wintypes
 
         process_terminate = 0x0001
-        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        kernel32 = cast(Any, ctypes).WinDLL("kernel32", use_last_error=True)
         kernel32.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
         kernel32.OpenProcess.restype = wintypes.HANDLE
         handle = kernel32.OpenProcess(process_terminate, False, record.pid)
