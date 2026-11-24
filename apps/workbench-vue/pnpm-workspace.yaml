@@ -1,0 +1,8 @@
+minimumReleaseAgeExclude:
+  - '@tanstack/query-core@5.108.1'
+  - '@tanstack/vue-query@5.108.1'
+allowBuilds:
+  esbuild: true
+  msw: true
+  sharp: true
+  vue-demi: true

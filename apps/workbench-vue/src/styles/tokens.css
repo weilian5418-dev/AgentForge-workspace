@@ -1,0 +1,42 @@
+@import 'tailwindcss';
+
+:root {
+  --af-bg: #fcfbfe;
+  --af-surface: #fff;
+  --af-surface-subtle: #f8f5fd;
+  --af-selected: #f0ebfa;
+  --af-accent: #a391d4;
+  --af-accent-ink: #6b5395;
+  --af-accent-strong: #795cab;
+  --af-text: #24232a;
+  --af-text-secondary: #625e6d;
+  --af-text-muted: #706a7b;
+  --af-border: #e7e3ed;
+  --af-button: #30323a;
+  --af-code: #2d3137;
+  --af-success: #20752f;
+  --af-success-bg: #e8f7eb;
+  --af-attention: #9a570d;
+  --af-attention-bg: #fff5e5;
+  --af-danger: #c24145;
+  --af-header-height: 72px;
+  --af-management-width: 296px;
+  --af-task-width: 314px;
+  --af-conversation-width: 602px;
+  --af-radius: 8px;
+  --background: var(--af-bg);
+  --foreground: var(--af-text);
+  --primary: var(--af-button);
+  --primary-foreground: #fff;
+  --border: var(--af-border);
+  --ring: var(--af-accent-strong);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+}

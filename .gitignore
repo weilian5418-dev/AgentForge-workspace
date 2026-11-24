@@ -31,3 +31,15 @@ Thumbs.db
 # Legacy Node monorepo (must not return)
 node_modules/
 .pnpm-store/
+
+# Frontend workbench (apps/workbench-vue)
+.pnpm-store/
+.vite/
+*.tsbuildinfo
+!.env.reference
+.playwright-cli/
+.taste-skill/
+**/chrome-integration/
+playwright-report/
+test-results/
+apps/workbench-vue/output/

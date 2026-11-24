@@ -1,0 +1,323 @@
+{
+  "referenceRoot": "D:\\AgentFront\\apps\\workbench-vue\\visual\\reference",
+  "actualRoot": "D:\\AgentFront\\apps\\workbench-vue\\visual\\current",
+  "limit": null,
+  "regionLimit": null,
+  "pages": [
+    {
+      "page": "01-overview",
+      "status": "diagnostic",
+      "width": 2048,
+      "height": 1152,
+      "changedPixels": 144225,
+      "ratio": 0.061130523681640625,
+      "regions": [
+        {
+          "name": "header",
+          "changedPixels": 15566,
+          "ratio": 0.1055636935763889
+        },
+        {
+          "name": "sidebar",
+          "changedPixels": 10950,
+          "ratio": 0.034253003003003005
+        },
+        {
+          "name": "content",
+          "changedPixels": 117709,
+          "ratio": 0.06220879841028243
+        }
+      ]
+    },
+    {
+      "page": "02-new-task",
+      "status": "diagnostic",
+      "width": 2048,
+      "height": 1152,
+      "changedPixels": 139516,
+      "ratio": 0.059134589301215276,
+      "regions": [
+        {
+          "name": "header",
+          "changedPixels": 14648,
+          "ratio": 0.0993381076388889
+        },
+        {
+          "name": "sidebar",
+          "changedPixels": 19657,
+          "ratio": 0.061489614614614614
+        },
+        {
+          "name": "content",
+          "changedPixels": 105219,
+          "ratio": 0.055607876712328766
+        }
+      ]
+    },
+    {
+      "page": "03-execution",
+      "status": "diagnostic",
+      "width": 2048,
+      "height": 1152,
+      "changedPixels": 213962,
+      "ratio": 0.0906889173719618,
+      "regions": [
+        {
+          "name": "header",
+          "changedPixels": 14480,
+          "ratio": 0.09819878472222222
+        },
+        {
+          "name": "task-sidebar",
+          "changedPixels": 25361,
+          "ratio": 0.07478473696626563
+        },
+        {
+          "name": "conversation",
+          "changedPixels": 57580,
+          "ratio": 0.08856281530700136
+        },
+        {
+          "name": "graph",
+          "changedPixels": 20967,
+          "ratio": 0.053498162890385795
+        },
+        {
+          "name": "artifact",
+          "changedPixels": 85709,
+          "ratio": 0.1464810637134263
+        },
+        {
+          "name": "composer",
+          "changedPixels": 6145,
+          "ratio": 0.08977618045815802
+        }
+      ]
+    },
+    {
+      "page": "04-delivery-review",
+      "status": "diagnostic",
+      "width": 2048,
+      "height": 1152,
+      "changedPixels": 309011,
+      "ratio": 0.13097593519422743,
+      "regions": [
+        {
+          "name": "header",
+          "changedPixels": 15100,
+          "ratio": 0.10240342881944445
+        },
+        {
+          "name": "task-sidebar",
+          "changedPixels": 26957,
+          "ratio": 0.07949103562160886
+        },
+        {
+          "name": "content",
+          "changedPixels": 266954,
+          "ratio": 0.14254880601478065
+        }
+      ]
+    },
+    {
+      "page": "05-task-library",
+      "status": "diagnostic",
+      "width": 2048,
+      "height": 1152,
+      "changedPixels": 127444,
+      "ratio": 0.05401780870225695,
+      "regions": [
+        {
+          "name": "header",
+          "changedPixels": 15923,
+          "ratio": 0.10798475477430555
+        },
+        {
+          "name": "sidebar",
+          "changedPixels": 11366,
+          "ratio": 0.035554304304304306
+        },
+        {
+          "name": "content",
+          "changedPixels": 100155,
+          "ratio": 0.05293157026889904
+        }
+      ]
+    },
+    {
+      "page": "06-inbox",
+      "status": "diagnostic",
+      "width": 2048,
+      "height": 1152,
+      "changedPixels": 166491,
+      "ratio": 0.07056808471679688,
+      "regions": [
+        {
+          "name": "header",
+          "changedPixels": 15378,
+          "ratio": 0.10428873697916667
+        },
+        {
+          "name": "sidebar",
+          "changedPixels": 10194,
+          "ratio": 0.031888138138138136
+        },
+        {
+          "name": "content",
+          "changedPixels": 140919,
+          "ratio": 0.0744752029426687
+        }
+      ]
+    },
+    {
+      "page": "07-executors",
+      "status": "diagnostic",
+      "width": 2048,
+      "height": 1152,
+      "changedPixels": 130113,
+      "ratio": 0.055149078369140625,
+      "regions": [
+        {
+          "name": "header",
+          "changedPixels": 15137,
+          "ratio": 0.10265435112847222
+        },
+        {
+          "name": "sidebar",
+          "changedPixels": 10636,
+          "ratio": 0.03327077077077077
+        },
+        {
+          "name": "content",
+          "changedPixels": 104340,
+          "ratio": 0.055143328259766616
+        }
+      ]
+    },
+    {
+      "page": "08-harness-profile",
+      "status": "diagnostic",
+      "width": 2048,
+      "height": 1152,
+      "changedPixels": 121159,
+      "ratio": 0.05135387844509549,
+      "regions": [
+        {
+          "name": "header",
+          "changedPixels": 14786,
+          "ratio": 0.10027398003472222
+        },
+        {
+          "name": "sidebar",
+          "changedPixels": 11451,
+          "ratio": 0.03582019519519519
+        },
+        {
+          "name": "content",
+          "changedPixels": 94922,
+          "ratio": 0.0501659479113817
+        }
+      ]
+    },
+    {
+      "page": "09-knowledge-library",
+      "status": "diagnostic",
+      "width": 2048,
+      "height": 1152,
+      "changedPixels": 168829,
+      "ratio": 0.0715590582953559,
+      "regions": [
+        {
+          "name": "header",
+          "changedPixels": 16516,
+          "ratio": 0.11200629340277778
+        },
+        {
+          "name": "sidebar",
+          "changedPixels": 11677,
+          "ratio": 0.03652715215215215
+        },
+        {
+          "name": "content",
+          "changedPixels": 140636,
+          "ratio": 0.07432563842381194
+        }
+      ]
+    },
+    {
+      "page": "10-knowledge-document",
+      "status": "diagnostic",
+      "width": 2048,
+      "height": 1152,
+      "changedPixels": 167493,
+      "ratio": 0.07099278767903645,
+      "regions": [
+        {
+          "name": "header",
+          "changedPixels": 15702,
+          "ratio": 0.10648600260416667
+        },
+        {
+          "name": "sidebar",
+          "changedPixels": 10488,
+          "ratio": 0.03280780780780781
+        },
+        {
+          "name": "content",
+          "changedPixels": 141301,
+          "ratio": 0.07467708861829866
+        }
+      ]
+    },
+    {
+      "page": "11-extensions",
+      "status": "diagnostic",
+      "width": 2048,
+      "height": 1152,
+      "changedPixels": 134297,
+      "ratio": 0.05692248874240451,
+      "regions": [
+        {
+          "name": "header",
+          "changedPixels": 17085,
+          "ratio": 0.11586507161458333
+        },
+        {
+          "name": "sidebar",
+          "changedPixels": 12157,
+          "ratio": 0.038028653653653655
+        },
+        {
+          "name": "content",
+          "changedPixels": 105055,
+          "ratio": 0.05552120328090648
+        }
+      ]
+    },
+    {
+      "page": "12-settings-system",
+      "status": "diagnostic",
+      "width": 2048,
+      "height": 1152,
+      "changedPixels": 102688,
+      "ratio": 0.043524848090277776,
+      "regions": [
+        {
+          "name": "header",
+          "changedPixels": 14155,
+          "ratio": 0.09599473741319445
+        },
+        {
+          "name": "sidebar",
+          "changedPixels": 9846,
+          "ratio": 0.03079954954954955
+        },
+        {
+          "name": "content",
+          "changedPixels": 78687,
+          "ratio": 0.04158580669710807
+        }
+      ]
+    }
+  ]
+}
